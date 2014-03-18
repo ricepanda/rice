@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -714,7 +714,8 @@ public class LookupableImpl extends ViewHelperServiceImpl implements Lookupable 
         returnLinkField.setLinkText(linkLabel);
 
         List<String> returnKeys = getReturnKeys(lookupView, lookupForm, dataObject);
-        Map<String, String> returnKeyValues = KRADUtils.getPropertyKeyValuesFromDataObject(returnKeys, dataObject);
+        List<String> secureReturnKeys = lookupView.getAdditionalSecurePropertyNames();
+        Map<String, String> returnKeyValues = KRADUtils.getPropertyKeyValuesFromDataObject(returnKeys, secureReturnKeys, dataObject);
 
         String title = LookupInquiryUtils.getLinkTitleText(linkLabel, getDataObjectClass(), returnKeyValues);
         returnLinkField.setTitle(title);
@@ -806,7 +807,8 @@ public class LookupableImpl extends ViewHelperServiceImpl implements Lookupable 
         }
 
         List<String> returnKeys = getReturnKeys(lookupView, lookupForm, dataObject);
-        Map<String, String> returnKeyValues = KRADUtils.getPropertyKeyValuesFromDataObject(returnKeys, dataObject);
+        List<String> secureReturnKeys = lookupView.getAdditionalSecurePropertyNames();
+        Map<String, String> returnKeyValues = KRADUtils.getPropertyKeyValuesFromDataObject(returnKeys, secureReturnKeys, dataObject);
 
         for (String returnKey : returnKeyValues.keySet()) {
             String returnValue = returnKeyValues.get(returnKey);
