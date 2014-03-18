@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -381,7 +381,7 @@ public class Book {
       <para>Implementations of this can be made to determine the default value in whatever
                 manner necessary. Previous to KRAD, this was helpful for retrieving the default
                 value from a system parameter. However, with KRAD EL, you can do this with the
-                defaultValue property using the <emphasis role="keyword">getParm</emphasis>
+                defaultValue property using the <emphasis role="keyword">getParam</emphasis>
                 function.</para>
       <para>Let's create a default value finder class that calls a service to retrieve the value.
         Our finder class would be setup like:</para>
@@ -3284,11 +3284,11 @@ public class QueryUtils {
       on the image element.</para>
     <para>Uif-PrimaryActionButton – Action component that is configured to render a button. The
       button element can include text (the label) along with an image. This bean adds the CSS style
-      'uif-primaryActionButton' on the button element.</para>
+      'btn' and 'btn-primary' on the button element.</para>
     <para>Uif-SecondaryActionButton – Action component that is configured to render a button. This
-      bean sets the CSS style 'uif-secondaryActionButton' on the button element.</para>
+      bean sets the CSS style 'btn' and 'btn-default' on the button element.</para>
     <para>Uif-PrimaryActionButton-Small – Action component that is configured to render a button.
-      This bean sets the CSS style 'uif-primaryActionButton' and 'uif-smallActionButton' on the
+      This bean sets the CSS style 'btn', 'btn-default' and 'btn-xs' on the
       button element.</para>
     <para>Uif-SecondaryActionButton-Small – Action component that is configured to render a button.
       This bean sets the CSS style 'uif-secondaryActionButton' and 'uif-smallActionButton' on the
@@ -4437,10 +4437,10 @@ The following areas allow rich message content described by this section:
     <section>
       <title>Html, Color, and css Rich Message Tags</title>
       <para>Example that uses all 3 in one message (bold html tag, color for #F78C00 web color, and
-          css to add the class 'fl-text-underline' around that content)</para>
+          css to add the class 'uif-text-underline' around that content)</para>
       <programlisting linenumbering = "numbered">&lt;bean parent=&quot;Uif-Message&quot;&gt;
           &lt;property name=&quot;messageText&quot;
-                    value=&quot;<emphasis role="keyword">[b]</emphasis>Message<emphasis role="keyword">[/b]</emphasis> using a <emphasis role="keyword">[color=#F78C00]</emphasis> <emphasis role="keyword">[css=&apos;fl-text-underline&apos;]</emphasis>combination<emphasis role="keyword">[/css]</emphasis> of different options<emphasis role="keyword">[/color]</emphasis>" /&gt;
+                    value=&quot;<emphasis role="keyword">[b]</emphasis>Message<emphasis role="keyword">[/b]</emphasis> using a <emphasis role="keyword">[color=#F78C00]</emphasis> <emphasis role="keyword">[css=&apos;uif-text-underline&apos;]</emphasis>combination<emphasis role="keyword">[/css]</emphasis> of different options<emphasis role="keyword">[/color]</emphasis>" /&gt;
 </programlisting>
     </section>
     <section>
@@ -4500,7 +4500,7 @@ The following areas allow rich message content described by this section:
       <para>Usage in instructionalText (similar in other areas which are backed by the Message
             component in their Java object):</para>
       <programlisting linenumbering = "numbered">…
-<emphasis role="keyword">p:instructionalText=&quot;Testing [css=&apos;fl-text-underline&apos;]checkbox and radio groups[/css] below&quot;</emphasis>
+<emphasis role="keyword">p:instructionalText=&quot;Testing [css=&apos;uif-text-underline&apos;]checkbox and radio groups[/css] below&quot;</emphasis>
 …
 </programlisting>
       <para>Usage in CheckboxControl - also demonstrating the ability to override a property of the component referenced by id (overriding propertyName with value &apos;field103&apos;):</para>

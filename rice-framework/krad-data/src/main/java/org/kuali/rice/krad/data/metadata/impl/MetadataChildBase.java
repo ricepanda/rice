@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ public abstract class MetadataChildBase extends MetadataCommonBase implements Me
 
 	protected Class<?> relatedType;
 	protected List<DataObjectAttributeRelationship> attributeRelationships;
+    protected MetadataChild inverseRelationship;
 
 	protected Boolean savedWithParent;
 	protected Boolean deletedWithParent;
@@ -106,6 +107,21 @@ public abstract class MetadataChildBase extends MetadataCommonBase implements Me
 	public void setAttributeRelationships(List<DataObjectAttributeRelationship> attributeRelationships) {
 		this.attributeRelationships = attributeRelationships;
 	}
+
+    @Override
+    public MetadataChild getInverseRelationship() {
+        if (inverseRelationship != null) {
+            return inverseRelationship;
+        }
+        if (embeddedMetadataChild != null) {
+            return embeddedMetadataChild.getInverseRelationship();
+        }
+        return null;
+    }
+
+    public void setInverseRelationship(MetadataChild inverseRelationship) {
+        this.inverseRelationship = inverseRelationship;
+    }
 
     @Override
 	public String getParentAttributeNameRelatedToChildAttributeName(String childAttribute) {

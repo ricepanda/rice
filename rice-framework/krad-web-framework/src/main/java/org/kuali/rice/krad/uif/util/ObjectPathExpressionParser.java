@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -186,8 +186,6 @@ public final class ObjectPathExpressionParser {
 
                         // Move original path index forward
                         originalPathIndex += nextTokenIndex;
-                        parentPath = originalPath.substring(0, originalPathIndex);
-
                         return;
                 }
             }
@@ -211,6 +209,7 @@ public final class ObjectPathExpressionParser {
             if (nextTokenIndex == -1) {
                 // Only a symbolic reference, resolve it and return.
                 currentContinuation = pathEntry.parse(parentPath, currentContinuation, path);
+                parentPath = originalPath.substring(0, originalPathIndex);
                 return null;
             }
 
@@ -222,6 +221,7 @@ public final class ObjectPathExpressionParser {
                     // Approaching a collection reference.
                     currentContinuation = pathEntry.parse(parentPath, currentContinuation,
                             path.substring(0, nextTokenIndex));
+                    parentPath = originalPath.substring(0, originalPathIndex);
                     return path.substring(nextTokenIndex); // Keep the left parenthesis
 
                 case '.':
@@ -230,7 +230,7 @@ public final class ObjectPathExpressionParser {
                             path.substring(0, nextTokenIndex));
 
                     // Step past the period
-                    originalPathIndex++;
+                    parentPath = originalPath.substring(0, originalPathIndex++);
 
                     return path.substring(nextTokenIndex + 1);
 
@@ -293,8 +293,9 @@ public final class ObjectPathExpressionParser {
      * This method is used to eliminate parsing and object creation overhead when resolving an
      * object property reference with a non-complex property path.
      * </p>
+     * @param propertyName property name
      *
-     * @return True if the name is a path, false if a plain reference.
+     * @return true if the name is a path, false if a plain reference
      */
     public static boolean isPath(String propertyName) {
         if (propertyName == null) {
@@ -318,14 +319,13 @@ public final class ObjectPathExpressionParser {
      * @param root The root object.
      * @param path The path expression.
      * @param pathEntry The path entry adaptor to use for processing parse node transition.
-     * @param <T> Reference type representing the next parse node.
-     * @param <S> The parse node type.
      * 
      * @return The valid of the bean property indicated by the given path expression, null if the
      *         path expression doesn't resolve to a valid property.
-     * @see ObjectPathExpressionParser#getPropertyValue(Object, String)
+     * @see ObjectPropertyUtils#getPropertyValue(Object, String)
      */
-    public static Object parsePathExpression(Object root, String path, final PathEntry pathEntry) {
+    @SuppressWarnings("unchecked")
+    public static <T> T parsePathExpression(Object root, String path, final PathEntry pathEntry) {
 
         // NOTE: This iterative parser allows support for subexpressions
         // without recursion. When a subexpression start token '[' is
@@ -360,7 +360,7 @@ public final class ObjectPathExpressionParser {
                 parseState.scan(path);
                 path = parseState.step(path, pathEntry);
             }
-            return parseState.currentContinuation;
+            return (T) parseState.currentContinuation;
         } finally {
             assert !recycle || parseState == TL_EL_PARSE_STATE.get();
             parseState.reset();

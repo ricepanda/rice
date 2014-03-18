@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,22 +40,27 @@ import org.kuali.rice.krad.data.CompoundKey;
 import org.kuali.rice.krad.data.DataObjectService;
 import org.kuali.rice.krad.data.DataObjectWrapper;
 import org.kuali.rice.krad.exception.PessimisticLockingException;
+import org.kuali.rice.krad.rules.rule.event.AddCollectionLineEvent;
 import org.kuali.rice.krad.service.DataObjectAuthorizationService;
 import org.kuali.rice.krad.service.DocumentDictionaryService;
 import org.kuali.rice.krad.service.KRADServiceLocator;
 import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
+import org.kuali.rice.krad.service.KualiRuleService;
 import org.kuali.rice.krad.service.LegacyDataAdapter;
 import org.kuali.rice.krad.service.MaintenanceDocumentService;
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.component.BindingInfo;
-import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.container.CollectionGroup;
 import org.kuali.rice.krad.uif.field.DataField;
+import org.kuali.rice.krad.uif.field.InputField;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.service.ViewHelperService;
 import org.kuali.rice.krad.uif.service.impl.ViewHelperServiceImpl;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.util.ObjectPropertyUtils;
 import org.kuali.rice.krad.uif.view.View;
 import org.kuali.rice.krad.uif.view.ViewModel;
+import org.kuali.rice.krad.uif.view.MaintenanceDocumentView;
 import org.kuali.rice.krad.util.KRADConstants;
 import org.kuali.rice.krad.web.form.MaintenanceDocumentForm;
 
@@ -66,7 +71,6 @@ import org.kuali.rice.krad.web.form.MaintenanceDocumentForm;
  */
 public class MaintainableImpl extends ViewHelperServiceImpl implements Maintainable {
     private static final long serialVersionUID = 9125271369161634992L;
-
     private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(MaintainableImpl.class);
 
     private String documentNumber;
@@ -80,6 +84,7 @@ public class MaintainableImpl extends ViewHelperServiceImpl implements Maintaina
     private transient EncryptionService encryptionService;
     private transient DataObjectService dataObjectService;
     private transient MaintenanceDocumentService maintenanceDocumentService;
+    private transient KualiRuleService kualiRuleService;
 
     /**
      * @see org.kuali.rice.krad.maintenance.Maintainable#retrieveObjectForEditOrCopy(MaintenanceDocument, java.util.Map)
@@ -104,6 +109,7 @@ public class MaintainableImpl extends ViewHelperServiceImpl implements Maintaina
 
         return dataObject;
     }
+
 
     /**
      * @see org.kuali.rice.krad.maintenance.Maintainable#setDocumentNumber
@@ -259,7 +265,6 @@ public class MaintainableImpl extends ViewHelperServiceImpl implements Maintaina
     /**
      * @see org.kuali.rice.krad.maintenance.Maintainable#saveDataObject
      */
-    @SuppressWarnings("deprecation")
     @Override
     public void saveDataObject() {
         if ( dataObject == null ) {
@@ -272,7 +277,6 @@ public class MaintainableImpl extends ViewHelperServiceImpl implements Maintaina
     /**
      * @see org.kuali.rice.krad.maintenance.Maintainable#deleteDataObject
      */
-    @SuppressWarnings("deprecation")
     @Override
     public void deleteDataObject() {
         if (dataObject == null) {
@@ -368,7 +372,6 @@ public class MaintainableImpl extends ViewHelperServiceImpl implements Maintaina
         if (getDataObject() == null) {
             isOldDataObjectInExistence = false;
         } else {
-            @SuppressWarnings("deprecation")
             Map<String, ?> keyFieldValues = getLegacyDataAdapter().getPrimaryKeyFieldValuesDOMDS(getDataObject());
             for (Object keyValue : keyFieldValues.values()) {
                 if (keyValue == null) {
@@ -450,24 +453,27 @@ public class MaintainableImpl extends ViewHelperServiceImpl implements Maintaina
      *
      */
     @Override
-    public void processAfterAddLine(View view, CollectionGroup collectionGroup, Object model, Object addLine,
-            boolean isValidLine) {
-        super.processAfterAddLine(view, collectionGroup, model, addLine, isValidLine);
+    public void processAfterAddLine(ViewModel viewModel, Object addLine, String collectionId, String collectionPath,
+                boolean isValidLine) {
+        super.processAfterAddLine(viewModel, addLine, collectionId, collectionPath, isValidLine);
 
         // Check for maintenance documents in edit but exclude notes and ad hoc recipients
-        if (model instanceof MaintenanceDocumentForm
+        if (viewModel instanceof MaintenanceDocumentForm
                 && KRADConstants.MAINTENANCE_EDIT_ACTION.equals(
-                ((MaintenanceDocumentForm) model).getMaintenanceAction())
+                ((MaintenanceDocumentForm) viewModel).getMaintenanceAction())
                 && !(addLine instanceof Note)
                 && !(addLine instanceof AdHocRoutePerson)
                 && !(addLine instanceof AdHocRouteWorkgroup)) {
-            MaintenanceDocumentForm maintenanceForm = (MaintenanceDocumentForm) model;
+            MaintenanceDocumentForm maintenanceForm = (MaintenanceDocumentForm) viewModel;
             MaintenanceDocument document = maintenanceForm.getDocument();
+
+            BindingInfo bindingInfo = (BindingInfo) viewModel.getViewPostMetadata().getComponentPostData(collectionId,
+                    UifConstants.PostMetadata.BINDING_INFO);
 
             // get the old object's collection
             //KULRICE-7970 support multiple level objects
-            String bindingPrefix = collectionGroup.getBindingInfo().getBindByNamePrefix();
-            String propertyPath = collectionGroup.getPropertyName();
+            String bindingPrefix = bindingInfo.getBindByNamePrefix();
+            String propertyPath = bindingInfo.getBindingName();
             if (bindingPrefix != "" && bindingPrefix != null) {
                 propertyPath = bindingPrefix + "." + propertyPath;
             }
@@ -475,8 +481,11 @@ public class MaintainableImpl extends ViewHelperServiceImpl implements Maintaina
             Collection<Object> oldCollection = ObjectPropertyUtils.getPropertyValue(
                     document.getOldMaintainableObject().getDataObject(), propertyPath);
 
+            Class<?> collectionObjectClass = (Class<?>) viewModel.getViewPostMetadata().getComponentPostData(collectionId,
+                    UifConstants.PostMetadata.COLL_OBJECT_CLASS);
+
             try {
-                Object blankLine = collectionGroup.getCollectionObjectClass().newInstance();
+                Object blankLine = collectionObjectClass.newInstance();
                 //Add a blank line to the top of the collection
                 if (oldCollection instanceof List) {
                     ((List<Object>) oldCollection).add(0, blankLine);
@@ -497,22 +506,35 @@ public class MaintainableImpl extends ViewHelperServiceImpl implements Maintaina
      *      org.kuali.rice.krad.uif.container.CollectionGroup, java.lang.Object,  int)
      */
     @Override
-    public void processAfterDeleteLine(View view, CollectionGroup collectionGroup, Object model, int lineIndex) {
-        super.processAfterDeleteLine(view, collectionGroup, model, lineIndex);
+    public void processAfterDeleteLine(ViewModel model, String collectionId, String collectionPath, int lineIndex) {
+        super.processAfterDeleteLine(model, collectionId, collectionPath, lineIndex);
+
+        Class<?> collectionObjectClass = (Class<?>) model.getViewPostMetadata().getComponentPostData(collectionId,
+                UifConstants.PostMetadata.COLL_OBJECT_CLASS);
 
         // Check for maintenance documents in edit but exclude notes and ad hoc recipients
         if (model instanceof MaintenanceDocumentForm
                 && KRADConstants.MAINTENANCE_EDIT_ACTION.equals(((MaintenanceDocumentForm)model).getMaintenanceAction())
-                && !collectionGroup.getCollectionObjectClass().getName().equals(Note.class.getName())
-                && !collectionGroup.getCollectionObjectClass().getName().equals(AdHocRoutePerson.class.getName())
-                && !collectionGroup.getCollectionObjectClass().getName().equals(AdHocRouteWorkgroup.class.getName())) {
+                && !collectionObjectClass.getName().equals(Note.class.getName())
+                && !collectionObjectClass.getName().equals(AdHocRoutePerson.class.getName())
+                && !collectionObjectClass.getName().equals(AdHocRouteWorkgroup.class.getName())) {
             MaintenanceDocumentForm maintenanceForm = (MaintenanceDocumentForm) model;
             MaintenanceDocument document = maintenanceForm.getDocument();
 
+            BindingInfo bindingInfo = (BindingInfo) model.getViewPostMetadata().getComponentPostData(collectionId,
+                    UifConstants.PostMetadata.BINDING_INFO);
+
             // get the old object's collection
-            Collection<Object> oldCollection = ObjectPropertyUtils
-                    .getPropertyValue(document.getOldMaintainableObject().getDataObject(),
-                            collectionGroup.getPropertyName());
+            //KULRICE-7970 support multiple level objects
+            String bindingPrefix = bindingInfo.getBindByNamePrefix();
+            String propertyPath = bindingInfo.getBindingName();
+            if (bindingPrefix != "" && bindingPrefix != null) {
+                propertyPath = bindingPrefix + "." + propertyPath;
+            }
+
+            Collection<Object> oldCollection = ObjectPropertyUtils.getPropertyValue(
+                                document.getOldMaintainableObject().getDataObject(), propertyPath);
+
             try {
                 // Remove the object at lineIndex from the collection
                 oldCollection.remove(oldCollection.toArray()[lineIndex]);
@@ -520,6 +542,23 @@ public class MaintainableImpl extends ViewHelperServiceImpl implements Maintaina
                 throw new RuntimeException("Unable to delete line instance for old maintenance object", e);
             }
         }
+    }
+
+    @Override
+    protected boolean performAddLineValidation(ViewModel viewModel, Object newLine, String collectionId,
+                String collectionPath) {
+        boolean isValidLine = super.performAddLineValidation(viewModel, newLine, collectionId, collectionPath);
+
+        BindingInfo bindingInfo = (BindingInfo) viewModel.getViewPostMetadata().getComponentPostData(collectionId,
+                            UifConstants.PostMetadata.BINDING_INFO);
+
+        if (viewModel instanceof MaintenanceDocumentForm) {
+            MaintenanceDocumentForm form = ((MaintenanceDocumentForm) viewModel);
+            isValidLine &= getKualiRuleService()
+                    .applyRules(new AddCollectionLineEvent(form.getDocument(), bindingInfo.getBindingName(), newLine));
+        }
+
+        return isValidLine;
     }
 
     /**
@@ -531,6 +570,58 @@ public class MaintainableImpl extends ViewHelperServiceImpl implements Maintaina
         return this.documentNumber;
     }
 
+
+
+    /**
+     * Hook for service overrides to perform custom apply model logic on the component
+     *
+     * @param element element instance to apply model to
+     * @param model Top level object containing the data (could be the model or a top level business
+     *        object, dto)
+     */
+    @Override
+    public void performCustomApplyModel(LifecycleElement element, Object model) {
+
+        MaintenanceDocumentForm form = (MaintenanceDocumentForm) model;
+
+        /**
+         *  Primary keys should not be editable on maintenance edit action
+         *
+         *  Determines if the maintenance action matches MAINTENANCE_EDIT_ACTION, that the element is of type InputField and
+         *  if the bindingPath includes a new maintainable path
+         */
+        if (KRADConstants.MAINTENANCE_EDIT_ACTION.equals(form.getMaintenanceAction()) && element instanceof InputField
+                && StringUtils.contains(((InputField) element).getName(), KRADConstants.MAINTENANCE_NEW_MAINTAINABLE)) {
+            setPrimaryKeyReadOnly(element);
+
+        }
+    }
+
+    /**
+     * sets primary keys to read-only
+     */
+     private void setPrimaryKeyReadOnly(LifecycleElement element){
+
+         String propertyName =  ((InputField) element).getPropertyName();
+         MaintenanceDocumentView maintenanceView = (MaintenanceDocumentView) ViewLifecycle.getView();
+
+         /**
+          *   get a list of primary keys from the maintenance view dataObject
+          */
+         List<String> primaryKeys = KRADServiceLocatorWeb.getLegacyDataAdapter().listPrimaryKeyFieldNames(maintenanceView.getDataObjectClassName());
+
+         /**
+          *  loop thru primary keys, match to our component field name and set it to read-only
+          */
+         for (String field : primaryKeys) {
+             if(propertyName.equals(field)){
+                 ((InputField) element).setReadOnly(true);
+
+             }
+         }
+     }
+
+
     /**
      * For the copy action, clears out primary key values and replaces any new fields that the current user is
      * unauthorized for with default values in the old record.
@@ -538,7 +629,7 @@ public class MaintainableImpl extends ViewHelperServiceImpl implements Maintaina
      * {@inheritDoc}
      */
     @Override
-    public void performCustomFinalize(Component component, Object model, Component parent) {
+    public void performCustomFinalize(LifecycleElement element, Object model, LifecycleElement parent) {
         if (!(model instanceof MaintenanceDocumentForm)) {
             return;
         }
@@ -550,14 +641,14 @@ public class MaintainableImpl extends ViewHelperServiceImpl implements Maintaina
         }
 
         if (KRADConstants.MAINTENANCE_COPY_ACTION.equals(form.getMaintenanceAction())) {
-            View view = ViewLifecycle.getActiveLifecycle().getView();
+            View view = ViewLifecycle.getView();
 
-            if (component instanceof DataField) {
-                DataField field = (DataField) component;
+            if (element instanceof DataField) {
+                DataField field = (DataField) element;
 
                 clearUnauthorizedField(view, form, field);
-            } else if (component instanceof CollectionGroup) {
-                CollectionGroup group = (CollectionGroup) component;
+            } else if (element instanceof CollectionGroup) {
+                CollectionGroup group = (CollectionGroup) element;
 
                 clearUnauthorizedLine(view, form, group);
             }
@@ -585,6 +676,8 @@ public class MaintainableImpl extends ViewHelperServiceImpl implements Maintaina
         }
     }
 
+
+
     /**
      * Determines if the current field is restricted and replaces its value with a default value if so.
      *
@@ -593,7 +686,7 @@ public class MaintainableImpl extends ViewHelperServiceImpl implements Maintaina
      * @param field field being checked for restrictions
      */
     private void clearUnauthorizedField(View view, ViewModel model, DataField field) {
-        ViewLifecycle viewLifecycle = ViewLifecycle.getActiveLifecycle();
+        ViewHelperService helper = ViewLifecycle.getHelper();
         String bindingPath = field.getBindingInfo().getBindingPath();
 
         if (StringUtils.contains(bindingPath, KRADConstants.MAINTENANCE_NEW_MAINTAINABLE)) {
@@ -606,7 +699,7 @@ public class MaintainableImpl extends ViewHelperServiceImpl implements Maintaina
                     ObjectPropertyUtils.setPropertyValue(model, bindingPath, null);
                 }
 
-                viewLifecycle.populateDefaultValueForField(view, model, field, bindingPath);
+                helper.populateDefaultValueForField(model, field, bindingPath);
             }
         }
     }
@@ -714,5 +807,16 @@ public class MaintainableImpl extends ViewHelperServiceImpl implements Maintaina
 
     public void setMaintenanceDocumentService(MaintenanceDocumentService maintenanceDocumentService) {
         this.maintenanceDocumentService = maintenanceDocumentService;
+    }
+
+    public KualiRuleService getKualiRuleService() {
+        if (kualiRuleService == null) {
+            kualiRuleService = KRADServiceLocatorWeb.getKualiRuleService();
+        }
+        return kualiRuleService;
+    }
+
+    public void setKualiRuleService(KualiRuleService kualiRuleService) {
+        this.kualiRuleService = kualiRuleService;
     }
 }

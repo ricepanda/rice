@@ -1,6 +1,6 @@
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -77,8 +77,8 @@
     <!-- other properties -->
     <jetty.port>8080</jetty.port>
     <maven.failsafe.skip>true</maven.failsafe.skip>
-    <plugin.compiler.source>${kuali.compile.source}</plugin.compiler.source>
-    <plugin.compiler.target>${kuali.compile.target}</plugin.compiler.target>
+    <plugin.compiler.source>1.7</plugin.compiler.source>
+    <plugin.compiler.target>1.7</plugin.compiler.target>
   </properties>
 
   <build>

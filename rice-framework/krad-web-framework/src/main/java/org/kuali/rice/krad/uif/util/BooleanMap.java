@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,17 +22,27 @@ import java.util.Set;
 /**
  * Map implementation takes a <code>Set</code> of Strings and converts to Map
  * where the string is the map key and value is the Boolean true, convenience
- * collection for expression language
+ * collection for expression language.
  *
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 public class BooleanMap extends HashMap<String, Boolean> {
     private static final long serialVersionUID = 4042557657401395547L;
 
+    /**
+     * Copy constructor.
+     *
+     * @param m map to copy
+     */
     public BooleanMap(Map<? extends String, ? extends Boolean> m) {
         super(m);
     }
 
+    /**
+     * Sets an initial value of {@link Boolean#TRUE} for a given provided set of keys.
+     *
+     * @param keys set of keys to map to {@link Boolean#TRUE}
+     */
     public BooleanMap(Set<String> keys) {
         super();
 
@@ -43,9 +53,9 @@ public class BooleanMap extends HashMap<String, Boolean> {
 
     /**
      * Overrides the get method to return Boolean false if the key does not
-     * exist in the Map
+     * exist in the Map.
      *
-     * @see java.util.HashMap#get(java.lang.Object)
+     * {@inheritDoc}
      */
     @Override
     public Boolean get(Object key) {

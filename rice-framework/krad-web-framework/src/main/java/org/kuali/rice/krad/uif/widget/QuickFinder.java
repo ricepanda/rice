@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,7 @@ import org.kuali.rice.krad.uif.element.Action;
 import org.kuali.rice.krad.uif.field.InputField;
 import org.kuali.rice.krad.uif.lifecycle.LifecycleEventListener;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
-import org.kuali.rice.krad.uif.service.ViewHelperService;
-import org.kuali.rice.krad.uif.util.ScriptUtils;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.util.ViewModelUtils;
 import org.kuali.rice.krad.uif.view.View;
 import org.kuali.rice.krad.util.KRADConstants;
@@ -62,9 +61,11 @@ public class QuickFinder extends WidgetBase implements LifecycleEventListener {
     private String readOnlyLookupFields;
     private String referencesToRefresh;
     private String lookupCollectionName;
+    private String lookupCollectionId;
 
     private Map<String, String> fieldConversions;
     private Map<String, String> lookupParameters;
+    private Map<String, String> additionalLookupParameters;
 
     private Action quickfinderAction;
     private LightBox lightBox;
@@ -75,6 +76,7 @@ public class QuickFinder extends WidgetBase implements LifecycleEventListener {
     private Boolean autoSearch;
     private Boolean renderLookupCriteria;
     private Boolean renderCriteriaActions;
+    private Boolean hideCriteriaOnSearch;
     private Boolean renderMaintenanceLinks;
     private Boolean multipleValuesSelect;
 
@@ -113,10 +115,10 @@ public class QuickFinder extends WidgetBase implements LifecycleEventListener {
      * {@inheritDoc}
      */
     @Override
-    public void performFinalize(Object model, Component parent) {
+    public void performFinalize(Object model, LifecycleElement parent) {
         super.performFinalize(model, parent);
 
-        if (parent.isReadOnly()) {
+        if (parent instanceof Component && ((Component) parent).isReadOnly()) {
             setRender(false);
         }
 
@@ -170,6 +172,9 @@ public class QuickFinder extends WidgetBase implements LifecycleEventListener {
         updateFieldConversions(inputField.getBindingInfo());
         updateLookupParameters(inputField.getBindingInfo());
         updateReferencesToRefresh(inputField.getBindingInfo());
+
+        // add the quickfinders action as an input field addon
+        inputField.addPostInputAddon(quickfinderAction);
     }
 
     /**
@@ -328,6 +333,10 @@ public class QuickFinder extends WidgetBase implements LifecycleEventListener {
         if (isRender() && StringUtils.isBlank(getLookupCollectionName())) {
             setLookupCollectionName(collectionGroup.getBindingInfo().getBindingPath());
         }
+
+        if (isRender() && StringUtils.isBlank(getLookupCollectionId())) {
+            setLookupCollectionId(collectionGroup.getId());
+        }
     }
 
     /**
@@ -338,7 +347,7 @@ public class QuickFinder extends WidgetBase implements LifecycleEventListener {
      * @param model object containing the view data
      * @param parent component instance the quickfinder is associated with
      */
-    protected void setupQuickfinderAction(View view, Object model, Component parent) {
+    protected void setupQuickfinderAction(View view, Object model, LifecycleElement parent) {
         quickfinderAction.setId(getId() + UifConstants.IdSuffixes.ACTION);
 
         if ((lightBox != null) && lightBox.isRender()) {
@@ -369,10 +378,20 @@ public class QuickFinder extends WidgetBase implements LifecycleEventListener {
         addActionParameterIfNotNull(UifParameters.AUTO_SEARCH, autoSearch);
         addActionParameterIfNotNull(UifParameters.RENDER_LOOKUP_CRITERIA, renderLookupCriteria);
         addActionParameterIfNotNull(UifParameters.RENDER_CRITERIA_ACTIONS, renderCriteriaActions);
+        addActionParameterIfNotNull(UifParameters.HIDE_CRITERIA_ON_SEARCH, hideCriteriaOnSearch);
         addActionParameterIfNotNull(UifParameters.RENDER_MAINTENANCE_LINKS, renderMaintenanceLinks);
         addActionParameterIfNotNull(UifParameters.MULTIPLE_VALUES_SELECT, multipleValuesSelect);
         addActionParameterIfNotNull(UifParameters.LOOKUP_COLLECTION_NAME, lookupCollectionName);
+        addActionParameterIfNotNull(UifParameters.LOOKUP_COLLECTION_ID, lookupCollectionId);
         addActionParameterIfNotNull(UifParameters.QUICKFINDER_ID, getId());
+
+        //insert additional lookup parameters.
+        if (additionalLookupParameters != null) {
+            //copy additional parameters to actionParameters
+            Map<String, String> actionParameters = quickfinderAction.getActionParameters();
+            actionParameters.putAll(additionalLookupParameters);
+            quickfinderAction.setActionParameters(actionParameters);
+        }
     }
 
     /**
@@ -389,35 +408,21 @@ public class QuickFinder extends WidgetBase implements LifecycleEventListener {
     }
 
     /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<Component> getComponentsForLifecycle() {
-        List<Component> components = super.getComponentsForLifecycle();
-
-        components.add(quickfinderAction);
-        components.add(lightBox);
-
-        return components;
-    }
-
-    /**
      * Adds post context data for the quickfinder so when the lookup return occurs the focus and jump point
      * of the quickfinder action can be retrieved.
      *
-     * @see org.kuali.rice.krad.uif.lifecycle.LifecycleEventListener#processEvent(org.kuali.rice.krad.uif.lifecycle.ViewLifecycle.LifecycleEvent,
-     *      org.kuali.rice.krad.uif.view.View, java.lang.Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
     public void processEvent(ViewLifecycle.LifecycleEvent lifecycleEvent, View view, Object model,
-            Component eventComponent) {
+            LifecycleElement eventComponent) {
         Action finalQuickfinderAction = (Action) eventComponent;
 
         // add post metadata for focus point when the associated lookup returns
-        view.getViewIndex().addPostContextEntry(getId(), UifConstants.PostContextKeys.QUICKFINDER_FOCUS_ID,
-                finalQuickfinderAction.getFocusOnIdAfterSubmit());
-        view.getViewIndex().addPostContextEntry(getId(), UifConstants.PostContextKeys.QUICKFINDER_JUMP_TO_ID,
-                finalQuickfinderAction.getJumpToIdAfterSubmit());
+        ViewLifecycle.getViewPostMetadata().addComponentPostData(this,
+                UifConstants.PostMetadata.QUICKFINDER_FOCUS_ID, finalQuickfinderAction.getFocusOnIdAfterSubmit());
+        ViewLifecycle.getViewPostMetadata().addComponentPostData(this,
+                UifConstants.PostMetadata.QUICKFINDER_JUMP_TO_ID, finalQuickfinderAction.getJumpToIdAfterSubmit());
     }
 
     /**
@@ -710,6 +715,14 @@ public class QuickFinder extends WidgetBase implements LifecycleEventListener {
         this.renderCriteriaActions = renderCriteriaActions;
     }
 
+    public Boolean getHideCriteriaOnSearch() {
+        return hideCriteriaOnSearch;
+    }
+
+    public void setHideCriteriaOnSearch(Boolean hideCriteriaOnSearch) {
+        this.hideCriteriaOnSearch = hideCriteriaOnSearch;
+    }
+
     /**
      * Indicates whether the maintenance action links should be rendered for the invoked lookup view.
      *
@@ -812,45 +825,27 @@ public class QuickFinder extends WidgetBase implements LifecycleEventListener {
         this.lookupCollectionName = lookupCollectionName;
     }
 
+    public String getLookupCollectionId() {
+        return lookupCollectionId;
+    }
+
+    public void setLookupCollectionId(String lookupCollectionId) {
+        this.lookupCollectionId = lookupCollectionId;
+    }
+
     /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
+     * The additional parameters that were passed to the quickFinder.
+     *
+     * @return additionalLookupParameters - map of additional lookup parameters
      */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
+    public Map<String, String> getAdditionalLookupParameters() {
+        return additionalLookupParameters;
+    }
 
-        QuickFinder quickFinderCopy = (QuickFinder) component;
-
-        quickFinderCopy.setBaseLookupUrl(this.baseLookupUrl);
-        quickFinderCopy.setDataObjectClassName(this.dataObjectClassName);
-        quickFinderCopy.setViewName(this.viewName);
-        quickFinderCopy.setReferencesToRefresh(this.referencesToRefresh);
-
-        if (fieldConversions != null) {
-            quickFinderCopy.setFieldConversions(new HashMap<String, String>(this.fieldConversions));
-        }
-
-        if (lookupParameters != null) {
-            quickFinderCopy.setLookupParameters(new HashMap<String, String>(this.lookupParameters));
-        }
-
-        quickFinderCopy.setReturnByScript(this.returnByScript);
-        quickFinderCopy.setReadOnlyLookupFields(this.readOnlyLookupFields);
-        quickFinderCopy.setRenderReturnLink(this.renderReturnLink);
-        quickFinderCopy.setRenderResultActions(this.renderResultActions);
-        quickFinderCopy.setAutoSearch(this.autoSearch);
-        quickFinderCopy.setRenderLookupCriteria(this.renderLookupCriteria);
-        quickFinderCopy.setRenderCriteriaActions(this.renderCriteriaActions);
-        quickFinderCopy.setRenderMaintenanceLinks(this.renderMaintenanceLinks);
-        quickFinderCopy.setMultipleValuesSelect(this.multipleValuesSelect);
-        quickFinderCopy.setLookupCollectionName(this.lookupCollectionName);
-
-        if (lightBox != null) {
-            quickFinderCopy.setLightBox((LightBox) this.lightBox.copy());
-        }
-
-        if (this.quickfinderAction != null) {
-            quickFinderCopy.setQuickfinderAction((Action) this.quickfinderAction.copy());
-        }
+    /**
+     * @see QuickFinder#getAdditionalLookupParameters()
+     */
+    public void setAdditionalLookupParameters(Map<String, String> additionalLookupParameters) {
+        this.additionalLookupParameters = additionalLookupParameters;
     }
 }

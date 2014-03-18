@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package org.kuali.rice.ksb.test;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.kuali.rice.core.api.config.property.ConfigContext;
 import org.kuali.rice.core.api.lifecycle.Lifecycle;
 import org.kuali.rice.core.api.resourceloader.ResourceLoader;
@@ -24,11 +26,15 @@ import org.kuali.rice.ksb.api.KsbApiServiceLocator;
 import org.kuali.rice.ksb.server.TestClient1;
 import org.kuali.rice.ksb.server.TestClient2;
 import org.kuali.rice.test.BaselineTestCase;
+import org.kuali.rice.test.runners.BootstrapTest;
+import org.kuali.rice.test.runners.LoadTimeWeavableTestRunner;
 
 import javax.xml.namespace.QName;
 import java.util.List;
 
 @BaselineTestCase.BaselineMode(BaselineTestCase.Mode.ROLLBACK)
+@RunWith(LoadTimeWeavableTestRunner.class)
+@BootstrapTest(KSBTestCase.BootstrapTest.class)
 public abstract class KSBTestCase extends BaselineTestCase {
 
     private static final String KSB_MODULE_NAME = "ksb";
@@ -110,4 +116,10 @@ public abstract class KSBTestCase extends BaselineTestCase {
     protected boolean disableJta() {
         return false;
     }
+
+    public static final class BootstrapTest extends KSBTestCase {
+        @Test
+        public void bootstrapTest() {};
+    }
+
 }

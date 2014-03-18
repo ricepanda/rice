@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,9 @@
  */
 package org.kuali.rice.scripts.beans
 
-import groovy.util.logging.Log
-import org.apache.commons.lang.ClassUtils
+import groovy.util.logging.Log;
+import groovy.xml.XmlUtil;
+import org.apache.commons.lang.ClassUtils;
 
 /**
  * This class transforms lookup definitions into their uif counterpart as well as
@@ -48,15 +49,15 @@ class LookupDefinitionBeanTransformer extends SpringBeanTransformer {
         def translatedBeanId = getTranslatedBeanId(beanNode.@id, lookupDefinitionBeanType, lookupViewBeanType);
         def translatedParentId = getTranslatedBeanId(beanNode.@parent, lookupDefinitionBeanType, lookupViewBeanType);
 
-        // these attributes are being converted and should not be copied when carryoverAttributes is enabled
+        // these attributes are being converted and should not be copied when useCarryoverAttributes is enabled
         List ignoreAttributes = [];
 
-        // these properties are being converted and should not be copied when carryoverProperties is enabled
+        // these properties are being converted and should not be copied when useCarryoverProperties is enabled
         List ignoreOnCopyProperties = ["title", "translateCodes", "menubar", "defaultSort", "numOfColumns", "extraButtonSource", "extraButtonParams", "disableSearchButtons", "lookupFields", "resultFields"]
 
-        def beanAttributes = convertBeanAttributes(beanNode, lookupDefinitionBeanType, lookupViewBeanType, ignoreAttributes);
+        def beanAttributes = convertBeanAttributes(beanNode, lookupDefinitionBeanType, lookupViewBeanType, [],[:], ignoreAttributes);
 
-        if (carryoverProperties) {
+        if (useCarryoverProperties) {
             copiedProperties = beanNode.property.collect { it.@name };
             copiedProperties.removeAll(ignoreOnCopyProperties);
         } else {
@@ -72,13 +73,12 @@ class LookupDefinitionBeanTransformer extends SpringBeanTransformer {
             beanNode.replaceNode {
                 addCommentIfNotExists(beanNode.parent(),"Lookup View");
                 bean(beanAttributes) {
-                    addViewNameProperty(delegate, lookupTitle)
                     if (objClassName) {
                         property(name: "dataObjectClassName", value: objClassName)
                     }
                     renameProperties(delegate, lookupDefParentBeanNode, ["title": "headerText",
                             "translateCodes": "translateCodesOnReadOnlyDisplay"])
-                    copyProperties(delegate, beanNode, copiedProperties);
+                    copyBeanProperties(delegate, beanNode, copiedProperties);
                     transformMenubarProperty(delegate, beanNode)
                     transformDefaultSortProperty(delegate, beanNode)
                     transformNumOfColumns(delegate, beanNode)
@@ -98,10 +98,14 @@ class LookupDefinitionBeanTransformer extends SpringBeanTransformer {
     def transformMenubarProperty(NodeBuilder builder, Node node) {
         def menubarPropertyNode = node.property.find { it.@name == "menubar" };
         if (menubarPropertyNode != null) {
-            builder.property(name: "page.header.lowerGroup.items") {
-                list(merge: "true") {
-                    bean(parent: "Uif-Message") {
-                        property(name: "messageText", value: "[" + menubarPropertyNode.@value + "]");
+            builder.property(name: "page.header.lowerGroup") {
+                bean(parent: "Uif-HeaderLowerGroup") {
+                    property(name: "items"){
+                        list(merge: "true") {
+                            bean(parent: "Uif-Message") {
+                                property(name: "messageText", value: "[" + menubarPropertyNode.@value + "]");
+                            }
+                        }
                     }
                 }
             }
@@ -162,7 +166,7 @@ class LookupDefinitionBeanTransformer extends SpringBeanTransformer {
     def transformDisableSearchButtons(NodeBuilder builder, Node node) {
         def disableSearchButtons = getPropertyValue(node, "disableSearchButtons");
         if (disableSearchButtons != null && disableSearchButtons == "true") {
-            // builder.property(name: "renderSearchButtons", value: "false");
+            builder.property(name: "renderCriteriaActions", value: "false");
         }
     }
 
@@ -182,13 +186,34 @@ class LookupDefinitionBeanTransformer extends SpringBeanTransformer {
      * Convert the noLookup attribute to quickfinder.render.  The boolean value needs to be inverted as well.
      */
     def gatherNoLookupAttribute = { Node beanNode ->
-        def noLookup = beanNode.attributes().find { matchesAttr("*noLookup", it.key.toString()) };
+        def noLookup = beanNode?.attributes()?.clone().find { matchesAttr("*noLookup", it.key.toString()) };
         if (noLookup?.value == "true") {
             return ["p:quickfinder.render": "false"];
         } else if (noLookup?.value == "false") {
             return ["p:quickfinder.render": "true"];
         } else {
             return [:];
+        }
+    }
+
+    def transformHelpDefinitionProperty(NodeBuilder builder, Node beanNode) {
+        Node helpDefinitionProperty = ((Node)beanNode?.property?.find { "helpDefinition".equals(it.@name) });
+        Node helpUrlProperty = (Node) beanNode?.property?.find { "helpUrl".equals(it.@name) };
+        // if it contains a HelpDefinition bean
+        if (helpDefinitionProperty) {
+            Node helpDefinitionPropertyCopy  = cloneNode(helpDefinitionProperty);
+            // remove children, rename as help and copy clone of helpDefinition into help bean
+            helpDefinitionProperty.children().clear();
+            helpDefinitionProperty.attributes().put("name","help");
+            Node helpNode = new Node(helpDefinitionProperty, "bean", ["parent":"Uif-Help"]);
+            helpNode.append(helpDefinitionPropertyCopy);
+        } else if (helpUrlProperty) {
+            def helpUrl = helpUrlProperty.@value;
+            builder.property(name: "help") {
+                bean("parent": "Uif-Help") {
+                    property("name": "helpUrl", "value": helpUrl)
+                }
+            }
         }
     }
 

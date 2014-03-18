@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,22 @@
  */
 package org.kuali.rice.kim.impl.identity.address;
 
+import java.sql.Timestamp;
+
+import javax.persistence.Column;
+import javax.persistence.MappedSuperclass;
+import javax.persistence.Transient;
+
 import org.joda.time.DateTime;
 import org.kuali.rice.kim.api.KimApiConstants;
 import org.kuali.rice.kim.api.identity.address.EntityAddressContract;
 import org.kuali.rice.kim.api.identity.privacy.EntityPrivacyPreferences;
 import org.kuali.rice.kim.api.services.KimApiServiceLocator;
-import org.kuali.rice.krad.bo.PersistableBusinessObjectBase;
+import org.kuali.rice.krad.bo.DataObjectBase;
 import org.kuali.rice.krad.data.jpa.converters.BooleanYNConverter;
 
-import javax.persistence.Column;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.Transient;
-import java.sql.Timestamp;
-
 @MappedSuperclass
-public abstract class EntityAddressBase extends PersistableBusinessObjectBase implements EntityAddressContract {
+public abstract class EntityAddressBase extends DataObjectBase implements EntityAddressContract {
     private static final long serialVersionUID = -7550286656495828391L;
 
     @Column(name = "ENTITY_ID")
@@ -211,9 +212,17 @@ public abstract class EntityAddressBase extends PersistableBusinessObjectBase im
         return modifiedDate != null ? new DateTime(modifiedDate.getTime()) : null;
     }
 
+    public Timestamp getModifiedTimestamp() {
+        return modifiedDate;
+    }
+
     @Override
     public DateTime getValidatedDate() {
         return validatedDate != null ? new DateTime(validatedDate.getTime()) : null;
+    }
+
+    public Timestamp getValidatedTimestamp() {
+        return validatedDate;
     }
 
     @Override
@@ -309,11 +318,27 @@ public abstract class EntityAddressBase extends PersistableBusinessObjectBase im
         this.addressFormat = addressFormat;
     }
 
-    public void setModifiedDate(Timestamp modifiedDate) {
+    public void setModifiedDate(DateTime modifiedDate) {
+        if ( modifiedDate != null ) {
+            this.modifiedDate = new Timestamp(modifiedDate.getMillis());
+        } else {
+            this.modifiedDate = null;
+        }
+    }
+
+    public void setModifiedTimestamp( Timestamp modifiedDate ) {
         this.modifiedDate = modifiedDate;
     }
 
-    public void setValidatedDate(Timestamp validatedDate) {
+    public void setValidatedDate(DateTime validatedDate) {
+        if ( validatedDate != null ) {
+            this.validatedDate = new Timestamp(validatedDate.getMillis());
+        } else {
+            this.validatedDate = null;
+        }
+    }
+
+    public void setValidatedTimestamp( Timestamp validatedDate ) {
         this.validatedDate = validatedDate;
     }
 

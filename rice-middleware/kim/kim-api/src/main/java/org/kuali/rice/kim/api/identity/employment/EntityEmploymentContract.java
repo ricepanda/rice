@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,12 +85,5 @@ public interface EntityEmploymentContract extends Versioned, GloballyUnique, Ina
 	 * @return returns true if the record is the primary Employment record for the parent entity
 	 */
 	boolean isPrimary();
-
-    /**
-     * The tenure indicator value for this object.
-     *
-     * @return returns true if the record of Employment is tenured
-     */
-    boolean isTenured();
 
 }

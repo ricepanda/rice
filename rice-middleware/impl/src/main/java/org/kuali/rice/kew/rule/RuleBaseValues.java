@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,29 +15,13 @@
  */
 package org.kuali.rice.kew.rule;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
-import org.joda.time.DateTime;
-import org.kuali.rice.core.api.util.RiceConstants;
-import org.kuali.rice.kew.api.KewApiConstants;
-import org.kuali.rice.kew.api.rule.*;
-import org.kuali.rice.kew.api.util.CodeTranslator;
-import org.kuali.rice.kew.doctype.bo.DocumentType;
-import org.kuali.rice.kew.lookupable.MyColumns;
-import org.kuali.rice.kew.routeheader.DocumentContent;
-import org.kuali.rice.kew.rule.bo.RuleAttribute;
-import org.kuali.rice.kew.rule.bo.RuleTemplateAttributeBo;
-import org.kuali.rice.kew.rule.bo.RuleTemplateBo;
-import org.kuali.rice.kew.rule.service.RuleServiceInternal;
-import org.kuali.rice.kew.rule.xmlrouting.GenericXMLRuleAttribute;
-import org.kuali.rice.kew.service.KEWServiceLocator;
-import org.kuali.rice.kim.api.services.KimApiServiceLocator;
-import org.kuali.rice.kim.impl.group.GroupBo;
-import org.kuali.rice.kim.impl.identity.PersonImpl;
-import org.kuali.rice.krad.bo.PersistableBusinessObjectBase;
-import org.kuali.rice.krad.data.jpa.converters.Boolean01BigDecimalConverter;
-import org.kuali.rice.krad.data.jpa.converters.Boolean01Converter;
-import org.kuali.rice.krad.data.jpa.eclipselink.PortableSequenceGenerator;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -52,14 +36,31 @@ import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Transient;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+
+import org.apache.commons.lang.StringUtils;
+import org.joda.time.DateTime;
+import org.kuali.rice.core.api.util.RiceConstants;
+import org.kuali.rice.kew.api.KewApiConstants;
+import org.kuali.rice.kew.api.rule.RuleContract;
+import org.kuali.rice.kew.api.rule.RuleExtension;
+import org.kuali.rice.kew.api.util.CodeTranslator;
+import org.kuali.rice.kew.doctype.bo.DocumentType;
+import org.kuali.rice.kew.lookupable.MyColumns;
+import org.kuali.rice.kew.routeheader.DocumentContent;
+import org.kuali.rice.kew.rule.bo.RuleAttribute;
+import org.kuali.rice.kew.rule.bo.RuleTemplateAttributeBo;
+import org.kuali.rice.kew.rule.bo.RuleTemplateBo;
+import org.kuali.rice.kew.rule.service.RuleServiceInternal;
+import org.kuali.rice.kew.rule.xmlrouting.GenericXMLRuleAttribute;
+import org.kuali.rice.kew.service.KEWServiceLocator;
+import org.kuali.rice.kim.api.services.KimApiServiceLocator;
+import org.kuali.rice.kim.impl.group.GroupBo;
+import org.kuali.rice.kim.impl.identity.PersonImpl;
+import org.kuali.rice.krad.bo.PersistableBusinessObjectBase;
+import org.kuali.rice.krad.data.jpa.PortableSequenceGenerator;
+import org.kuali.rice.krad.data.jpa.converters.Boolean01Converter;
+import org.kuali.rice.krad.data.provider.annotation.SerializationContext;
+import org.kuali.rice.krad.data.provider.annotation.Serialized;
 
 /*import org.kuali.rice.kim.api.group.Group;*/
 
@@ -71,7 +72,7 @@ import java.util.Map;
  */
 @Entity
 @Table(name="KREW_RULE_T")
-public class RuleBaseValues extends PersistableBusinessObjectBase implements RuleContract, Cloneable {
+public class RuleBaseValues extends PersistableBusinessObjectBase implements RuleContract {
 
     private static final long serialVersionUID = 6137765574728530156L;
     @Id
@@ -86,7 +87,7 @@ public class RuleBaseValues extends PersistableBusinessObjectBase implements Rul
     @Column(name="NM")
 	private String name;
 
-    @Column(name="RULE_TMPL_ID", insertable=false, updatable=false)
+    @Column(name="RULE_TMPL_ID")
 	private String ruleTemplateId;
 
     @Column(name="PREV_VER_RULE_ID")
@@ -119,23 +120,25 @@ public class RuleBaseValues extends PersistableBusinessObjectBase implements Rul
 	private Boolean currentInd = Boolean.TRUE;
 
     @Column(name="RULE_VER_NBR")
-	private Integer versionNbr = new Integer(0);
+	private Integer versionNbr = 0;
 
     @Column(name="FRC_ACTN")
     @Convert(converter=Boolean01Converter.class)
 	private boolean forceAction;
 
-    @OneToMany(fetch=FetchType.EAGER,cascade={CascadeType.PERSIST, CascadeType.REMOVE, CascadeType.MERGE},mappedBy="ruleBaseValues")
+    @OneToMany(fetch=FetchType.EAGER,cascade=CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "RULE_ID", referencedColumnName = "RULE_ID")
 	private List<RuleResponsibilityBo> ruleResponsibilities;
 
-    @OneToMany(fetch=FetchType.EAGER,cascade={CascadeType.ALL},mappedBy="ruleBaseValues")
+    @OneToMany(fetch=FetchType.EAGER,cascade=CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "RULE_ID", referencedColumnName = "RULE_ID")
 	private List<RuleExtensionBo> ruleExtensions;
 
     @ManyToOne(fetch=FetchType.EAGER)
-	@JoinColumn(name="RULE_TMPL_ID")
+	@JoinColumn(name="RULE_TMPL_ID", insertable = false, updatable = false)
 	private RuleTemplateBo ruleTemplate;
 
-    @OneToOne(fetch=FetchType.EAGER, cascade={CascadeType.PERSIST, CascadeType.REMOVE, CascadeType.MERGE})
+    @OneToOne(fetch=FetchType.EAGER, cascade=CascadeType.ALL, orphanRemoval = true)
 	@JoinColumn(name="RULE_EXPR_ID")
 	private RuleExpressionDef ruleExpressionDef;
 
@@ -165,10 +168,13 @@ public class RuleBaseValues extends PersistableBusinessObjectBase implements Rul
     @Transient
     private MyColumns myColumns;
     @Transient
+    @Serialized(enabled=true,forContexts=SerializationContext.MAINTENANCE)
     private List<PersonRuleResponsibility> personResponsibilities = new ArrayList<PersonRuleResponsibility>();
     @Transient
+    @Serialized(enabled=true,forContexts=SerializationContext.MAINTENANCE)
     private List<GroupRuleResponsibility> groupResponsibilities = new ArrayList<GroupRuleResponsibility>();
     @Transient
+    @Serialized(enabled=true,forContexts=SerializationContext.MAINTENANCE)
     private List<RoleRuleResponsibility> roleResponsibilities = new ArrayList<RoleRuleResponsibility>();
     @Transient
     private Map<String, String> fieldValues;
@@ -193,6 +199,7 @@ public class RuleBaseValues extends PersistableBusinessObjectBase implements Rul
     /**
      * @return the rule expression definition for this rule, if defined
      */
+    @Override
     public RuleExpressionDef getRuleExpressionDef() {
         return ruleExpressionDef;
     }
@@ -204,6 +211,7 @@ public class RuleBaseValues extends PersistableBusinessObjectBase implements Rul
         this.ruleExpressionDef = ruleExpressionDef;
     }
 
+    @Override
     public String getRuleTemplateName() {
         if (ruleTemplate != null) {
             return ruleTemplate.getName();
@@ -229,14 +237,14 @@ public class RuleBaseValues extends PersistableBusinessObjectBase implements Rul
             ruleResponsibility.setRuleBaseValues(this);
             getRuleResponsibilities().add(ruleResponsibility);
         }
-        return (RuleResponsibilityBo) getRuleResponsibilities().get(index);
+        return getRuleResponsibilities().get(index);
     }
 
     public RuleExtensionBo getRuleExtension(int index) {
         while (getRuleExtensions().size() <= index) {
             getRuleExtensions().add(new RuleExtensionBo());
         }
-        return (RuleExtensionBo) getRuleExtensions().get(index);
+        return getRuleExtensions().get(index);
     }
 
     public RuleExtensionValue getRuleExtensionValue(String key) {
@@ -267,6 +275,7 @@ public class RuleBaseValues extends PersistableBusinessObjectBase implements Rul
         return null;
     }
 
+    @Override
     public String getPreviousRuleId() {
         return previousRuleId;
     }
@@ -287,6 +296,7 @@ public class RuleBaseValues extends PersistableBusinessObjectBase implements Rul
                 if (counter.intValue() == location) {
                     ruleResponsibilityRow.setPriority(ruleResponsibility.getPriority());
                     ruleResponsibilityRow.setActionRequestedCd(ruleResponsibility.getActionRequestedCd());
+                    // CHECKME : We probably should not be overriding the version number
                     ruleResponsibilityRow.setVersionNumber(ruleResponsibility.getVersionNumber());
                     ruleResponsibilityRow.setRuleBaseValuesId(ruleResponsibility.getRuleBaseValuesId());
                     ruleResponsibilityRow.setRuleResponsibilityName(ruleResponsibility.getRuleResponsibilityName());
@@ -303,6 +313,7 @@ public class RuleBaseValues extends PersistableBusinessObjectBase implements Rul
         }
     }
 
+    @Override
     public RuleTemplateBo getRuleTemplate() {
         return ruleTemplate;
     }
@@ -323,6 +334,7 @@ public class RuleBaseValues extends PersistableBusinessObjectBase implements Rul
     	return KEWServiceLocator.getDocumentTypeService().findByName(getDocTypeName());
     }
 
+    @Override
     public String getDocTypeName() {
         return docTypeName;
     }
@@ -331,6 +343,7 @@ public class RuleBaseValues extends PersistableBusinessObjectBase implements Rul
         this.docTypeName = docTypeName;
     }
 
+    @Override
     public List<RuleExtensionBo> getRuleExtensions() {
         return ruleExtensions;
     }
@@ -349,6 +362,7 @@ public class RuleBaseValues extends PersistableBusinessObjectBase implements Rul
         this.ruleExtensions = ruleExtensions;
     }
 
+    @Override
     public List<RuleResponsibilityBo> getRuleResponsibilities() {
         return this.ruleResponsibilities;
     }
@@ -396,7 +410,7 @@ public class RuleBaseValues extends PersistableBusinessObjectBase implements Rul
     public Timestamp getFromDateValue() {
         return fromDateValue;
     }
-    
+
     @Override
     public DateTime getFromDate() {
         if (this.fromDateValue == null) {
@@ -409,6 +423,7 @@ public class RuleBaseValues extends PersistableBusinessObjectBase implements Rul
         this.fromDateValue = fromDateValue;
     }
 
+    @Override
     public String getDescription() {
         return description;
     }
@@ -417,6 +432,7 @@ public class RuleBaseValues extends PersistableBusinessObjectBase implements Rul
         this.description = description;
     }
 
+    @Override
     public String getId() {
         return id;
     }
@@ -428,7 +444,7 @@ public class RuleBaseValues extends PersistableBusinessObjectBase implements Rul
     public Timestamp getToDateValue() {
         return toDateValue;
     }
-    
+
     @Override
     public DateTime getToDate() {
         if (this.toDateValue == null) {
@@ -491,7 +507,7 @@ public class RuleBaseValues extends PersistableBusinessObjectBase implements Rul
             if (!ruleTemplateAttribute.isWorkflowAttribute()) {
                 continue;
             }
-            WorkflowRuleAttribute routingAttribute = (WorkflowRuleAttribute) ruleTemplateAttribute.getWorkflowAttribute();
+            WorkflowRuleAttribute routingAttribute = ruleTemplateAttribute.getWorkflowAttribute();
 
             RuleAttribute ruleAttribute = ruleTemplateAttribute.getRuleAttribute();
             if (ruleAttribute.getType().equals(KewApiConstants.RULE_XML_ATTRIBUTE_TYPE)) {
@@ -588,6 +604,7 @@ public class RuleBaseValues extends PersistableBusinessObjectBase implements Rul
      * Get the rule name
      * @return the rule name
      */
+    @Override
     public String getName() {
         return name;
     }
@@ -698,41 +715,6 @@ public class RuleBaseValues extends PersistableBusinessObjectBase implements Rul
     }
 
     @Override
-    protected Object clone() throws CloneNotSupportedException {
-        RuleBaseValues rule = new RuleBaseValues();
-        rule.setId(this.getId());
-        rule.setName(getName());
-        rule.setRuleTemplate(getRuleTemplate());
-        rule.setActive(isActive());
-        rule.setDescription(getDescription());
-
-        rule.setDocTypeName(getDocTypeName());
-        rule.setFromDateValue(getFromDateValue());
-        rule.setToDateValue(getToDateValue());
-        rule.setForceAction(isForceAction());
-        rule.setPreviousRuleId(getPreviousRuleId());
-
-        if (CollectionUtils.isNotEmpty(getRuleResponsibilities())) {
-            List<RuleResponsibilityBo> responsibilitys = new ArrayList<RuleResponsibilityBo>();
-            for (RuleResponsibilityBo c : getRuleResponsibilities()) {
-                responsibilitys.add(c);
-            }
-            rule.setRuleResponsibilities(responsibilitys);
-        } else {
-            rule.setRuleResponsibilities(Collections.<RuleResponsibilityBo>emptyList());
-        }
-        if (CollectionUtils.isNotEmpty(getRuleExtensions())) {
-            List<RuleExtensionBo> extensions = new ArrayList<RuleExtensionBo>();
-            for (RuleExtensionBo ruleExtensionBo : getRuleExtensions()) {
-                extensions.add(ruleExtensionBo);
-            }
-            rule.setRuleExtensions(extensions);
-        } else {
-            rule.setRuleExtensions(Collections.<RuleExtensionBo>emptyList());
-        }
-        if (getRuleExpressionDef() != null) {
-            rule.setRuleExpressionDef(getRuleExpressionDef());
-        }
-        return rule;
+    public void refresh() {
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -114,7 +114,7 @@ public class ScriptUtils {
                 Map<String, PropertyDescriptor> propertyDescriptors = ObjectPropertyUtils
                         .getPropertyDescriptors(valueClass);
                 for (String propertyName : propertyDescriptors.keySet()) {
-                    if (ObjectPropertyUtils.isReadableProperty(valueClass, propertyName)
+                    if (ObjectPropertyUtils.isReadableProperty(value, propertyName)
                             && !"class".equals(propertyName)) {
                         Object propertyValue = ObjectPropertyUtils.getPropertyValue(value, propertyName);
                         jsValue += propertyName + ":";
@@ -226,9 +226,8 @@ public class ScriptUtils {
         else if (NumberUtils.isNumber(value)) {
             return originalValue;
         } else {
-            // use single quotes since hidden scripts are placed in
-            // the value attribute which surrounds the script with double quotes
-            return "'" + originalValue + "'";
+            // String values require double quotes
+            return "\"" + originalValue + "\"";
         }
     }
 
@@ -236,8 +235,8 @@ public class ScriptUtils {
      * Escapes the ' character present in collection names so it can be properly used in js without
      * causing javascript errors due to an early completion of a ' string.
      * 
-     * @param name
-     * @return
+     * @param name name to escape
+     * @return name, with single quotes escape
      */
     public static String escapeName(String name) {
         name = name.replace("'", "\\'");

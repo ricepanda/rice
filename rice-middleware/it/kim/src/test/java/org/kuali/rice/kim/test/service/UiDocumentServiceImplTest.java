@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,25 @@
  */
 package org.kuali.rice.kim.test.service;
 
-import org.junit.Ignore;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.kuali.rice.core.api.membership.MemberType;
 import org.kuali.rice.core.api.util.type.KualiDecimal;
 import org.kuali.rice.kew.api.WorkflowDocument;
 import org.kuali.rice.kew.api.WorkflowDocumentFactory;
@@ -28,11 +45,15 @@ import org.kuali.rice.kim.api.identity.affiliation.EntityAffiliation;
 import org.kuali.rice.kim.api.identity.email.EntityEmailContract;
 import org.kuali.rice.kim.api.identity.employment.EntityEmploymentContract;
 import org.kuali.rice.kim.api.identity.entity.Entity;
+import org.kuali.rice.kim.api.identity.entity.EntityDefault;
 import org.kuali.rice.kim.api.identity.name.EntityNameContract;
 import org.kuali.rice.kim.api.identity.phone.EntityPhoneContract;
 import org.kuali.rice.kim.api.identity.principal.PrincipalContract;
 import org.kuali.rice.kim.api.identity.type.EntityTypeContactInfo;
+import org.kuali.rice.kim.api.role.RoleMember;
+import org.kuali.rice.kim.api.role.RoleMemberContract;
 import org.kuali.rice.kim.api.services.KimApiServiceLocator;
+import org.kuali.rice.kim.bo.ui.KimDocumentRoleMember;
 import org.kuali.rice.kim.bo.ui.PersonDocumentAddress;
 import org.kuali.rice.kim.bo.ui.PersonDocumentAffiliation;
 import org.kuali.rice.kim.bo.ui.PersonDocumentEmail;
@@ -43,29 +64,23 @@ import org.kuali.rice.kim.bo.ui.PersonDocumentPrivacy;
 import org.kuali.rice.kim.bo.ui.PersonDocumentRole;
 import org.kuali.rice.kim.document.IdentityManagementPersonDocument;
 import org.kuali.rice.kim.framework.type.KimTypeService;
+import org.kuali.rice.kim.impl.common.delegate.DelegateMemberBo;
 import org.kuali.rice.kim.impl.identity.address.EntityAddressTypeBo;
 import org.kuali.rice.kim.impl.identity.affiliation.EntityAffiliationTypeBo;
 import org.kuali.rice.kim.impl.identity.email.EntityEmailTypeBo;
 import org.kuali.rice.kim.impl.identity.name.EntityNameTypeBo;
 import org.kuali.rice.kim.impl.identity.phone.EntityPhoneTypeBo;
 import org.kuali.rice.kim.impl.identity.privacy.EntityPrivacyPreferencesBo;
+import org.kuali.rice.kim.impl.role.RoleMemberBo;
 import org.kuali.rice.kim.impl.type.KimTypeAttributeBo;
 import org.kuali.rice.kim.impl.type.KimTypeBo;
 import org.kuali.rice.kim.service.KIMServiceLocatorInternal;
 import org.kuali.rice.kim.service.UiDocumentService;
 import org.kuali.rice.kim.test.KIMTestCase;
 import org.kuali.rice.kns.kim.type.DataDictionaryTypeServiceBase;
-import org.kuali.rice.kns.service.KNSServiceLocator;
-import org.kuali.rice.krad.service.KRADServiceLocator;
+import org.kuali.rice.krad.data.KradDataServiceLocator;
+import org.kuali.rice.krad.data.PersistenceOption;
 import org.kuali.rice.test.BaselineTestCase;
-
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.Assert.*;
 
 /**
  * This is a description of what this class does - shyu don't forget to fill this in.
@@ -77,12 +92,84 @@ import static org.junit.Assert.*;
 public class UiDocumentServiceImplTest extends KIMTestCase {
 
 	private UiDocumentService uiDocumentService;
+	static Person adminPerson = null;
+
+	@BeforeClass
+	public static void beforeClassSetup() {
+        adminPerson = KimApiServiceLocator.getPersonService().getPersonByPrincipalName("admin");
+	}
 
     @Override
 	public void setUp() throws Exception {
 		super.setUp();
 		uiDocumentService = KIMServiceLocatorInternal.getUiDocumentService();
 	}
+
+    protected EntityDefault createTestingEntity() {
+        IdentityManagementPersonDocument personDoc = initPersonDoc();
+
+        WorkflowDocument document = WorkflowDocumentFactory.createDocument(adminPerson.getPrincipalId(),"TestDocumentType");
+        personDoc.getDocumentHeader().setWorkflowDocument(document);
+        // first - save them so we can inactivate them
+        uiDocumentService.saveEntityPerson(personDoc);
+        // verify that the record was saved
+        EntityDefault entity = KimApiServiceLocator.getIdentityService().getEntityDefault(personDoc.getEntityId());
+        assertNotNull( "Entity was not saved: " + personDoc, entity);
+        assertNotNull( "Principal list was null on retrieved record", entity.getPrincipals() );
+        assertEquals( "Principal list was incorrect length", 1, entity.getPrincipals().size() );
+        assertTrue( "Principal is not active on saved record", entity.getPrincipals().get(0).isActive() );
+        return entity;
+    }
+
+    @Test
+    public void testInactivatePrincipal() {
+        createTestingEntity();
+        // create a new person document and inactivate the record we just created
+        IdentityManagementPersonDocument personDoc = initPersonDoc();
+
+        WorkflowDocument document = WorkflowDocumentFactory.createDocument(adminPerson.getPrincipalId(),"TestDocumentType");
+        personDoc.getDocumentHeader().setWorkflowDocument(document);
+
+        personDoc.setActive(false);
+        uiDocumentService.saveEntityPerson(personDoc);
+        EntityDefault entity = KimApiServiceLocator.getIdentityService().getEntityDefault(personDoc.getEntityId());
+
+        assertNotNull( "Entity missing after inactivation: " + personDoc, entity);
+        assertNotNull( "Principal list was null on retrieved record", entity.getPrincipals() );
+        assertEquals( "Principal list was incorrect length", 1, entity.getPrincipals().size() );
+        assertFalse( "Principal is active on saved record (after inactivation)", entity.getPrincipals().get(0).isActive() );
+    }
+
+    @Test
+    public void testInactivatePrincipalDelegations() {
+        EntityDefault entity = createTestingEntity();
+
+        // create a delegation for the system to inactivate
+        String delegateMemberId = UUID.randomUUID().toString();
+        DelegateMemberBo delegateMemberBo = new DelegateMemberBo();
+        delegateMemberBo.setMemberId(entity.getPrincipals().get(0).getPrincipalId());
+        delegateMemberBo.setType(MemberType.PRINCIPAL);
+        delegateMemberBo.setDelegationMemberId(delegateMemberId);
+        KradDataServiceLocator.getDataObjectService().save(delegateMemberBo,PersistenceOption.FLUSH);
+
+        // attempt to reload - to make sure it's all working
+        delegateMemberBo = KradDataServiceLocator.getDataObjectService().find(DelegateMemberBo.class, delegateMemberId);
+        assertNotNull( "Unable to find delegate member bo", delegateMemberBo);
+        assertTrue( "delegate member should be active", delegateMemberBo.isActive() );
+
+        // create a new person document and inactivate the record we just created
+        IdentityManagementPersonDocument personDoc = initPersonDoc();
+
+        WorkflowDocument document = WorkflowDocumentFactory.createDocument(adminPerson.getPrincipalId(),"TestDocumentType");
+        personDoc.getDocumentHeader().setWorkflowDocument(document);
+
+        personDoc.setActive(false);
+        uiDocumentService.saveEntityPerson(personDoc);
+
+        delegateMemberBo = KradDataServiceLocator.getDataObjectService().find(DelegateMemberBo.class, delegateMemberId);
+        assertNotNull( "Unable to find delegate member bo", delegateMemberBo);
+        assertFalse( "delegate member should be inactive: " + delegateMemberBo, delegateMemberBo.isActive() );
+    }
 
 	@Test
 	public void testSaveToEntity() {
@@ -97,17 +184,14 @@ public class UiDocumentServiceImplTest extends KIMTestCase {
             e.printStackTrace();
         }*/
 		uiDocumentService.saveEntityPerson(personDoc);
-        Map<String, String> criteria = new HashMap<String, String>();
-        criteria.put("id", "entity124eId");
-        criteria.put("entityTypeCode", "PERSON");
 
 		Entity entity = KimApiServiceLocator.getIdentityService().getEntity(personDoc.getEntityId());
         EntityTypeContactInfo entityType = entity.getEntityTypeContactInfos().get(0);
         personDoc.getExternalIdentifiers();
-		assertAddressTrue((PersonDocumentAddress)personDoc.getAddrs().get(0), entityType.getAddresses().get(0));
-		assertPhoneTrue((PersonDocumentPhone)personDoc.getPhones().get(0), entityType.getPhoneNumbers().get(0));
-		assertEmailTrue((PersonDocumentEmail)personDoc.getEmails().get(0), entityType.getEmailAddresses().get(0));
-		assertNameTrue((PersonDocumentName) personDoc.getNames().get(0), entity.getNames().get(0));
+		assertAddressTrue(personDoc.getAddrs().get(0), entityType.getAddresses().get(0));
+		assertPhoneTrue(personDoc.getPhones().get(0), entityType.getPhoneNumbers().get(0));
+		assertEmailTrue(personDoc.getEmails().get(0), entityType.getEmailAddresses().get(0));
+		assertNameTrue(personDoc.getNames().get(0), entity.getNames().get(0));
 		assertPrincipalTrue(personDoc, entity.getPrincipals().get(0));
 
 		assertAffiliationTrue(personDoc.getAffiliations().get(0), entity.getAffiliations().get(0));
@@ -120,10 +204,10 @@ public class UiDocumentServiceImplTest extends KIMTestCase {
                 personDoc.getEntityId());
         EntityTypeContactInfo entityType2 = entity2.getEntityTypeContactInfos().get(0);
         personDoc.getExternalIdentifiers();
-        assertAddressTrue((PersonDocumentAddress)personDoc.getAddrs().get(0), entityType2.getAddresses().get(0));
-        assertPhoneTrue((PersonDocumentPhone)personDoc.getPhones().get(0), entityType2.getPhoneNumbers().get(0));
-        assertEmailTrue((PersonDocumentEmail)personDoc.getEmails().get(0), entityType2.getEmailAddresses().get(0));
-        assertNameTrue((PersonDocumentName)personDoc.getNames().get(0), entity2.getNames().get(0));
+        assertAddressTrue(personDoc.getAddrs().get(0), entityType2.getAddresses().get(0));
+        assertPhoneTrue(personDoc.getPhones().get(0), entityType2.getPhoneNumbers().get(0));
+        assertEmailTrue(personDoc.getEmails().get(0), entityType2.getEmailAddresses().get(0));
+        assertNameTrue(personDoc.getNames().get(0), entity2.getNames().get(0));
         assertPrincipalTrue(personDoc, entity2.getPrincipals().get(0));
 
 
@@ -149,10 +233,10 @@ public class UiDocumentServiceImplTest extends KIMTestCase {
 		uiDocumentService.loadEntityToPersonDoc(personDoc, "entity123pId");
         EntityTypeContactInfo entityType = entity.getEntityTypeContactInfos().get(0);
         personDoc.getExternalIdentifiers();
-		assertAddressTrue((PersonDocumentAddress)personDoc.getAddrs().get(0), entityType.getAddresses().get(0));
-		assertPhoneTrue((PersonDocumentPhone)personDoc.getPhones().get(0), entityType.getPhoneNumbers().get(0));
-		assertEmailTrue((PersonDocumentEmail)personDoc.getEmails().get(0), entityType.getEmailAddresses().get(0));
-		assertNameTrue((PersonDocumentName)personDoc.getNames().get(0), entity.getNames().get(0));
+		assertAddressTrue(personDoc.getAddrs().get(0), entityType.getAddresses().get(0));
+		assertPhoneTrue(personDoc.getPhones().get(0), entityType.getPhoneNumbers().get(0));
+		assertEmailTrue(personDoc.getEmails().get(0), entityType.getEmailAddresses().get(0));
+		assertNameTrue(personDoc.getNames().get(0), entity.getNames().get(0));
 		//assertPrincipalTrue(personDoc, identity.getPrincipals().get(0));
 		assertAffiliationTrue(personDoc.getAffiliations().get(0), entity.getAffiliations().get(0));
 		assertEmpInfoTrue(personDoc.getAffiliations().get(0).getEmpInfos().get(0), entity.getEmploymentInformation().get(0));
@@ -161,7 +245,6 @@ public class UiDocumentServiceImplTest extends KIMTestCase {
 
 	// test principal membership
 	@Test
-	@Ignore
 	public void testSetAttributeEntry() throws Exception {
 		PersonDocumentRole personDocRole = initPersonDocRole();
         KimTypeService kimTypeService = (DataDictionaryTypeServiceBase) KIMServiceLocatorInternal.getService(personDocRole.getKimRoleType().getServiceName());
@@ -196,9 +279,7 @@ public class UiDocumentServiceImplTest extends KIMTestCase {
 		kimType.setId("roleType1");
 		kimType.setServiceName("kimRoleTypeService");
 		List<KimTypeAttributeBo> attributeDefinitions = new ArrayList<KimTypeAttributeBo>();
-		Map pkMap = new HashMap();
-		pkMap.put("kimTypeAttributeId", "kimAttr3");
-		KimTypeAttributeBo attr1 = (KimTypeAttributeBo) KNSServiceLocator.getBusinessObjectService().findByPrimaryKey(KimTypeAttributeBo.class, pkMap);
+		KimTypeAttributeBo attr1 = KradDataServiceLocator.getDataObjectService().find(KimTypeAttributeBo.class, "kimAttr3");
 
 //		attr1.setKimAttributeId("kimAttrDefn2");
 //		attr1.setSortCode("a");
@@ -210,13 +291,13 @@ public class UiDocumentServiceImplTest extends KIMTestCase {
 //		attr1.setSortCode("b");
 //		attr1.setKimTypeAttributeId("kimAttr4");
 
-		pkMap.put("kimTypeAttributeId", "kimAttr4");
-		KimTypeAttributeBo attr2 = (KimTypeAttributeBo) KNSServiceLocator.getBusinessObjectService().findByPrimaryKey(KimTypeAttributeBo.class, pkMap);
+		KimTypeAttributeBo attr2 = KradDataServiceLocator.getDataObjectService().find(KimTypeAttributeBo.class, "kimAttr4");
 
 		attributeDefinitions.add(attr2);
 		kimType.setAttributeDefinitions(attributeDefinitions);
 
-        Field fld = PersonDocumentRole.class.getField("kimRoleType");
+        Field fld = PersonDocumentRole.class.getDeclaredField("kimRoleType");
+        fld.setAccessible(true);
         fld.set(docRole, kimType);
 
 		return docRole;
@@ -402,5 +483,67 @@ public class UiDocumentServiceImplTest extends KIMTestCase {
 		assertEquals(docEmpInfo.getBaseSalaryAmount(), entityEmpInfo.getBaseSalaryAmount());
 	}
 
+    @Test
+    public void test_KimDocumentRoleMember_copyProperties() {
+        //
+        // KimDocumentRoleMember.copyProperties is called by the UiDocumentServiceImpl.getRoleMembers
+        // method.  This test verifies that KimDocumentRoleMember.copyProperties is working as
+        // expected and also will fail if fields are added to KimDocumentRoleMember to ensure that
+        // KimDocumentRoleMember.copyProperties is kept up to date.
+        //
 
+        DateTimeFormatter FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+        String ROLE_MEMBER_ID = "1";
+        String ROLE_ID = "23";
+        Map<String, String> ATTRIBUTES = new HashMap<String, String>();
+        String MEMBER_NAME = "WorkflowAdmin";
+        String MEMBER_NAMESPACE_CODE = "KR-WKFLW";
+        String MEMBER_ID = "1";
+        MemberType MEMBER_TYPE = MemberType.GROUP;
+        String ACTIVE_FROM_STRING = "2011-01-01 12:00:00";
+        DateTime ACTIVE_FROM = new DateTime(FORMATTER.parseDateTime(ACTIVE_FROM_STRING));
+        String ACTIVE_TO_STRING = "2115-01-01 12:00:00";
+        DateTime ACTIVE_TO = new DateTime(FORMATTER.parseDateTime(ACTIVE_TO_STRING));
+        String OBJ_ID = "123";
+        long VER_NUM = 4;
+
+        KimDocumentRoleMember newKimDocumentRoleMember = new KimDocumentRoleMember();
+
+        RoleMemberContract rmc = RoleMember.Builder.create(ROLE_ID, ROLE_MEMBER_ID, MEMBER_ID, MEMBER_TYPE, ACTIVE_FROM,
+                ACTIVE_TO, ATTRIBUTES, MEMBER_NAME, MEMBER_NAMESPACE_CODE).build();
+        RoleMember rm = RoleMember.Builder.create(rmc).build();
+        RoleMemberBo roleMemberBo = RoleMemberBo.from(rm);
+        roleMemberBo.setObjectId(OBJ_ID);
+        roleMemberBo.setVersionNumber(VER_NUM);
+
+        KimDocumentRoleMember.copyProperties(newKimDocumentRoleMember, roleMemberBo);
+
+        assertTrue("newKimDocumentRoleMember should have a roleId of " + ROLE_ID,
+                newKimDocumentRoleMember.getRoleId().equals(ROLE_ID));
+        assertTrue("newKimDocumentRoleMember should have a MemberId of " + MEMBER_ID,
+                newKimDocumentRoleMember.getMemberId().equals(MEMBER_ID));
+        assertTrue("newKimDocumentRoleMember should have a MemberName of " + MEMBER_NAME,
+                newKimDocumentRoleMember.getMemberName().equals(MEMBER_NAME));
+        assertTrue("newKimDocumentRoleMember should have a MemberNamespaceCode of " + MEMBER_NAMESPACE_CODE,
+                newKimDocumentRoleMember.getMemberNamespaceCode().equals(MEMBER_NAMESPACE_CODE));
+        assertTrue("newKimDocumentRoleMember should be active.",
+                newKimDocumentRoleMember.isActive());
+        assertTrue("newKimDocumentRoleMember should have a ActiveToDate of " + MEMBER_NAMESPACE_CODE,
+                newKimDocumentRoleMember.getActiveToDate().equals(roleMemberBo.getActiveToDateValue()));
+        assertTrue("newKimDocumentRoleMember should have a ActiveFromDate of " + ACTIVE_FROM_STRING,
+                newKimDocumentRoleMember.getActiveFromDate().equals(roleMemberBo.getActiveFromDateValue()));
+        assertTrue("newKimDocumentRoleMember should have a VersionNumber of " + VER_NUM,
+                newKimDocumentRoleMember.getVersionNumber().equals(VER_NUM));
+        assertTrue("newKimDocumentRoleMember should have a ObjectId of " + OBJ_ID,
+                newKimDocumentRoleMember.getObjectId().equals(OBJ_ID));
+
+        Class<?> c = newKimDocumentRoleMember.getClass();
+        Field[] fields = c.getDeclaredFields();
+        List<Field> fieldsList = Arrays.asList(fields);
+
+        int numberOfFieldsInKimDocumentRoleMember = 11;
+        assertTrue("KimDocumentRoleMember.copyProperties may need to be updated if the number of fields"
+                + "in KimDocumentRoleMember does not equal " + numberOfFieldsInKimDocumentRoleMember + ".  Size is " +
+                fieldsList.size(), fieldsList.size() == numberOfFieldsInKimDocumentRoleMember);
+    }
 }

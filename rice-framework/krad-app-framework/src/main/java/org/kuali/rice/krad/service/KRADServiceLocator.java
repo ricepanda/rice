@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,8 @@ public class KRADServiceLocator {
     public static final String XML_OBJECT_SERIALIZER_SERVICE = "xmlObjectSerializerService";
     public static final String XML_OBJECT_SERIALIZER_IGNORE_MISSING_FIELDS_SERVICE =
             "xmlObjectSerializerIgnoreMissingFieldsService";
-    public static final String SERIALIZER_SERVICE = "businessObjectSerializerService";
+    public static final String KNS_SERIALIZER_SERVICE = "businessObjectSerializerService";
+    public static final String KRAD_SERIALIZER_SERVICE = "dataObjectSerializerService";
     public static final String MAIL_SERVICE = "mailService";
     public static final String DB_PLATFORM = "dbPlatform";
     public static final String INACTIVATEABLE_FROM_TO_SERVICE = "inactivateableFromToService";
@@ -77,7 +78,11 @@ public class KRADServiceLocator {
     }
 
     public static BusinessObjectSerializerService getBusinessObjectSerializerService() {
-        return getService(SERIALIZER_SERVICE);
+        return getService(KNS_SERIALIZER_SERVICE);
+    }
+
+    public static BusinessObjectSerializerService getDataObjectSerializerService() {
+        return getService(KRAD_SERIALIZER_SERVICE);
     }
 
     public static final MailService getMailService() {

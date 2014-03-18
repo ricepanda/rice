@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,7 +132,7 @@ public class MessagingServiceImpl implements MessagingService {
             return null;
         }
 
-        final Message m = new Message();
+        Message m = new Message();
         m.setTitle(message.getTitle());
         m.setDeliveryType(message.getDeliveryType());
         m.setChannel(message.getChannel());
@@ -143,7 +143,7 @@ public class MessagingServiceImpl implements MessagingService {
         m.setOriginId(message.getOriginId());
 
         LOG.debug("saving message: " +m);
-        messageService.saveMessage(m);
+        m = messageService.saveMessage(m);
 
         for (String type: delivererTypes) {
             

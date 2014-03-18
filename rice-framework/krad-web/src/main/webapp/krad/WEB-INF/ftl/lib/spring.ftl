@@ -1,6 +1,6 @@
-h<#--
+<#--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -176,7 +176,10 @@ h<#--
     <#if fieldType != "file" && fieldType != "password">
         <#local value='value="${stringStatusValue}"'/>
     </#if>
-    <input id="${id!}" type="${fieldType}" name="${status.expression}" ${value!} ${attributes}<@closeTag/>
+    <#if id?has_content>
+        <#local idAttr="id='${id!}'"/>
+    </#if>
+    <input ${idAttr!} type="${fieldType}" name="${status.expression}" ${value!} ${attributes}<@closeTag/>
 </#macro>
 
 <#--
@@ -269,6 +272,7 @@ h<#--
         <option value="${option.key?html}"<#if isSelected> selected="selected"</#if>>${option.value?html}</option>
         </#list>
     </select>
+    <input type="hidden" name="_${status.expression}" value="on"/>
 </#macro>
 
 <#--
@@ -286,13 +290,17 @@ h<#--
 -->
 <#macro formRadioButtons id path options separator attributes="">
     <#-- Start Kuali enhancements and changes -->
-    <span class="uif-tooltip" style="width:100%;height:0px;"></span>
+    <#--<span class="uif-tooltip" style="width:100%;height:0px;"></span>-->
     <#list options as option>
     <@bind path/>
     <#local controlId="${id}_${option_index}">
-    <span>
+    <span class="uif-tooltip">
     <input type="radio" id="${controlId}" name="${status.expression}" value="${option.key?html}"<#if stringStatusValue == option.key> checked="checked"</#if> ${attributes}<@closeTag/>
-    <label for="${controlId}" onclick="handleRadioLabelClick('${controlId}',event); return false;"><@krad.template component=option.message/></label>
+    <#if option.message.richMessage>
+        <label for="${controlId}" onclick="handleRadioLabelClick('${controlId}',event); return false;"><@krad.template component=option.message/></label>
+    <#else>
+        <label for="${controlId}">${option.value!}</label>
+    </#if>
     </span>
     ${separator}
     </#list>
@@ -314,16 +322,22 @@ h<#--
 -->
 <#macro formCheckboxes id path options separator attributes="">
     <#-- Start Kuali enhancements and changes -->
-    <span class="uif-tooltip" style="width:100%;height:0px;"></span>
+    <#--<span class="uif-tooltip" style="width:100%;height:0px;"></span>-->
     <#list options as option>
     <@bind path/>
     <#local controlId="${id}_${option_index}">
     <#local isSelected = contains(status.actualValue?default([""]), option.key)>
-    <span>
-    <input type="checkbox" id="${controlId}" name="${status.expression}" value="${option.key?html}"<#if isSelected> checked="checked"</#if> ${attributes}<@closeTag/>
-    <label onclick="handleCheckboxLabelClick('${controlId}',event); return false;" for="${controlId}"><@krad.template component=option.message/></label>
+    <span class="uif-tooltip">
+        <input type="checkbox" id="${controlId}" name="${status.expression}" value="${option.key?html}"<#if isSelected> checked="checked"</#if> ${attributes}<@closeTag/>
+        <#if option.message.richMessage>
+            <label onclick="handleCheckboxLabelClick('${controlId}',event); return false;" for="${controlId}"><@krad.template component=option.message/></label>
+        <#else>
+            <label for="${controlId}">${option.value!}</label>
+        </#if>
     </span>
-    ${separator}
+        <#if option_has_next>
+            ${separator}
+        </#if>
     </#list>
     <input type="hidden" name="_${status.expression}" value="on"/>
     <#-- End Kuali enhancements and changes -->
@@ -355,7 +369,7 @@ h<#--
     </#if>
 	<input type="hidden" name="_${name}" value="on"/>
 	<input type="checkbox" id="${id!}" name="${name}"<#if isSelected> checked="checked"</#if> ${attributes}/>
-    <#if label?has_content>
+    <#if label?has_content && label.messageText?has_content>
         <label onclick="handleCheckboxLabelClick('${id}',event); return false;" for="${id}">
             <@krad.template component=label/>
         </label>

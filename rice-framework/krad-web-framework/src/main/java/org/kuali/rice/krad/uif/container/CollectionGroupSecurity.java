@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,18 +81,5 @@ public class CollectionGroupSecurity extends ComponentSecurity {
      */
     public void setViewLineAuthz(boolean viewLineAuthz) {
         this.viewLineAuthz = viewLineAuthz;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.uif.component.ComponentSecurity#copy()
-     */
-    @Override
-    protected <T> void copyProperties(T componentSecurity) {
-        super.copyProperties(componentSecurity);
-
-        CollectionGroupSecurity collectionGroupSecurityCopy = (CollectionGroupSecurity) componentSecurity;
-
-        collectionGroupSecurityCopy.setEditLineAuthz(this.editLineAuthz);
-        collectionGroupSecurityCopy.setViewLineAuthz(this.viewLineAuthz);
     }
 }

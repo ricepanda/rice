@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,9 @@
  */
 package org.kuali.rice.krad.lookup;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -29,10 +30,6 @@ import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.core.api.exception.RiceRuntimeException;
 import org.kuali.rice.core.api.util.RiceConstants;
 import org.kuali.rice.core.api.util.RiceKeyConstants;
-import org.kuali.rice.krad.bo.Exporter;
-import org.kuali.rice.krad.datadictionary.DataDictionary;
-import org.kuali.rice.krad.datadictionary.DataObjectEntry;
-import org.kuali.rice.krad.service.DataDictionaryService;
 import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
 import org.kuali.rice.krad.service.ModuleService;
 import org.kuali.rice.krad.uif.UifConstants;
@@ -44,7 +41,6 @@ import org.kuali.rice.krad.util.KRADUtils;
 import org.kuali.rice.krad.util.UrlFactory;
 import org.kuali.rice.krad.web.controller.UifControllerBase;
 import org.kuali.rice.krad.web.form.UifFormBase;
-import org.kuali.rice.krad.web.form.UifFormManager;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -169,7 +165,7 @@ public class LookupController extends UifControllerBase {
         // clear current form from session
         GlobalVariables.getUifFormManager().removeSessionForm(form);
 
-        return performRedirect(lookupForm, lookupForm.getReturnLocation(), props);
+        return returnToHub(form);
     }
 
     /**
@@ -192,51 +188,81 @@ public class LookupController extends UifControllerBase {
     }
 
     /**
-     * Handles exporting lookup results as xml using a custom xml exporter.
+     * Invoked from the UI to mark values from all pages as selected. Copies the value from the lookupResults to
+     * selectedLookupResultsCache
+     *
+     * @param lookupForm lookup form instance containing the selected results and lookup configuration
+     * @param request servlet request
+     * @param redirectAttributes redirect attributes instance
+     * 
+     * @return ModelAndView
      */
-    @Override
-    protected String retrieveTableData(@ModelAttribute(UifConstants.KUALI_FORM_ATTR) UifFormBase form, BindingResult result,
-            HttpServletRequest request, HttpServletResponse response) {
-        LookupForm lookupForm = (LookupForm) form;
+    @RequestMapping(method = RequestMethod.POST, params = "methodToCall=selectAllPages")
+    public ModelAndView selectAllPages(@ModelAttribute(UifConstants.KUALI_FORM_ATTR) LookupForm lookupForm,
+            HttpServletRequest request, final RedirectAttributes redirectAttributes) {
 
-        String formatType = getValidatedFormatType(request.getParameter(UifParameters.FORMAT_TYPE));
+        List<? extends Object> lookupResults = (List<? extends Object>) lookupForm.getLookupResults();
 
-        // locate session form and its data object entry
-//        UifFormManager uifFormManager = (UifFormManager) request.getSession().getAttribute(UifParameters.FORM_MANAGER);
-//        String formKey = request.getParameter(UifParameters.FORM_KEY);
-//        LookupForm currentForm = (LookupForm) uifFormManager.getSessionForm(formKey);
+        Map<String, String> fieldConversions = lookupForm.getFieldConversions();
+        List<String> fromFieldNames = new ArrayList<String>(fieldConversions.keySet());
 
-        // if it has a valid custom exporter, use the lookup results and the custom exporter
-        DataDictionaryService dictionaryService = KRADServiceLocatorWeb.getDataDictionaryService();
-        DataDictionary dictionary = dictionaryService.getDataDictionary();
-
-        String dataObjectClassName = lookupForm.getDataObjectClassName();
-        DataObjectEntry dataObjectEntry = dictionary.getDataObjectEntry(dataObjectClassName);
-
-        Class<? extends Exporter> exporterClass = dataObjectEntry.getExporterClass();
-
-        // checks for custom xml formatting before using standard approach
-        if (exporterClass != null && KRADConstants.XML_FORMAT.equals(formatType)) {
-            try {
-                List<? extends Object> displayList = (List<? extends Object>) lookupForm.getLookupResults();
-
-                setAttachmentResponseHeader(response, UifConstants.EXPORT_FILE_NAME, KRADConstants.XML_MIME_TYPE);
-
-                Exporter exporter = exporterClass.newInstance();
-                exporter.export(dataObjectEntry.getDataObjectClass(), displayList, KRADConstants.XML_FORMAT,
-                        response.getOutputStream());
-            } catch (Exception e) {
-                LOG.error("Unable to process xml export", e);
-                throw new RuntimeException("Unable to process xml export", e);
-            }
-
-        } else {
-            // otherwise use standard export
-            return super.retrieveTableData(form, result, request, response);
+        // Loop through  the lookup results and store identifiers for all items in the set
+        Set<String> selectedValues = new HashSet<String>();
+        for(Object lineItem : lookupResults) {
+            String lineIdentifier = LookupUtils.generateMultiValueKey(lineItem, fromFieldNames);
+            selectedValues.add(lineIdentifier);
         }
 
-        // return null as custom export writes to response output stream
-        return null;
+        lookupForm.setSelectedLookupResultsCache(selectedValues);
+
+        return getUIFModelAndView(lookupForm);
+    }
+
+    /**
+     * Invoked from the UI to mark values from all pages as deselected. Clears the selectedLookupResultsCache
+     *
+     * @param lookupForm lookup form instance containing the selected results and lookup configuration
+     * @param request servlet request
+     * @param redirectAttributes redirect attributes instance
+     * 
+     * @return ModelAndView
+     */
+    @RequestMapping(method = RequestMethod.POST, params = "methodToCall=deselectAllPages")
+    public ModelAndView deselectAllPages(@ModelAttribute(UifConstants.KUALI_FORM_ATTR) LookupForm lookupForm,
+            HttpServletRequest request, final RedirectAttributes redirectAttributes) {
+
+        lookupForm.getSelectedLookupResultsCache().clear();
+        Set<String> selectedLines = lookupForm.getSelectedCollectionLines().get(UifPropertyPaths.LOOKUP_RESULTS);
+        if (selectedLines != null) {
+            selectedLines.clear();
+        }
+
+        return getUIFModelAndView(lookupForm);
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @RequestMapping(params = "methodToCall=retrieveCollectionPage")
+    @Override
+    public ModelAndView retrieveCollectionPage(@ModelAttribute("KualiForm") UifFormBase form, BindingResult result,
+            HttpServletRequest request, HttpServletResponse response) throws Exception {
+        LookupUtils.refreshLookupResultSelections((LookupForm) form);
+
+        return super.retrieveCollectionPage(form,result,request,response);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @RequestMapping(method = RequestMethod.GET, params = "methodToCall=tableJsonRetrieval")
+    @Override
+    public ModelAndView tableJsonRetrieval(@ModelAttribute("KualiForm") UifFormBase form, BindingResult result,
+            HttpServletRequest request, HttpServletResponse response) {
+        LookupUtils.refreshLookupResultSelections((LookupForm) form);
+
+        return super.tableJsonRetrieval(form, result, request, response);
     }
 
     /**
@@ -244,10 +270,16 @@ public class LookupController extends UifControllerBase {
      * the caller and then a redirect is performed.
      *
      * @param lookupForm lookup form instance containing the selected results and lookup configuration
+     * @param request servlet request
+     * @param redirectAttributes redirect attributes instance
+     * @return redirect URL for the return location
      */
     @RequestMapping(method = RequestMethod.POST, params = "methodToCall=returnSelected")
     public String returnSelected(@ModelAttribute(UifConstants.KUALI_FORM_ATTR) LookupForm lookupForm,
             HttpServletRequest request, final RedirectAttributes redirectAttributes) {
+
+        LookupUtils.refreshLookupResultSelections((LookupForm) lookupForm);
+
         // build string of select line identifiers
         String selectedLineValues = "";
 
@@ -298,7 +330,7 @@ public class LookupController extends UifControllerBase {
             redirectAttributes.addAttribute(UifParameters.FORM_KEY, lookupForm.getReturnFormKey());
         }
 
-        redirectAttributes.addAttribute(KRADConstants.REFRESH_CALLER, lookupForm.getActiveView().getId());
+        redirectAttributes.addAttribute(KRADConstants.REFRESH_CALLER, lookupForm.getView().getId());
         redirectAttributes.addAttribute(KRADConstants.REFRESH_CALLER_TYPE,
                 UifConstants.RefreshCallerTypes.MULTI_VALUE_LOOKUP);
         redirectAttributes.addAttribute(KRADConstants.REFRESH_DATA_OBJECT_CLASS, lookupForm.getDataObjectClassName());
@@ -309,6 +341,10 @@ public class LookupController extends UifControllerBase {
 
         if (StringUtils.isNotBlank(lookupForm.getLookupCollectionName())) {
             redirectAttributes.addAttribute(UifParameters.LOOKUP_COLLECTION_NAME, lookupForm.getLookupCollectionName());
+        }
+
+        if (StringUtils.isNotBlank(lookupForm.getLookupCollectionId())) {
+            redirectAttributes.addAttribute(UifParameters.LOOKUP_COLLECTION_ID, lookupForm.getLookupCollectionId());
         }
 
         if (StringUtils.isNotBlank(lookupForm.getReferencesToRefresh())) {

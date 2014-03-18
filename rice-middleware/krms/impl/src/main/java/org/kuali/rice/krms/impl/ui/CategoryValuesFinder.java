@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 package org.kuali.rice.krms.impl.ui;
 
 import org.apache.commons.lang.StringUtils;
+import org.kuali.rice.core.api.criteria.QueryByCriteria;
+import org.kuali.rice.core.api.criteria.QueryResults;
 import org.kuali.rice.core.api.util.ConcreteKeyValue;
 import org.kuali.rice.core.api.util.KeyValue;
 import org.kuali.rice.kns.service.KNSServiceLocator;
@@ -70,11 +72,12 @@ public class CategoryValuesFinder extends UifKeyValuesFinderBase {
                 keyValues.add(new ConcreteKeyValue("", ""));
             }
 
-            Map<String, String> criteria = Collections.singletonMap("namespace", namespace);
-            Collection<CategoryBo> categories =
-                    KNSServiceLocator.getBusinessObjectService().findMatchingOrderBy(
-                            CategoryBo.class, criteria, "name", true
-                    );
+            QueryByCriteria.Builder criteriaBuilder = QueryByCriteria.Builder.forAttribute("namespace", namespace);
+            criteriaBuilder.setOrderByAscending("name");
+
+            QueryResults<CategoryBo> categoryResults =
+                    KRADServiceLocator.getDataObjectService().findMatching(CategoryBo.class, criteriaBuilder.build());
+            List<CategoryBo> categories = categoryResults.getResults();
 
             for (CategoryBo category : categories) {
                 keyValues.add(new ConcreteKeyValue(category.getId(), category.getName()));

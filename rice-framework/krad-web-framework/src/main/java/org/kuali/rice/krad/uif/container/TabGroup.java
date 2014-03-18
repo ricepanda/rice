@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package org.kuali.rice.krad.uif.container;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
@@ -24,6 +23,7 @@ import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
 import org.kuali.rice.krad.datadictionary.parse.BeanTags;
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.component.Component;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.widget.Tabs;
 
 /**
@@ -36,7 +36,7 @@ import org.kuali.rice.krad.uif.widget.Tabs;
 @BeanTags(
         {@BeanTag(name = "tabGroup-bean", parent = "Uif-TabGroup"), @BeanTag(name = "tabSection-bean", parent = "Uif-TabSection"),
                 @BeanTag(name = "tabSubSection-bean", parent = "Uif-TabSubSection")})
-public class TabGroup extends Group {
+public class TabGroup extends GroupBase {
     private static final long serialVersionUID = 3L;
 
     private Tabs tabsWidget;
@@ -46,19 +46,10 @@ public class TabGroup extends Group {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#getComponentsForLifecycle()
+     * {@inheritDoc}
      */
     @Override
-    public List<Component> getComponentsForLifecycle() {
-        List<Component> components = super.getComponentsForLifecycle();
-
-        components.add(tabsWidget);
-
-        return components;
-    }
-
-    @Override
-    public void performFinalize(Object model, Component parent) {
+    public void performFinalize(Object model, LifecycleElement parent) {
         super.performFinalize(model, parent);
         this.addDataAttribute(UifConstants.DataAttributes.TYPE, "Uif-TabGroup");
     }
@@ -66,7 +57,7 @@ public class TabGroup extends Group {
     /**
      * Only groups are supported for this group.
      *
-     * @see org.kuali.rice.krad.web.view.container.ContainerBase#getSupportedComponents()
+     * {@inheritDoc}
      */
     @Override
     public Set<Class<? extends Component>> getSupportedComponents() {
@@ -92,20 +83,6 @@ public class TabGroup extends Group {
      */
     public void setTabsWidget(Tabs tabsWidget) {
         this.tabsWidget = tabsWidget;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        TabGroup tabGroupCopy = (TabGroup) component;
-
-        if(tabsWidget != null) {
-            tabGroupCopy.setTabsWidget((Tabs)this.tabsWidget.copy());
-        }
     }
 
 }

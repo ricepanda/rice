@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,7 +138,6 @@ public class CustomTagAnnotations {
      * Generate the custom schema for KRAD based on the custom tag annotations on KRAD classes
      *
      * @param doc the RescourceBundle containing the documentation
-     * @return the
      */
     public static void generateSchemaFile(ResourceBundle doc) {
         Map<String, Map<String, BeanTagInfo>> nameTagMap = new HashMap<String, Map<String, BeanTagInfo>>();

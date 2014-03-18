@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,9 @@
  */
 package org.kuali.rice.kim.bo.ui;
 
-import org.kuali.rice.kim.impl.common.attribute.KimAttributeBo;
-
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
+import javax.persistence.Embeddable;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -25,6 +25,9 @@ import javax.persistence.JoinColumn;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.OneToOne;
 import javax.persistence.Transient;
+
+import org.kuali.rice.kim.impl.common.attribute.KimAttributeBo;
+import org.kuali.rice.krad.data.jpa.PortableSequenceGenerator;
 
 /**
  * This class is the base class for KIM documents sub-business objects that store attribute/qualifier data
@@ -35,29 +38,34 @@ import javax.persistence.Transient;
 @MappedSuperclass
 public class KimDocumentAttributeDataBusinessObjectBase extends KimDocumentBoActivatableEditableBase {
 
-	private static final long serialVersionUID = -1512640359333185819L;
+    private static final long serialVersionUID = -1512640359333185819L;
+
 	@Id
-	@GeneratedValue(generator="KRIM_ATTR_DATA_ID_S")
 	@Column(name = "ATTR_DATA_ID")
+    @GeneratedValue(generator="KRIM_ATTR_DATA_ID_S")
+    @PortableSequenceGenerator(name = "KRIM_ATTR_DATA_ID_S" )
 	private String attrDataId;
+
 	@Column(name = "KIM_TYP_ID")
 	private String kimTypId;
+	
 	@Column(name = "KIM_ATTR_DEFN_ID")
 	private String kimAttrDefnId;
+	
 	@Column(name = "ATTR_VAL")
 	private String attrVal = "";
-	@OneToOne(targetEntity=KimAttributeBo.class, fetch=FetchType.EAGER, cascade={})
+	
+	@OneToOne(targetEntity=KimAttributeBo.class, fetch=FetchType.EAGER, cascade={ CascadeType.REFRESH } )
     @JoinColumn(name="KIM_ATTR_DEFN_ID",insertable=false,updatable=false)
+	
 	private KimAttributeBo kimAttribute;
+	
 	@Transient
 	private String qualifierKey;
+	
 	@Transient
 	private Boolean unique;
 	
-	/**
-	 * This constructs a ...
-	 * 
-	 */
 	public KimDocumentAttributeDataBusinessObjectBase() {
 		super();
 	}

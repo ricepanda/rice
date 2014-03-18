@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.kuali.rice.krad.uif.lifecycle.model;
 
 import org.kuali.rice.kim.api.identity.Person;
+import org.kuali.rice.krad.datadictionary.AttributeSecurity;
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.component.DataBinding;
 import org.kuali.rice.krad.uif.container.Group;
@@ -23,7 +24,7 @@ import org.kuali.rice.krad.uif.element.Action;
 import org.kuali.rice.krad.uif.field.ActionField;
 import org.kuali.rice.krad.uif.field.DataField;
 import org.kuali.rice.krad.uif.field.Field;
-import org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleTaskBase;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase;
 import org.kuali.rice.krad.uif.view.View;
@@ -38,7 +39,7 @@ import org.kuali.rice.krad.util.GlobalVariables;
  * 
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-public class ApplyAuthAndPresentationLogicTask extends AbstractViewLifecycleTask {
+public class ApplyAuthAndPresentationLogicTask extends ViewLifecycleTaskBase<Component> {
 
     /**
      * Constructor.
@@ -46,7 +47,7 @@ public class ApplyAuthAndPresentationLogicTask extends AbstractViewLifecycleTask
      * @param phase The apply model phase for the component.
      */
     public ApplyAuthAndPresentationLogicTask(ViewLifecyclePhase phase) {
-        super(phase);
+        super(phase, Component.class);
     }
 
     /**
@@ -63,12 +64,12 @@ public class ApplyAuthAndPresentationLogicTask extends AbstractViewLifecycleTask
      * authorization is found in {@link org.kuali.rice.krad.uif.container.CollectionGroupBuilder}
      * </p>
      * 
-     * @see org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask#performLifecycleTask()
+     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecycleTaskBase#performLifecycleTask()
      */
     @Override
     protected void performLifecycleTask() {
-        ViewModel model = (ViewModel) getPhase().getModel();
-        Component component = getPhase().getComponent();
+        ViewModel model = (ViewModel) ((ViewLifecyclePhase) getElementState()).getModel();
+        Component component = (Component) getElementState().getElement();
         View view = ViewLifecycle.getView();
         ViewPresentationController presentationController = view.getPresentationController();
         ViewAuthorizer authorizer = view.getAuthorizer();
@@ -158,22 +159,26 @@ public class ApplyAuthAndPresentationLogicTask extends AbstractViewLifecycleTask
             if (field instanceof DataField) {
                 DataField dataField = (DataField) field;
 
-                // check mask authorization
+                // check for masking and mask authorization
                 boolean canUnmaskValue = authorizer.canUnmaskField(view, model, dataField, dataField.getPropertyName(),
                         user);
-                if (!canUnmaskValue) {
+                boolean canPartiallyUnmaskValue = authorizer.canPartialUnmaskField(view, model, dataField,
+                        dataField.getPropertyName(), user);
+                boolean isMasked = isMaskField(dataField);
+                boolean isPartialMask = isPartialMaskField(dataField);
+
+                if (isMasked && !canUnmaskValue)  {
                     dataField.setApplyMask(true);
                     dataField.setMaskFormatter(dataField.getDataFieldSecurity().getAttributeSecurity().
                             getMaskFormatter());
-                } else {
-                    // check partial mask authorization
-                    boolean canPartiallyUnmaskValue = authorizer.canPartialUnmaskField(view, model, dataField,
-                            dataField.getPropertyName(), user);
-                    if (!canPartiallyUnmaskValue) {
-                        dataField.setApplyMask(true);
-                        dataField.setMaskFormatter(
-                                dataField.getDataFieldSecurity().getAttributeSecurity().getPartialMaskFormatter());
-                    }
+                }
+                else if(isMasked && canUnmaskValue)  {
+                    // do not mask
+                }
+                else if (isPartialMask && !canPartiallyUnmaskValue ) {
+                    dataField.setApplyMask(true);
+                    dataField.setMaskFormatter(
+                            dataField.getDataFieldSecurity().getAttributeSecurity().getPartialMaskFormatter());
                 }
             }
         }
@@ -219,6 +224,40 @@ public class ApplyAuthAndPresentationLogicTask extends AbstractViewLifecycleTask
                 widget.setReadOnly(!canEditWidget);
             }
         }
+    }
+
+    /**
+     *
+     */
+    private boolean isMaskField(DataField field) {
+        if (field.getDataFieldSecurity() == null) {
+            return false;
+        }
+
+        // check mask authz flag is set
+        AttributeSecurity attributeSecurity = field.getDataFieldSecurity().getAttributeSecurity();
+        if (attributeSecurity == null || !attributeSecurity.isMask()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     *
+     */
+    private boolean isPartialMaskField(DataField field) {
+        if (field.getDataFieldSecurity() == null) {
+            return false;
+        }
+
+        // check partial mask authz flag is set
+        AttributeSecurity attributeSecurity = field.getDataFieldSecurity().getAttributeSecurity();
+        if (attributeSecurity == null || !attributeSecurity.isPartialMask()) {
+            return false;
+        }
+
+        return true;
     }
 
 }

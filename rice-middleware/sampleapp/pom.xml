@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
   <parent>
     <groupId>org.kuali.rice</groupId>
     <artifactId>rice-middleware</artifactId>
-    <version>2.4.0-M3-SNAPSHOT</version>
+    <version>2.4.0-M5-SNAPSHOT</version>
   </parent>
   <artifactId>rice-sampleapp</artifactId>
   <packaging>war</packaging>
@@ -30,6 +30,8 @@
   <properties>
     <web.launch.context.path>/sample-app</web.launch.context.path>
     <bootstrap.spring.file>classpath:SampleAppBeans.xml</bootstrap.spring.file>
+    <!-- don't generate edu.sampleu javadocs -->
+    <maven.javadoc.skip>true</maven.javadoc.skip>
     <maven.surefire.skip>true</maven.surefire.skip>
     <war.overlay.pattern.1>WEB-INF/web.xml</war.overlay.pattern.1>
     <war.overlay.exclude.2>DO_NOT_MATCH_ANYTHING_PATTERN</war.overlay.exclude.2>
@@ -55,6 +57,11 @@
         <excludes>
           <exclude>**/META-INF/*.xml</exclude>
         </excludes>
+      </resource>
+      <!-- needed for XmlIngestionAfts -->
+      <resource>
+        <directory>src/it/resources</directory>
+        <filtering>false</filtering>
       </resource>
     </resources>
 
@@ -213,6 +220,18 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>rice-krms-impl</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>rice-sql</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>rice-xml</artifactId>
       <version>${project.version}</version>
     </dependency>
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,14 @@
  */
 package org.kuali.rice.kim.bo.ui;
 
-import javax.persistence.AttributeOverride;
-import javax.persistence.AttributeOverrides;
-import javax.persistence.Column;
-import javax.persistence.MappedSuperclass;
 import java.sql.Timestamp;
+
+import javax.persistence.Column;
+import javax.persistence.Convert;
+import javax.persistence.Embeddable;
+import javax.persistence.MappedSuperclass;
+
+import org.kuali.rice.krad.data.jpa.converters.BooleanYNConverter;
 
 /**
  * This is a description of what this class does - shyu don't forget to fill this in. 
@@ -28,17 +31,16 @@ import java.sql.Timestamp;
  *
  */
 @MappedSuperclass
-@AttributeOverrides({
-	@AttributeOverride(name="edit",column=@Column(name="EDIT_FLAG"))
-})
 public class KimDocumentBoActivatableToFromEditableBase  extends KimDocumentBoBase {
+
     private static final long serialVersionUID = 9042706897191231673L;
-	//@Type(type="yes_no")
-	@Column(name="ACTV_IND")
+
+    @Column(name="ACTV_IND")
+	@Convert(converter=BooleanYNConverter.class)
     protected boolean active = true;
 	
-	//@Type(type="yes_no")
 	@Column(name="EDIT_FLAG")
+	@Convert(converter=BooleanYNConverter.class)
     protected boolean edit;
 
 	

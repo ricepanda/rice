@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,42 +17,46 @@ package org.kuali.rice.ken.services.impl;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.kuali.rice.core.api.criteria.QueryByCriteria;
 import org.kuali.rice.ken.bo.NotificationMessageDelivery;
 import org.kuali.rice.ken.service.NotificationMessageDeliveryAutoRemovalService;
 import org.kuali.rice.ken.service.ProcessingResult;
 import org.kuali.rice.ken.test.KENTestCase;
 import org.kuali.rice.ken.util.NotificationConstants;
-import org.kuali.rice.test.BaselineTestCase;
+import org.kuali.rice.krad.service.KRADServiceLocator;
 
 import java.util.Collection;
-import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-//import org.kuali.rice.core.jpa.criteria.Criteria;
+import static org.kuali.rice.core.api.criteria.PredicateFactory.equal;
+import static org.kuali.rice.core.api.criteria.PredicateFactory.isNotNull;
 
 /**
  * Tests NotificationMessageDeliveryAutoRemovalServiceImpl
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-// deadlocks are detected during clear database lifecycle (even when select for update is commented out...)
-@Ignore
+@Ignore // deadlocks are detected during clear database lifecycle (even when select for update is commented out...)
 public class NotificationMessageDeliveryAutoRemovalServiceImplTest extends KENTestCase {
 	// NOTE: this value is highly dependent on test data 
 	private static final int EXPECTED_SUCCESSES = 6;
 
 	protected void assertProcessResults() {
 		// one error should have occurred and the delivery should have been marked unlocked again
-		Collection<NotificationMessageDelivery> lockedDeliveries = services.getNotificationMessegDeliveryDao().getLockedDeliveries(NotificationMessageDelivery.class, services.getGenericDao());
+		Collection<NotificationMessageDelivery> lockedDeliveries = getLockedDeliveries();
 
 		assertEquals(0, lockedDeliveries.size());
 
 		// should be 1 autoremoved delivery
-		HashMap<String, String> queryCriteria = new HashMap<String, String>();
-		queryCriteria.put(NotificationConstants.BO_PROPERTY_NAMES.MESSAGE_DELIVERY_STATUS, NotificationConstants.MESSAGE_DELIVERY_STATUS.AUTO_REMOVED);
-		Collection<NotificationMessageDelivery> unprocessedDeliveries = services.getGenericDao().findMatching(NotificationMessageDelivery.class, queryCriteria);
-		assertEquals(EXPECTED_SUCCESSES, unprocessedDeliveries.size());
+        QueryByCriteria.Builder criteria = QueryByCriteria.Builder.create();
+        criteria.setPredicates(equal(NotificationConstants.BO_PROPERTY_NAMES.MESSAGE_DELIVERY_STATUS,
+                NotificationConstants.MESSAGE_DELIVERY_STATUS.AUTO_REMOVED));
+		Collection<NotificationMessageDelivery> unprocessedDeliveries =
+                KRADServiceLocator.getDataObjectService().findMatching(NotificationMessageDelivery.class,
+                criteria.build()).getResults();
+
+        assertEquals(EXPECTED_SUCCESSES, unprocessedDeliveries.size());
 	}
 
 	/**
@@ -102,9 +106,25 @@ public class NotificationMessageDeliveryAutoRemovalServiceImplTest extends KENTe
 		// assert that ONE of the autoremovers got all the items, and the other got NONE of the items
 		LOG.info("Results of thread #1: " + results[0]);
 		LOG.info("Results of thread #2: " + results[1]);
-		assertTrue((results[0].getSuccesses().size() == EXPECTED_SUCCESSES && results[0].getFailures().size() == 0 && results[1].getSuccesses().size() == 0 && results[1].getFailures().size() == 0) ||
-				(results[1].getSuccesses().size() == EXPECTED_SUCCESSES && results[1].getFailures().size() == 0 && results[0].getSuccesses().size() == 0 && results[0].getFailures().size() == 0));
+		assertTrue((results[0].getSuccesses().size() == EXPECTED_SUCCESSES && results[0].getFailures().size() == 0 &&
+                results[1].getSuccesses().size() == 0 && results[1].getFailures().size() == 0) ||
+				(results[1].getSuccesses().size() == EXPECTED_SUCCESSES && results[1].getFailures().size() == 0 &&
+                results[0].getSuccesses().size() == 0 && results[0].getFailures().size() == 0));
 
 		assertProcessResults();
-	}
+
+    }
+
+    /**
+     * Gets all locked deliveries for the given entity.
+     * @return null
+     */
+    protected Collection<NotificationMessageDelivery> getLockedDeliveries() {
+        QueryByCriteria.Builder criteria = QueryByCriteria.Builder.create();
+        criteria.setPredicates(isNotNull(NotificationConstants.BO_PROPERTY_NAMES.LOCKED_DATE));
+        Collection<NotificationMessageDelivery> lockedDeliveries = KRADServiceLocator.getDataObjectService().findMatching(
+                NotificationMessageDelivery.class, criteria.build()).getResults();
+
+        return null;
+    }
 }

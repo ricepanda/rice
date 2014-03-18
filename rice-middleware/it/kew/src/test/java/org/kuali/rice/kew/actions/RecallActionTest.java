@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,22 @@
  */
 package org.kuali.rice.kew.actions;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import junit.framework.Assert;
+
 import org.apache.commons.lang.ArrayUtils;
 import org.junit.Test;
+import org.kuali.rice.core.api.util.RiceKeyConstants;
 import org.kuali.rice.coreservice.api.parameter.Parameter;
 import org.kuali.rice.coreservice.framework.CoreFrameworkServiceLocator;
 import org.kuali.rice.kew.actionitem.ActionItem;
@@ -43,15 +56,10 @@ import org.kuali.rice.kim.api.permission.Permission;
 import org.kuali.rice.kim.api.role.Role;
 import org.kuali.rice.kim.api.services.KimApiServiceLocator;
 import org.kuali.rice.kim.impl.common.attribute.KimAttributeBo;
-import org.kuali.rice.kns.service.KNSServiceLocator;
+import org.kuali.rice.krad.data.KradDataServiceLocator;
+import org.kuali.rice.krad.util.ErrorMessage;
+import org.kuali.rice.krad.util.GlobalVariables;
 import org.kuali.rice.krad.util.KRADConstants;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.Assert.*;
 
 public class RecallActionTest extends KEWTestCase {
     /**
@@ -109,6 +117,7 @@ public class RecallActionTest extends KEWTestCase {
     private String NATJOHNS = null;
     private String BMCGOUGH = null;
 
+    @Override
     protected void loadTestData() throws Exception {
         loadXmlFile("ActionsConfig.xml");
     }
@@ -222,8 +231,8 @@ public class RecallActionTest extends KEWTestCase {
         assertFalse(document.getValidActions().getValidActions().contains(ActionType.RECALL));
     }
 
-    @Test(expected=InvalidActionTakenException.class)
-    public void testRecallInvalidWhenProcessed() throws Exception {
+    @Test
+    public void testRecallDoesNotRecallDocumentWhenProcessed() throws Exception {
         WorkflowDocument document = WorkflowDocumentFactory.createDocument(EWESTFAL, RECALL_TEST_DOC);
         document.route("");
 
@@ -238,11 +247,24 @@ public class RecallActionTest extends KEWTestCase {
         assertFalse("Document should not be final", document.isFinal());
 
         document = WorkflowDocumentFactory.loadDocument(EWESTFAL, document.getDocumentId());
-        document.recall("recalling when processed should fail", true);
+        document.recall("recalling when processed should not recall the document", true);
+
+        Map<String, List<ErrorMessage>> errorMessages =  GlobalVariables.getMessageMap().getErrorMessages();
+        assertTrue(errorMessages.size() == 1);
+        for (Map.Entry<String, List<ErrorMessage>> errorMessage : errorMessages.entrySet()) {
+            assertTrue(errorMessage.getValue().get(0).getErrorKey().equals(RiceKeyConstants.MESSAGE_RECALL_NOT_SUPPORTED));
+        }
+
+        // Verify the document status is still PROCESSED
+        assertTrue("Document should be processed", document.isProcessed());
+        assertTrue("Document should be approved", document.isApproved());
+        assertFalse("Document should not be final", document.isFinal());
+
+        GlobalVariables.getMessageMap().clearErrorMessages();
     }
 
-    @Test(expected=InvalidActionTakenException.class)
-    public void testRecallInvalidWhenFinal() throws Exception {
+    @Test
+    public void testRecallDoesNotRecallDocumentWhenFinal() throws Exception {
         WorkflowDocument document = WorkflowDocumentFactory.createDocument(EWESTFAL, RECALL_TEST_DOC);
         document.route("");
 
@@ -269,7 +291,20 @@ public class RecallActionTest extends KEWTestCase {
         assertTrue("Document should be final", document.isFinal());
 
         document = WorkflowDocumentFactory.loadDocument(EWESTFAL, document.getDocumentId());
-        document.recall("recalling when processed should fail", true);
+        document.recall("recalling when final should not recall the document", true);
+
+        Map<String, List<ErrorMessage>> errorMessages =  GlobalVariables.getMessageMap().getErrorMessages();
+        assertTrue(errorMessages.size() == 1);
+        for (Map.Entry<String, List<ErrorMessage>> errorMessage : errorMessages.entrySet()) {
+            assertTrue(errorMessage.getValue().get(0).getErrorKey().equals(RiceKeyConstants.MESSAGE_RECALL_NOT_SUPPORTED));
+        }
+
+        // Verify the document status is still FINAL
+        assertFalse("Document should not be processed", document.isProcessed());
+        assertTrue("Document should be approved", document.isApproved());
+        assertTrue("Document should be final", document.isFinal());
+
+        GlobalVariables.getMessageMap().clearErrorMessages();
     }
 
     @Test public void testRecallToActionListAsInitiatorBeforeAnyApprovals() throws Exception {
@@ -328,9 +363,15 @@ public class RecallActionTest extends KEWTestCase {
         Permission perm = KimApiServiceLocator.getPermissionService().createPermission(permission.build());
         assertEquals(perm.getTemplate().getId(), permTmpl.getId());
         int num = 1;
-        if (appDocStatus != null) num++;
-        if (routeNode != null) num++;
-        if (routeStatus != null) num++;
+        if (appDocStatus != null) {
+            num++;
+        }
+        if (routeNode != null) {
+            num++;
+        }
+        if (routeStatus != null) {
+            num++;
+        }
         assertEquals(num, perm.getAttributes().size());
         assertEquals(docType, perm.getAttributes().get(KimConstants.AttributeConstants.DOCUMENT_TYPE_NAME));
         assertEquals(appDocStatus, perm.getAttributes().get(KimConstants.AttributeConstants.APP_DOC_STATUS));
@@ -542,7 +583,7 @@ public class RecallActionTest extends KEWTestCase {
         chartAttribute.setNamespaceCode("KR-SYS");
         chartAttribute.setAttributeLabel(roleQualifierName);
         chartAttribute.setActive(true);
-        KNSServiceLocator.getBusinessObjectService().save(chartAttribute);
+        chartAttribute = KradDataServiceLocator.getDataObjectService().save(chartAttribute);
 
         KimApiServiceLocator.getRoleService().assignPermissionToRole(recallPerm.getId(), customRole.getId());
 
@@ -659,7 +700,7 @@ public class RecallActionTest extends KEWTestCase {
         boolean notifyPreviousRecipients = !RECALL_TEST_DOC.equals(doctype);
         boolean notifyPendingRecipients = !RECALL_NO_PENDING_NOTIFY_TEST_DOC.equals(doctype);
         String[] thirdPartiesNotified = RECALL_NOTIFY_THIRDPARTY_TEST_DOC.equals(doctype) ? new String[] { "quickstart", "admin" } : new String[] {};
-        
+
         WorkflowDocument document = WorkflowDocumentFactory.createDocument(initiator, doctype);
         document.route("");
 
@@ -682,7 +723,7 @@ public class RecallActionTest extends KEWTestCase {
 
         // the recaller has a completion request
         assertTrue(document.isCompletionRequested());
-        
+
         // pending approver has FYI
         assertEquals(notifyPendingRecipients, WorkflowDocumentFactory.loadDocument(NATJOHNS, document.getDocumentId()).isFYIRequested());
         // third approver has FYI
@@ -697,7 +738,7 @@ public class RecallActionTest extends KEWTestCase {
                 assertTrue("Expected FYI to be sent to: " + recipient, WorkflowDocumentFactory.loadDocument(getPrincipalIdForName(recipient), document.getDocumentId()).isFYIRequested());
             }
         }
-        
+
         // omit JHOPF, and see if FYI is subsumed by approval request
         for (String user: new String[] { RKIRKEND, NATJOHNS }) {
             WorkflowDocumentFactory.loadDocument(user, document.getDocumentId()).fyi();

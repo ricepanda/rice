@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,30 +15,27 @@
  */
 package org.kuali.rice.krad.uif.widget;
 
-import java.util.ArrayList;
+import java.io.Serializable;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
 import org.kuali.rice.krad.uif.component.BindingInfo;
-import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.component.MethodInvokerConfig;
 import org.kuali.rice.krad.uif.field.AttributeQuery;
 import org.kuali.rice.krad.uif.field.InputField;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.util.ScriptUtils;
 import org.kuali.rice.krad.uif.view.View;
 
 /**
- * Widget that provides dynamic select options to the user as they
- * are entering the value (also known as auto-complete)
+ * Widget that provides dynamic select options to the user as they are entering the value (also known
+ * as auto-complete).
  *
- * <p>
- * Widget is backed by an <code>AttributeQuery</code> that provides
- * the configuration for executing a query server side that will retrieve
- * the valid option values
- * </p>
+ * <p>Widget is backed by an {@link org.kuali.rice.krad.uif.field.AttributeQuery} that provides the configuration
+ * for executing a query server side that will retrieve the valid option values.</p>
  *
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
@@ -69,13 +66,15 @@ public class Suggest extends WidgetBase {
      * <ul>
      * <li>Invoke expression evaluation on the suggestQuery</li>
      * </ul>
+     *
+     * {@inheritDoc}
      */
-    public void performApplyModel(Object model, Component parent) {
+    public void performApplyModel(Object model, LifecycleElement parent) {
         super.performApplyModel(model, parent);
 
         if (suggestQuery != null) {
-            ViewLifecycle.getActiveLifecycle().getHelper().getExpressionEvaluator().evaluateExpressionsOnConfigurable(
-                    ViewLifecycle.getActiveLifecycle().getView(), suggestQuery, getContext());
+            ViewLifecycle.getExpressionEvaluator().evaluateExpressionsOnConfigurable(ViewLifecycle.getView(),
+                    suggestQuery, getContext());
         }
     }
 
@@ -87,16 +86,15 @@ public class Suggest extends WidgetBase {
      * <li>TODO: determine query if render is true and query is not set</li>
      * </ul>
      *
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#performFinalize(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performFinalize(Object model, Component parent) {
+    public void performFinalize(Object model, LifecycleElement parent) {
         super.performFinalize(model, parent);
 
         // check for necessary configuration
         if (!isSuggestConfigured()) {
-           setRender(false);
+            setRender(false);
         }
 
         if (!isRender()) {
@@ -107,7 +105,7 @@ public class Suggest extends WidgetBase {
             if (suggestOptions == null || suggestOptions.isEmpty()) {
                 // execute query method to retrieve up front suggestions
                 if (suggestQuery.hasConfiguredMethod()) {
-                    retrieveSuggestOptions(ViewLifecycle.getActiveLifecycle().getView());
+                    retrieveSuggestOptions(ViewLifecycle.getView());
                 }
             } else {
                 suggestOptionsJsString = ScriptUtils.translateValue(suggestOptions);
@@ -118,6 +116,10 @@ public class Suggest extends WidgetBase {
 
             BindingInfo bindingInfo = field.getBindingInfo();
             suggestQuery.updateQueryFieldMapping(bindingInfo);
+
+            if (suggestQuery != null) {
+                suggestQuery.defaultQueryTarget(ViewLifecycle.getHelper());
+            }
         }
     }
 
@@ -127,8 +129,7 @@ public class Suggest extends WidgetBase {
      * @return true if the necessary configuration is present, false if not
      */
     public boolean isSuggestConfigured() {
-        if (StringUtils.isNotBlank(valuePropertyName) ||
-                suggestQuery.hasConfiguredMethod() ||
+        if (StringUtils.isNotBlank(valuePropertyName) || suggestQuery.hasConfiguredMethod() ||
                 (suggestOptions != null && !suggestOptions.isEmpty())) {
             return true;
         }
@@ -176,6 +177,15 @@ public class Suggest extends WidgetBase {
         } catch (Exception e) {
             throw new RuntimeException("Unable to invoke query method: " + queryMethodInvoker.getTargetMethod(), e);
         }
+    }
+
+    /**
+     * Returns object containing post data to store for the suggest request.
+     *
+     * @return suggest post data instance
+     */
+    public SuggestPostData getPostData() {
+        return new SuggestPostData(this);
     }
 
     /**
@@ -289,7 +299,7 @@ public class Suggest extends WidgetBase {
      * </p>
      *
      * @return true if the query method results should be used as the suggestions, false to assume
-     *         objects are returned and suggestions are formed using the source property name
+     * objects are returned and suggestions are formed using the source property name
      */
     @BeanTagAttribute(name = "returnFullQueryObject")
     public boolean isReturnFullQueryObject() {
@@ -322,7 +332,7 @@ public class Suggest extends WidgetBase {
      * </p>
      *
      * @return true to provide the suggest options initially, false to use ajax retrieval based on the
-     *         user's input
+     * user's input
      */
     @BeanTagAttribute(name = "retrieveAllSuggestions")
     public boolean isRetrieveAllSuggestions() {
@@ -391,29 +401,83 @@ public class Suggest extends WidgetBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
+     * Holds post data for the suggest component.
      */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
+    public static class SuggestPostData implements Serializable {
+        private static final long serialVersionUID = 997780560864981128L;
 
-        Suggest suggestCopy = (Suggest) component;
+        private String id;
 
-        suggestCopy.setValuePropertyName(this.valuePropertyName);
-        suggestCopy.setLabelPropertyName(this.labelPropertyName);
+        private AttributeQuery suggestQuery;
 
-        if(additionalPropertiesToReturn != null) {
-            suggestCopy.setAdditionalPropertiesToReturn(new ArrayList<String> (additionalPropertiesToReturn));
+        private String valuePropertyName;
+        private String labelPropertyName;
+        private List<String> additionalPropertiesToReturn;
+        private boolean returnFullQueryObject;
+        private boolean retrieveAllSuggestions;
+
+        /**
+         * Constructor taking suggest widget to pull post data from.
+         *
+         * @param suggest component instance to pull data
+         */
+        public SuggestPostData(Suggest suggest) {
+            this.id = suggest.getId();
+            this.suggestQuery = suggest.getSuggestQuery();
+            this.valuePropertyName = suggest.getValuePropertyName();
+            this.labelPropertyName = suggest.getLabelPropertyName();
+            this.additionalPropertiesToReturn = suggest.getAdditionalPropertiesToReturn();
+            this.returnFullQueryObject = suggest.isReturnFullQueryObject();
+            this.retrieveAllSuggestions = suggest.isRetrieveAllSuggestions();
         }
 
-        suggestCopy.setReturnFullQueryObject(this.returnFullQueryObject);
-        suggestCopy.setRetrieveAllSuggestions(this.retrieveAllSuggestions);
-
-        if (this.suggestQuery != null) {
-            suggestCopy.setSuggestQuery((AttributeQuery)this.suggestQuery.copy());
+        /**
+         * @see org.kuali.rice.krad.uif.util.LifecycleElement#getId()
+         */
+        public String getId() {
+            return id;
         }
 
-        suggestCopy.setSuggestOptions(this.suggestOptions);
-        suggestCopy.setSuggestOptionsJsString(this.suggestOptionsJsString);
+        /**
+         * @see Suggest#getSuggestQuery()
+         */
+        public AttributeQuery getSuggestQuery() {
+            return suggestQuery;
+        }
+
+        /**
+         * @see Suggest#getValuePropertyName()
+         */
+        public String getValuePropertyName() {
+            return valuePropertyName;
+        }
+
+        /**
+         * @see Suggest#getLabelPropertyName()
+         */
+        public String getLabelPropertyName() {
+            return labelPropertyName;
+        }
+
+        /**
+         * @see Suggest#getAdditionalPropertiesToReturn()
+         */
+        public List<String> getAdditionalPropertiesToReturn() {
+            return additionalPropertiesToReturn;
+        }
+
+        /**
+         * @see Suggest#isReturnFullQueryObject()
+         */
+        public boolean isReturnFullQueryObject() {
+            return returnFullQueryObject;
+        }
+
+        /**
+         * @see Suggest#isRetrieveAllSuggestions()
+         */
+        public boolean isRetrieveAllSuggestions() {
+            return retrieveAllSuggestions;
+        }
     }
 }

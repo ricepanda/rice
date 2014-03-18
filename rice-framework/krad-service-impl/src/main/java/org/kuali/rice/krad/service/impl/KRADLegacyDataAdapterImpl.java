@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,6 @@
  * limitations under the License.
  */
 package org.kuali.rice.krad.service.impl;
-
-import java.beans.PropertyDescriptor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang.StringUtils;
@@ -45,14 +33,13 @@ import org.kuali.rice.krad.bo.PersistableBusinessObject;
 import org.kuali.rice.krad.bo.PersistableBusinessObjectExtension;
 import org.kuali.rice.krad.data.CompoundKey;
 import org.kuali.rice.krad.data.DataObjectService;
-import org.kuali.rice.krad.data.DataObjectUtils;
 import org.kuali.rice.krad.data.DataObjectWrapper;
+import org.kuali.rice.krad.data.KradDataServiceLocator;
 import org.kuali.rice.krad.data.PersistenceOption;
 import org.kuali.rice.krad.data.metadata.DataObjectAttributeRelationship;
 import org.kuali.rice.krad.data.metadata.DataObjectCollection;
 import org.kuali.rice.krad.data.metadata.DataObjectMetadata;
 import org.kuali.rice.krad.data.metadata.DataObjectRelationship;
-import org.kuali.rice.krad.data.metadata.MetadataRepository;
 import org.kuali.rice.krad.data.provider.annotation.ExtensionFor;
 import org.kuali.rice.krad.datadictionary.DataDictionaryEntry;
 import org.kuali.rice.krad.datadictionary.DataObjectEntry;
@@ -77,15 +64,27 @@ import org.kuali.rice.krad.util.KRADConstants;
 import org.kuali.rice.krad.util.KRADPropertyConstants;
 import org.kuali.rice.krad.util.KRADUtils;
 import org.kuali.rice.krad.util.LegacyUtils;
+import org.springframework.beans.PropertyAccessorUtils;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
+
+import java.beans.PropertyDescriptor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  *
  */
 public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
     private DataObjectService dataObjectService;
-    private MetadataRepository metadataRepository;
     private LookupCriteriaGenerator lookupCriteriaGenerator;
 
     private ConfigurationService kualiConfigurationService;
@@ -109,12 +108,12 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
     @Override
     public <T> T linkAndSave(T dataObject) {
         // This method is only used from MaintainableImpl
-        return dataObjectService.save(dataObject, PersistenceOption.LINK);
+        return dataObjectService.save(dataObject, PersistenceOption.LINK_KEYS);
     }
 
     @Override
     public <T> T saveDocument(T document) {
-        return dataObjectService.save(document, PersistenceOption.FLUSH);
+        return dataObjectService.save(document, PersistenceOption.LINK_KEYS, PersistenceOption.FLUSH);
     }
 
     @Override
@@ -176,8 +175,8 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
             boolean sortAscending) {
         OrderDirection direction = sortAscending ? OrderDirection.ASCENDING : OrderDirection.DESCENDING;
         OrderByField orderBy = OrderByField.Builder.create(sortField, direction).build();
-        QueryResults<T> result = dataObjectService.findMatching(clazz,
-                QueryByCriteria.Builder.andAttributes(fieldValues).setOrderByFields(orderBy).build());
+        QueryResults<T> result = dataObjectService.findMatching(clazz, QueryByCriteria.Builder.andAttributes(
+                fieldValues).setOrderByFields(orderBy).build());
         return result.getResults();
     }
 
@@ -188,17 +187,39 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
 
     @Override
     public void retrieveNonKeyFields(Object persistableObject) {
-        throw new UnsupportedOperationException("retrieveNonKeyFields not supported in KRAD");
+        List<DataObjectRelationship> relationships = dataObjectService.getMetadataRepository().getMetadata(
+                persistableObject.getClass()).getRelationships();
+        for (DataObjectRelationship relationship : relationships) {
+            retrieveReferenceObject(persistableObject, relationship.getName());
+        }
     }
 
     @Override
     public void retrieveReferenceObject(Object persistableObject, String referenceObjectName) {
-        throw new UnsupportedOperationException("retrieveReferenceObject not supported in KRAD");
+        dataObjectService.wrap(persistableObject).fetchRelationship(referenceObjectName);
     }
 
     @Override
     public void refreshAllNonUpdatingReferences(Object persistableObject) {
-        throw new UnsupportedOperationException("refreshAllNonUpdatingReferences not supported in KRAD");
+        List<DataObjectRelationship> nonUpdateableRelationships = findNonUpdateableRelationships(persistableObject);
+        for (DataObjectRelationship relationship : nonUpdateableRelationships) {
+            retrieveReferenceObject(persistableObject, relationship.getName());
+        }
+    }
+
+    protected List<DataObjectRelationship> findNonUpdateableRelationships(Object persistableObject) {
+        List<DataObjectRelationship> nonUpdateableRelationships = new ArrayList<DataObjectRelationship>();
+        DataObjectMetadata dataObjectMetadata = dataObjectService.getMetadataRepository().
+                getMetadata(persistableObject.getClass());
+        if (dataObjectMetadata != null) {
+            List<DataObjectRelationship> relationships = dataObjectMetadata.getRelationships();
+            for (DataObjectRelationship relationship : relationships) {
+                if (!relationship.isSavedWithParent()) {
+                    nonUpdateableRelationships.add(relationship);
+                }
+            }
+        }
+        return nonUpdateableRelationships;
     }
 
     @Override
@@ -224,10 +245,10 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
 
     @Override
     public <T> Collection<T> findCollectionBySearchHelper(Class<T> dataObjectClass, Map<String, String> formProperties,
-            List<String> wildcardAsLiteralPropertyNames, boolean unbounded, boolean allPrimaryKeyValuesPresentAndNotWildcard,
-            Integer searchResultsLimit) {
-        return performDataObjectServiceLookup(dataObjectClass, formProperties, wildcardAsLiteralPropertyNames, unbounded,
-                allPrimaryKeyValuesPresentAndNotWildcard, searchResultsLimit);
+            List<String> wildcardAsLiteralPropertyNames, boolean unbounded,
+            boolean allPrimaryKeyValuesPresentAndNotWildcard, Integer searchResultsLimit) {
+        return performDataObjectServiceLookup(dataObjectClass, formProperties, wildcardAsLiteralPropertyNames,
+                unbounded, allPrimaryKeyValuesPresentAndNotWildcard, searchResultsLimit);
     }
 
     /**
@@ -270,8 +291,8 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
      * @return collection of lookup results
      */
     protected <T> Collection<T> performDataObjectServiceLookup(Class<T> dataObjectClass,
-            Map<String, String> formProperties, List<String> wildcardAsLiteralPropertyNames,
-            boolean unbounded, boolean allPrimaryKeyValuesPresentAndNotWildcard, Integer searchResultsLimit) {
+            Map<String, String> formProperties, List<String> wildcardAsLiteralPropertyNames, boolean unbounded,
+            boolean allPrimaryKeyValuesPresentAndNotWildcard, Integer searchResultsLimit) {
         if (!unbounded && searchResultsLimit == null) {
             // use KRAD LookupUtils.getSearchResultsLimit instead of KNS version. we have no LookupForm, so pass null, only the class will be used
             //searchResultsLimit = LookupUtils.getSearchResultsLimit(example, null);
@@ -372,17 +393,32 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
         return returnVal;
     }
 
-//    @Override
-//    public Attachment getAttachmentByNoteId(Long noteId) {
-//        // noteIdentifier is the PK of Attachment, so just look up by PK
-//        return dataObjectService.find(Attachment.class, noteId);
-//    }
+    //    @Override
+    //    public Attachment getAttachmentByNoteId(Long noteId) {
+    //        // noteIdentifier is the PK of Attachment, so just look up by PK
+    //        return dataObjectService.find(Attachment.class, noteId);
+    //    }
 
     @Override
     public List<String> listPrimaryKeyFieldNames(Class<?> type) {
-        List<String> keys = new ArrayList<String>();
-        if (metadataRepository.contains(type)) {
-            keys = metadataRepository.getMetadata(type).getPrimaryKeyAttributeNames();
+        List<String> keys = Collections.emptyList();
+        if (dataObjectService.getMetadataRepository().contains(type)) {
+            keys = dataObjectService.getMetadataRepository().getMetadata(type).getPrimaryKeyAttributeNames();
+        } else {
+            // check the Data Dictionary for PK's of non-persisted objects
+            DataObjectEntry dataObjectEntry = dataDictionaryService.getDataDictionary().getDataObjectEntry(
+                    type.getName());
+            if (dataObjectEntry != null) {
+                List<String> pks = dataObjectEntry.getPrimaryKeys();
+                if (pks != null) {
+                    keys = pks;
+                }
+            } else {
+                ModuleService responsibleModuleService = kualiModuleService.getResponsibleModuleService(type);
+                if (responsibleModuleService != null && responsibleModuleService.isExternalizable(type)) {
+                    keys = responsibleModuleService.listPrimaryKeyFieldNames(type);
+                }
+            }
         }
         return keys;
     }
@@ -397,12 +433,12 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
      *
      * @param type the data object class
      * @return list of primary key field names, consulting persistence structure service, module service and
-     *         datadictionary
+     * datadictionary
      */
     protected List<String> listPrimaryKeyFieldNamesConsultingAllServices(Class<?> type) {
         List<String> keys = new ArrayList<String>();
-        if (metadataRepository.contains(type)) {
-            keys = metadataRepository.getMetadata(type).getPrimaryKeyAttributeNames();
+        if (dataObjectService.getMetadataRepository().contains(type)) {
+            keys = dataObjectService.getMetadataRepository().getMetadata(type).getPrimaryKeyAttributeNames();
         }
         return keys;
     }
@@ -410,8 +446,8 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
     @Override
     public Class<?> determineCollectionObjectType(Class<?> containingType, String collectionPropertyName) {
         final Class<?> collectionObjectType;
-        if (metadataRepository.contains(containingType)) {
-            DataObjectMetadata metadata = metadataRepository.getMetadata(containingType);
+        if (dataObjectService.getMetadataRepository().contains(containingType)) {
+            DataObjectMetadata metadata = dataObjectService.getMetadataRepository().getMetadata(containingType);
             DataObjectCollection collection = metadata.getCollection(collectionPropertyName);
             if (collection == null) {
                 throw new IllegalArgumentException(
@@ -439,7 +475,7 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
 
     @Override
     public boolean isExtensionAttribute(Class<?> boClass, String attributePropertyName, Class<?> propertyType) {
-        DataObjectMetadata metadata = metadataRepository.getMetadata(boClass);
+        DataObjectMetadata metadata = dataObjectService.getMetadataRepository().getMetadata(boClass);
         if (metadata != null) {
             DataObjectRelationship relationship = metadata.getRelationship(attributePropertyName);
             if (relationship != null) {
@@ -457,7 +493,7 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
 
     @Override
     public Class<?> getExtensionAttributeClass(Class<?> boClass, String attributePropertyName) {
-        DataObjectMetadata metadata = metadataRepository.getMetadata(boClass);
+        DataObjectMetadata metadata = dataObjectService.getMetadataRepository().getMetadata(boClass);
         if (metadata != null) {
             DataObjectRelationship relationship = metadata.getRelationship(attributePropertyName);
             if (relationship != null) {
@@ -466,7 +502,6 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
         }
         return null;
     }
-
 
     @Override
     public Map<String, ?> getPrimaryKeyFieldValuesDOMDS(Object dataObject) {
@@ -495,8 +530,8 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
      */
     public Class<?> getPropertyType(Object object, String propertyName) {
         DataObjectWrapper wrappedObject = dataObjectService.wrap(object);
-        if(DataObjectUtils.isNestedAttribute(propertyName)){
-           return wrappedObject.getPropertyTypeNullSafe(wrappedObject.getWrappedClass(),propertyName);
+        if (PropertyAccessorUtils.isNestedOrIndexedProperty(propertyName)) {
+            return wrappedObject.getPropertyTypeNullSafe(wrappedObject.getWrappedClass(), propertyName);
         }
         return wrappedObject.getPropertyType(propertyName);
     }
@@ -504,12 +539,18 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
     @Override
     public PersistableBusinessObjectExtension getExtension(
             Class<? extends PersistableBusinessObject> businessObjectClass) throws InstantiationException, IllegalAccessException {
-        throw new UnsupportedOperationException("getExtension not supported in KRAD");
+        DataObjectMetadata metadata = dataObjectService.getMetadataRepository().getMetadata(businessObjectClass);
+        DataObjectRelationship extensionRelationship = metadata.getRelationship("extension");
+        if (extensionRelationship != null) {
+            Class<?> extensionType = extensionRelationship.getRelatedType();
+            return (PersistableBusinessObjectExtension) extensionType.newInstance();
+        }
+        return null;
     }
 
     @Override
     public void refreshReferenceObject(PersistableBusinessObject businessObject, String referenceObjectName) {
-        throw new UnsupportedOperationException("refreshReferenceObject not supported in KRAD");
+        dataObjectService.wrap(businessObject).fetchRelationship(referenceObjectName);
     }
 
     @Override
@@ -519,50 +560,53 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
 
     @Override
     public void verifyVersionNumber(Object dataObject) {
-        DataObjectMetadata metadata = metadataRepository.getMetadata(dataObject.getClass());
+        DataObjectMetadata metadata = dataObjectService.getMetadataRepository().getMetadata(dataObject.getClass());
         if (metadata == null) {
-            throw new IllegalArgumentException("Given data object class could not be loaded from metadata repository: "
-                + dataObject.getClass());
+            return;
         }
+
         if (metadata.isSupportsOptimisticLocking()) {
             if (dataObject instanceof Versioned) {
                 Map<String, ?> keyPropertyValues = dataObjectService.wrap(dataObject).getPrimaryKeyValues();
-                Object persistableDataObject = dataObjectService.find(dataObject.getClass(), new CompoundKey(
-                        keyPropertyValues));
+                CompoundKey key = new CompoundKey(keyPropertyValues);
+                Object persistableDataObject = null;
+                if (!key.hasNullKeyValues()) {
+                    persistableDataObject = dataObjectService.find(dataObject.getClass(), key);
+                }
                 // if it's null that means that this is an insert, not an update
                 if (persistableDataObject != null) {
-                        Long databaseVersionNumber = ((Versioned) persistableDataObject).getVersionNumber();
-                        Long documentVersionNumber = ((Versioned) dataObject).getVersionNumber();
-                        if (databaseVersionNumber != null && !(databaseVersionNumber.equals(documentVersionNumber))) {
-                            GlobalVariables.getMessageMap().putError(KRADConstants.GLOBAL_ERRORS,
-                                    RiceKeyConstants.ERROR_VERSION_MISMATCH);
-                            throw new ValidationException(
-                                    "Version mismatch between the local business object and the database business object");
-                        }
+                    Long databaseVersionNumber = ((Versioned) persistableDataObject).getVersionNumber();
+                    Long documentVersionNumber = ((Versioned) dataObject).getVersionNumber();
+                    if (databaseVersionNumber != null && !(databaseVersionNumber.equals(documentVersionNumber))) {
+                        GlobalVariables.getMessageMap().putError(KRADConstants.GLOBAL_ERRORS,
+                                RiceKeyConstants.ERROR_VERSION_MISMATCH);
+                        throw new ValidationException(
+                                "Version mismatch between the local business object and the database business object");
                     }
                 }
             }
         }
+    }
 
-        @Override
-        public RemotableQuickFinder.Builder createQuickFinder(Class<?> containingClass, String attributeName) {
-            return createQuickFinderNew(containingClass, attributeName);
-        }
+    @Override
+    public RemotableQuickFinder.Builder createQuickFinder(Class<?> containingClass, String attributeName) {
+        return createQuickFinderNew(containingClass, attributeName);
+    }
 
-        /**
-         * New implementation of createQuickFinder which uses the new MetadataRepository.
-         */
-        protected RemotableQuickFinder.Builder createQuickFinderNew(Class<?> containingClass, String attributeName) {
-            if (metadataRepository.contains(containingClass)) {
+    /**
+     * New implementation of createQuickFinder which uses the new dataObjectService.getMetadataRepository().
+     */
+    protected RemotableQuickFinder.Builder createQuickFinderNew(Class<?> containingClass, String attributeName) {
+        if (dataObjectService.getMetadataRepository().contains(containingClass)) {
 
-                String lookupClassName = null;
+            String lookupClassName = null;
             Map<String, String> fieldConversions = new HashMap<String, String>();
             Map<String, String> lookupParameters = new HashMap<String, String>();
 
-            DataObjectMetadata metadata = metadataRepository.getMetadata(containingClass);
+            DataObjectMetadata metadata = dataObjectService.getMetadataRepository().getMetadata(containingClass);
             DataObjectRelationship relationship = metadata.getRelationshipByLastAttributeInRelationship(attributeName);
             if (relationship != null) {
-                DataObjectMetadata lookupClassMetadata = metadataRepository.getMetadata(
+                DataObjectMetadata lookupClassMetadata = dataObjectService.getMetadataRepository().getMetadata(
                         relationship.getRelatedType());
                 lookupClassName = lookupClassMetadata.getClass().getName();
                 for (DataObjectAttributeRelationship attributeRelationship : relationship.getAttributeRelationships()) {
@@ -619,8 +663,9 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
 
     @Override
     public boolean isReferenceUpdatable(Class<?> type, String referenceName) {
-        if (metadataRepository.contains(type)) {
-            DataObjectRelationship relationship = metadataRepository.getMetadata(type).getRelationship(referenceName);
+        if (dataObjectService.getMetadataRepository().contains(type)) {
+            DataObjectRelationship relationship = dataObjectService.getMetadataRepository().getMetadata(type)
+                    .getRelationship(referenceName);
             if (relationship != null) {
                 return relationship.isSavedWithParent();
             }
@@ -632,8 +677,9 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
     @Override
     public Map<String, Class> listReferenceObjectFields(Class<?> type) {
         Map<String, Class> referenceNameToTypeMap = new HashMap<String, Class>();
-        if (metadataRepository.contains(type)) {
-            List<DataObjectRelationship> relationships = metadataRepository.getMetadata(type).getRelationships();
+        if (dataObjectService.getMetadataRepository().contains(type)) {
+            List<DataObjectRelationship> relationships = dataObjectService.getMetadataRepository().getMetadata(type)
+                    .getRelationships();
             for (DataObjectRelationship rel : relationships) {
                 referenceNameToTypeMap.put(rel.getName(), rel.getRelatedType());
             }
@@ -643,8 +689,9 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
 
     @Override
     public boolean isCollectionUpdatable(Class<?> type, String collectionName) {
-        if (metadataRepository.contains(type)) {
-            DataObjectCollection collection = metadataRepository.getMetadata(type).getCollection(collectionName);
+        if (dataObjectService.getMetadataRepository().contains(type)) {
+            DataObjectCollection collection = dataObjectService.getMetadataRepository().getMetadata(type).getCollection(
+                    collectionName);
             if (collection != null) {
                 return collection.isSavedWithParent();
             }
@@ -655,8 +702,9 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
     @Override
     public Map<String, Class> listCollectionObjectTypes(Class<?> type) {
         Map<String, Class> collectionNameToTypeMap = new HashMap<String, Class>();
-        if (metadataRepository.contains(type)) {
-            List<DataObjectCollection> collections = metadataRepository.getMetadata(type).getCollections();
+        if (dataObjectService.getMetadataRepository().contains(type)) {
+            List<DataObjectCollection> collections = dataObjectService.getMetadataRepository().getMetadata(type)
+                    .getCollections();
             for (DataObjectCollection coll : collections) {
                 collectionNameToTypeMap.put(coll.getName(), coll.getRelatedType());
             }
@@ -665,13 +713,34 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
     }
 
     @Override
-    public BusinessObject getReferenceIfExists(BusinessObject bo, String referenceName) {
-        throw new UnsupportedOperationException("getReferenceIfExists not supported in KRAD");
+    public Object getReferenceIfExists(Object bo, String referenceName) {
+        // fetches relationship if key is set and return populated value or null
+        DataObjectWrapper<Object> dataObjectWrapper = dataObjectService.wrap(bo);
+        dataObjectWrapper.fetchRelationship(referenceName);
+        return dataObjectWrapper.getPropertyValueNullSafe(referenceName);
     }
 
     @Override
-    public boolean allForeignKeyValuesPopulatedForReference(PersistableBusinessObject bo, String referenceName) {
-        throw new UnsupportedOperationException("allForeignKeyValuesPopulatedForReference not supported in KRAD");
+    public boolean allForeignKeyValuesPopulatedForReference(Object bo, String referenceName) {
+        Map<String, String> fkReferences = getForeignKeysForReference(bo.getClass(), referenceName);
+        if (fkReferences.size() > 0) {
+            DataObjectWrapper<Object> dataObjectWrapper = dataObjectService.wrap(bo);
+
+            for (String fkFieldName : fkReferences.keySet()) {
+                Object fkFieldValue = dataObjectWrapper.getForeignKeyAttributeValue(fkFieldName);
+                if (fkFieldValue == null) {
+                    return false;
+                } else if (fkFieldValue instanceof CompoundKey) {
+                    return !((CompoundKey) fkFieldValue).hasNullKeyValues();
+                } else if (String.class.isAssignableFrom(fkFieldValue.getClass())) {
+                    if (StringUtils.isBlank((String) fkFieldValue)) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -748,7 +817,7 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
     /**
      * @param dataObjectClass
      * @return DataObjectEntry for the given dataObjectClass, or null if
-     *         there is none
+     * there is none
      * @throws IllegalArgumentException if the given Class is null
      */
     protected DataObjectEntry getDataObjectEntry(Class<?> dataObjectClass) {
@@ -822,9 +891,8 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
     @Override
     public Class<?> getInquiryObjectClassIfNotTitle(Object dataObject, String propertyName) {
         DataObjectMetadata objectMetadata =
-                KRADServiceLocator.getDataObjectService().getMetadataRepository().getMetadata(
-                        dataObject.getClass());
-        if(objectMetadata != null){
+                KRADServiceLocator.getDataObjectService().getMetadataRepository().getMetadata(dataObject.getClass());
+        if (objectMetadata != null) {
             org.kuali.rice.krad.data.metadata.DataObjectRelationship dataObjectRelationship =
                     objectMetadata.getRelationship(propertyName);
             if (dataObjectRelationship != null) {
@@ -838,16 +906,15 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
     public Map<String, String> getInquiryParameters(Object dataObject, List<String> keys, String propertyName) {
         Map<String, String> inquiryParameters = new HashMap<String, String>();
         DataObjectMetadata objectMetadata =
-                KRADServiceLocator.getDataObjectService().getMetadataRepository().getMetadata(
-                        dataObject.getClass());
+                KRADServiceLocator.getDataObjectService().getMetadataRepository().getMetadata(dataObject.getClass());
         org.kuali.rice.krad.data.metadata.DataObjectRelationship dataObjectRelationship =
                 objectMetadata.getRelationshipByLastAttributeInRelationship(propertyName);
         for (String keyName : keys) {
             String keyConversion = keyName;
             if (dataObjectRelationship != null) {
                 keyConversion = dataObjectRelationship.getParentAttributeNameRelatedToChildAttributeName(keyName);
-            } else if (DataObjectUtils.isNestedAttribute(propertyName)) {
-                String nestedAttributePrefix = DataObjectUtils.getNestedAttributePrefix(propertyName);
+            } else if (PropertyAccessorUtils.isNestedOrIndexedProperty(propertyName)) {
+                String nestedAttributePrefix = KRADUtils.getNestedAttributePrefix(propertyName);
                 keyConversion = nestedAttributePrefix + "." + keyName;
             }
             inquiryParameters.put(keyConversion, keyName);
@@ -873,7 +940,7 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
 
         org.kuali.rice.krad.bo.DataObjectRelationship relationship = null;
         DataObjectAttributeRelationship rel = null;
-        if (DataObjectUtils.isNestedAttribute(attributeName)) {
+        if (PropertyAccessorUtils.isNestedOrIndexedProperty(attributeName)) {
             if (ddReference != null) {
                 if (classHasSupportedFeatures(ddReference.getTargetClass(), supportsLookup, supportsInquiry)) {
                     relationship = populateRelationshipFromDictionaryReference(dataObjectClass, ddReference,
@@ -917,16 +984,19 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
         int maxSize = Integer.MAX_VALUE;
 
         if (isPersistable(dataObjectClass)) {
-            DataObjectMetadata metadata = metadataRepository.getMetadata(dataObjectClass);
+            DataObjectMetadata metadata = dataObjectService.getMetadataRepository().getMetadata(dataObjectClass);
             DataObjectRelationship dataObjectRelationship = metadata.getRelationship(attributeName);
 
-            if(dataObjectRelationship != null){
-                List<DataObjectAttributeRelationship> attributeRelationships = dataObjectRelationship.getAttributeRelationships();
-                for (DataObjectAttributeRelationship dataObjectAttributeRelationship : attributeRelationships){
-                    if(classHasSupportedFeatures(dataObjectRelationship.getRelatedType(),supportsLookup,supportsInquiry)){
+            if (dataObjectRelationship != null) {
+                List<DataObjectAttributeRelationship> attributeRelationships =
+                        dataObjectRelationship.getAttributeRelationships();
+                for (DataObjectAttributeRelationship dataObjectAttributeRelationship : attributeRelationships) {
+                    if (classHasSupportedFeatures(dataObjectRelationship.getRelatedType(), supportsLookup,
+                            supportsInquiry)) {
                         maxSize = attributeRelationships.size();
-                        relationship = transformToDeprecatedDataObjectRelationship(dataObjectClass,
-                                attributeName,attributePrefix,dataObjectRelationship.getRelatedType(),dataObjectAttributeRelationship);
+                        relationship = transformToDeprecatedDataObjectRelationship(dataObjectClass, attributeName,
+                                attributePrefix, dataObjectRelationship.getRelatedType(),
+                                dataObjectAttributeRelationship);
 
                         break;
                     }
@@ -946,8 +1016,6 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
             }
         }
 
-
-
         if (ddReference != null && ddReference.getPrimitiveAttributes().size() < maxSize) {
             if (classHasSupportedFeatures(ddReference.getTargetClass(), supportsLookup, supportsInquiry)) {
                 relationship = populateRelationshipFromDictionaryReference(dataObjectClass, ddReference, null,
@@ -957,23 +1025,26 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
         return relationship;
     }
 
-    protected  org.kuali.rice.krad.bo.DataObjectRelationship transformToDeprecatedDataObjectRelationship(Class<?> dataObjectClass,
-            String attributeName, String attributePrefix, Class<?> relatedObjectClass, DataObjectAttributeRelationship relationship){
-        org.kuali.rice.krad.bo.DataObjectRelationship rel = new org.kuali.rice.krad.bo.DataObjectRelationship(dataObjectClass,
-                attributeName, relatedObjectClass);
-        if(StringUtils.isBlank(attributePrefix)){
-            rel.getParentToChildReferences().put(relationship.getParentAttributeName(),relationship.getChildAttributeName());
+    protected org.kuali.rice.krad.bo.DataObjectRelationship transformToDeprecatedDataObjectRelationship(
+            Class<?> dataObjectClass, String attributeName, String attributePrefix, Class<?> relatedObjectClass,
+            DataObjectAttributeRelationship relationship) {
+        org.kuali.rice.krad.bo.DataObjectRelationship rel = new org.kuali.rice.krad.bo.DataObjectRelationship(
+                dataObjectClass, attributeName, relatedObjectClass);
+        if (StringUtils.isBlank(attributePrefix)) {
+            rel.getParentToChildReferences().put(relationship.getParentAttributeName(),
+                    relationship.getChildAttributeName());
         } else {
-            rel.getParentToChildReferences().put(attributePrefix + "." + relationship.getParentAttributeName(),relationship.getChildAttributeName());
+            rel.getParentToChildReferences().put(attributePrefix + "." + relationship.getParentAttributeName(),
+                    relationship.getChildAttributeName());
         }
 
         return rel;
     }
 
-    protected org.kuali.rice.krad.bo.DataObjectRelationship populateRelationshipFromDictionaryReference(Class<?> dataObjectClass,
-            RelationshipDefinition ddReference, String attributePrefix, boolean keysOnly) {
-        org.kuali.rice.krad.bo.DataObjectRelationship relationship = new org.kuali.rice.krad.bo.DataObjectRelationship(dataObjectClass,
-                ddReference.getObjectAttributeName(), ddReference.getTargetClass());
+    protected org.kuali.rice.krad.bo.DataObjectRelationship populateRelationshipFromDictionaryReference(
+            Class<?> dataObjectClass, RelationshipDefinition ddReference, String attributePrefix, boolean keysOnly) {
+        org.kuali.rice.krad.bo.DataObjectRelationship relationship = new org.kuali.rice.krad.bo.DataObjectRelationship(
+                dataObjectClass, ddReference.getObjectAttributeName(), ddReference.getTargetClass());
 
         for (PrimitiveAttributeDefinition def : ddReference.getPrimitiveAttributes()) {
             if (StringUtils.isNotBlank(attributePrefix)) {
@@ -1005,11 +1076,9 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
     }
 
     @Override
-	public boolean isPersistable(Class<?> dataObjectClass) {
-        return metadataRepository.contains(dataObjectClass);
+    public boolean isPersistable(Class<?> dataObjectClass) {
+        return dataObjectService.getMetadataRepository().contains(dataObjectClass);
     }
-
-
 
     protected org.kuali.rice.krad.bo.DataObjectRelationship getRelationshipMetadata(Class<?> dataObjectClass,
             String attributeName, String attributePrefix) {
@@ -1060,8 +1129,9 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
 
     @Override
     public Map<String, String> getForeignKeysForReference(Class<?> clazz, String attributeName) {
-        if (metadataRepository.contains(clazz)) {
-            DataObjectRelationship relationship = metadataRepository.getMetadata(clazz).getRelationship(attributeName);
+        if (dataObjectService.getMetadataRepository().contains(clazz)) {
+            DataObjectRelationship relationship = dataObjectService.getMetadataRepository().getMetadata(clazz)
+                    .getRelationship(attributeName);
             List<DataObjectAttributeRelationship> attributeRelationships = relationship.getAttributeRelationships();
             Map<String, String> parentChildKeyRelationships = new HashMap<String, String>(
                     attributeRelationships.size());
@@ -1075,12 +1145,12 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
 
     @Override
     public void setObjectPropertyDeep(Object bo, String propertyName, Class type,
-            Object propertyValue) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException{
+            Object propertyValue) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         DataObjectWrapper<Object> dataObjectWrapper = dataObjectService.wrap(bo);
         // Base return cases to avoid null pointers & infinite loops
-        if (KRADUtils.isNull(bo) || !PropertyUtils.isReadable(bo, propertyName) || (propertyValue != null && propertyValue.equals(
-                dataObjectWrapper.getPropertyValueNullSafe(propertyName))) || (type != null && !type.equals(KRADUtils.easyGetPropertyType(bo,
-                propertyName)))) {
+        if (KRADUtils.isNull(bo) || !PropertyUtils.isReadable(bo, propertyName) || (propertyValue != null
+                && propertyValue.equals(dataObjectWrapper.getPropertyValueNullSafe(propertyName))) || (type != null
+                && !type.equals(KRADUtils.easyGetPropertyType(bo, propertyName)))) {
             return;
         }
         // Set the property in the BO
@@ -1104,8 +1174,8 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
 
             // Lists
             else if (propertyDescriptor.getPropertyType() != null && (List.class).isAssignableFrom(
-                    propertyDescriptor.getPropertyType()) && dataObjectWrapper.getPropertyValueNullSafe(propertyDescriptor.getName())
-                    != null) {
+                    propertyDescriptor.getPropertyType()) && dataObjectWrapper.getPropertyValueNullSafe(
+                    propertyDescriptor.getName()) != null) {
 
                 List propertyList = (List) dataObjectWrapper.getPropertyValueNullSafe(propertyDescriptor.getName());
                 for (Object listedBo : propertyList) {
@@ -1124,13 +1194,13 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
     }
 
     @Override
-	public Class materializeClassForProxiedObject(Object object){
-        if(object == null){
+    public Class materializeClassForProxiedObject(Object object) {
+        if (object == null) {
             return null;
         }
-        if(LegacyUtils.isKradDataManaged(object.getClass())){
+        if (LegacyUtils.isKradDataManaged(object.getClass())) {
             Object o = resolveProxy(object);
-            if(o != null){
+            if (o != null) {
                 return o.getClass();
             }
         }
@@ -1138,34 +1208,38 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
     }
 
     @Override
-	public Object getNestedValue(Object bo, String fieldName){
-        if (bo == null) {
-            throw new IllegalArgumentException("The bo passed in was null.");
-        }
-        if (StringUtils.isBlank(fieldName)) {
-            throw new IllegalArgumentException("The fieldName passed in was blank.");
-        }
-        return DataObjectUtils.getNestedValue(bo,fieldName);
+    public Object getNestedValue(Object bo, String fieldName) {
+        return KradDataServiceLocator.getDataObjectService().wrap(bo).getPropertyValueNullSafe(fieldName);
     }
 
-
     @Override
-	public Object createNewObjectFromClass(Class clazz){
+    public Object createNewObjectFromClass(Class clazz) {
         if (clazz == null) {
-            throw new RuntimeException("BO class was passed in as null");
+            throw new IllegalArgumentException("Class was passed in as null");
         }
-        return DataObjectUtils.createNewObjectFromClass(clazz);
+
+        Object object = null;
+
+        try {
+            object = clazz.newInstance();
+        } catch (InstantiationException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+
+        return object;
     }
 
     @Override
-    public boolean isNull(Object object){
-        return DataObjectUtils.isNull(object);
+    public boolean isNull(Object object) {
+        return object == null;
     }
 
     @Override
-	public void setObjectProperty(Object bo, String propertyName, Class propertyType,
-            Object propertyValue) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException{
-        DataObjectUtils.setObjectValue(bo,propertyName,propertyValue);
+    public void setObjectProperty(Object bo, String propertyName, Class propertyType,
+            Object propertyValue) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+        PropertyUtils.setNestedProperty(bo, propertyName, propertyValue);
     }
 
     @Override
@@ -1177,7 +1251,7 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
     }
 
     @Override
-	public <T extends Document> List<T> findByDocumentHeaderIds(Class<T> documentClass, List<String> ids) {
+    public <T extends Document> List<T> findByDocumentHeaderIds(Class<T> documentClass, List<String> ids) {
         List<T> documents = new ArrayList<T>();
         for (String id : ids) {
             documents.add(findByDocumentHeaderId(documentClass, id));
@@ -1188,11 +1262,6 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
     @Required
     public void setDataObjectService(DataObjectService dataObjectService) {
         this.dataObjectService = dataObjectService;
-    }
-
-    @Required
-    public void setMetadataRepository(MetadataRepository metadataRepository) {
-        this.metadataRepository = metadataRepository;
     }
 
     @Required
@@ -1222,6 +1291,5 @@ public class KRADLegacyDataAdapterImpl implements LegacyDataAdapter {
     public void setViewDictionaryService(ViewDictionaryService viewDictionaryService) {
         this.viewDictionaryService = viewDictionaryService;
     }
-
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.krad.bo.BusinessObject;
 import org.kuali.rice.krad.bo.DataObjectRelationship;
 import org.kuali.rice.krad.bo.PersistableBusinessObject;
-import org.kuali.rice.krad.data.DataObjectUtils;
 import org.kuali.rice.krad.datadictionary.BusinessObjectEntry;
 import org.kuali.rice.krad.datadictionary.DataDictionaryEntry;
 import org.kuali.rice.krad.datadictionary.DataObjectEntry;
@@ -45,6 +44,7 @@ import org.kuali.rice.krad.uif.service.ViewDictionaryService;
 import org.kuali.rice.krad.uif.util.ObjectPropertyUtils;
 import org.kuali.rice.krad.util.KRADUtils;
 import org.kuali.rice.krad.util.LegacyDataFramework;
+import org.springframework.beans.PropertyAccessorUtils;
 
 /**
  * @author Kuali Rice Team (rice.collab@kuali.org)
@@ -152,7 +152,7 @@ public class DataObjectMetaDataServiceImpl implements DataObjectMetaDataService 
 
         // if it is nested then replace the data object and attributeName with the
         // sub-refs
-        if (DataObjectUtils.isNestedAttribute(attributeName)) {
+        if (PropertyAccessorUtils.isNestedOrIndexedProperty(attributeName)) {
             if (ddReference != null) {
                 if (classHasSupportedFeatures(ddReference.getTargetClass(), supportsLookup, supportsInquiry)) {
                     relationship = populateRelationshipFromDictionaryReference(dataObjectClass, ddReference,

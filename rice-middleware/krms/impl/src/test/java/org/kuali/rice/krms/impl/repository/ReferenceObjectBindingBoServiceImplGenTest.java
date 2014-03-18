@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,11 @@ package org.kuali.rice.krms.impl.repository;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.kuali.rice.krad.service.BusinessObjectService;
+import org.kuali.rice.krad.data.DataObjectService;
 import org.kuali.rice.krms.api.repository.ReferenceObjectBindingGenTest;
 import org.kuali.rice.krms.api.repository.reference.ReferenceObjectBinding;
-import static org.mockito.Mockito.*;
+
+import static org.mockito.Mockito.mock;
 
 /**
  * @author Kuali Rice Team (rice.collab@kuali.org)
@@ -48,7 +49,7 @@ public final class ReferenceObjectBindingBoServiceImplGenTest {
     @Before
     public void setUp() {
         referenceObjectBindingBoServiceImpl = new ReferenceObjectBindingBoServiceImpl();
-        referenceObjectBindingBoServiceImpl.setBusinessObjectService(mock(BusinessObjectService.class));// TODO Import static org.mockito.Mockito.*;
+        referenceObjectBindingBoServiceImpl.setDataObjectService(mock(DataObjectService.class));
     }
 
     @Test(expected = java.lang.IllegalArgumentException.class)

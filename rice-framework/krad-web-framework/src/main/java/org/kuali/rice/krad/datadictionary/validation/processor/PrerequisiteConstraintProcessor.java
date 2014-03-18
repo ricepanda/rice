@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,9 +35,7 @@ public class PrerequisiteConstraintProcessor extends BasePrerequisiteConstraintP
     private static final String FALLBACK_KEY = "prerequisiteFallback";
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.validation.processor.ConstraintProcessor#process(DictionaryValidationResult,
-     *      Object, org.kuali.rice.krad.datadictionary.validation.capability.Validatable,
-     *      org.kuali.rice.krad.datadictionary.validation.AttributeValueReader)
+     * {@inheritDoc}
      */
     @Override
     public ProcessorResult process(DictionaryValidationResult result, Object value, PrerequisiteConstraint constraint,

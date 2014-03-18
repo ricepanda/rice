@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -200,9 +200,9 @@
 
 	<bean id="testHarnessSharedTopic" class="org.kuali.rice.ksb.messaging.remotedservices.TestHarnessSharedTopic" />
 	<bean id="testRepeatMessageQueue" class="org.kuali.rice.ksb.messaging.remotedservices.TestRepeatMessageQueue" />
-	<bean id="testExplodingQueueTimeLimit" class="org.kuali.rice.ksb.messaging.remotedservices.TesetHarnessExplodingQueue" />
-	<bean id="testExplodingRetryCount" class="org.kuali.rice.ksb.messaging.remotedservices.TesetHarnessExplodingQueue" />
-	<bean id="testExplodingServiceWithDefaults" class="org.kuali.rice.ksb.messaging.remotedservices.TesetHarnessExplodingQueue" />
+	<bean id="testExplodingQueueTimeLimit" class="org.kuali.rice.ksb.messaging.remotedservices.TestHarnessExplodingQueue" />
+	<bean id="testExplodingRetryCount" class="org.kuali.rice.ksb.messaging.remotedservices.TestHarnessExplodingQueue" />
+	<bean id="testExplodingServiceWithDefaults" class="org.kuali.rice.ksb.messaging.remotedservices.TestHarnessExplodingQueue" />
 	<bean id="testLocalServiceFavoriteCall" class="org.kuali.rice.ksb.messaging.remotedservices.GenericTestService" />
 	<bean id="soapService" class="org.kuali.rice.ksb.messaging.remotedservices.SOAPServiceImpl" />
 

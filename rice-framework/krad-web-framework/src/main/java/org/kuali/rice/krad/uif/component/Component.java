@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,7 @@ import java.util.Map;
 
 import org.kuali.rice.krad.datadictionary.uif.UifDictionaryBean;
 import org.kuali.rice.krad.datadictionary.validator.ValidationTrace;
-import org.kuali.rice.krad.uif.UifConstants;
-import org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase;
+import org.kuali.rice.krad.uif.lifecycle.RunComponentModifiersTask;
 import org.kuali.rice.krad.uif.modifier.ComponentModifier;
 import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.widget.Tooltip;
@@ -57,30 +56,6 @@ import org.kuali.rice.krad.uif.widget.Tooltip;
 public interface Component extends UifDictionaryBean, LifecycleElement, Serializable, Ordered, ScriptEventSupport {
 
     /**
-     * Holds the id for the component that can be used to request new instances of that component from the
-     * {@link org.kuali.rice.krad.uif.util.ComponentFactory}
-     *
-     * <p>
-     * During component refreshes the component is reinitialized and the lifecycle is performed again to
-     * reflect the component state based on the latest updates (data, other component state). Since the lifecycle
-     * is only performed on the component, a new instance with configured initial state needs to be retrieved. Some
-     * component instances, such as those that are nested or created in code, cannot be obtained from the spring
-     * factory. For those the initial state is captured during the perform initialize phase and the factory id
-     * generated for referencing retrieving that configuration during a refresh
-     * </p>
-     *
-     * @return String bean id for component
-     */
-    String getBaseId();
-
-    /**
-     * Setter for the base id that backs the component instance
-     *
-     * @param baseId
-     */
-    void setBaseId(String baseId);
-
-    /**
      * The name for the component type
      *
      * <p>
@@ -93,28 +68,6 @@ public interface Component extends UifDictionaryBean, LifecycleElement, Serializ
     String getComponentTypeName();
     
     /**
-     * Indicates whether the component has been initialized.
-     *
-     * @return True if the component has been initialized, false if not.
-     */
-    boolean isInitialized();
-
-    /**
-     * Indicates whether the component has been updated from the model.
-     *
-     * @return True if the component has been updated, false if not.
-     */
-    boolean isModelApplied();
-
-    /**
-     * Indicates whether the component has been updated from the model and final
-     * updates made.
-     *
-     * @return True if the component has been updated, false if not.
-     */
-    boolean isFinal();
-
-    /**
      * Indicates whether the component has been fully rendered.
      *
      * @return True if the component has fully rendered, false if not.
@@ -122,30 +75,9 @@ public interface Component extends UifDictionaryBean, LifecycleElement, Serializ
     boolean isRendered();
 
     /**
-     * Get the view lifecycle processing status for this component.
-     * 
-     * @return The view lifecycle processing status for this component.
-     * @see UifConstants.ViewStatus
-     */
-    String getViewStatus();
-
-    /**
-     * Set the view lifecycle processing status for this component.
-     * 
-     * @param phase The phase that has just finished processing the component.
-     */
-    void setViewStatus(ViewLifecyclePhase phase);
-    
-    /**
-     * Receive notification that a lifecycle phase, and all successor phases, have been completed on
-     * this component.
-     */
-    void notifyCompleted(ViewLifecyclePhase phase);
-
-    /**
      * Set the view lifecycle processing status for this component, explicitly.
      * 
-     * @param phase The view status for this component.
+     * @param status The view status for this component.
      */
     void setViewStatus(String status);
 
@@ -172,6 +104,19 @@ public interface Component extends UifDictionaryBean, LifecycleElement, Serializ
      * @param template
      */
     void setTemplate(String template);
+    
+    /**
+     * Gets additional templates that will be required during the rendering of this component.
+     * 
+     * <p>
+     * If a parent or sibling component is referred to by this component's template,
+     * include that component's template here to ensure that it has been compiled already during
+     * bottom-up inline rendering.
+     * </p>
+     * 
+     * @return additional templates required during rendering
+     */
+    List<String> getAdditionalTemplates();
 
     /**
      * The name for which the template can be invoked by
@@ -186,7 +131,7 @@ public interface Component extends UifDictionaryBean, LifecycleElement, Serializ
      * e.g. 'uif_text'
      * </p>
      *
-     * @return
+     * @return template name
      */
     public String getTemplateName();
 
@@ -218,31 +163,6 @@ public interface Component extends UifDictionaryBean, LifecycleElement, Serializ
     void setTitle(String title);
 
     /**
-     * List of components that are contained within the component and should be sent through
-     * the lifecycle
-     *
-     * <p>
-     * Used by {@code ViewHelperService} for the various lifecycle callbacks
-     * </p>
-     *
-     * @return List<Component> child components
-     */
-    List<Component> getComponentsForLifecycle();
-
-    /**
-     * List of components that are maintained by the component as prototypes for creating other component instances
-     *
-     * <p>
-     * Prototypes are held for configuring how a component should be created during the lifecycle. An example of this
-     * are the fields in a collection group that are created for each collection record. They only participate in the
-     * initialize phase.
-     * </p>
-     *
-     * @return List<Component> child component prototypes
-     */
-    List<Component> getComponentPrototypes();
-
-    /**
      * List of components that are contained within the List of {@code PropertyReplacer} in component
      *
      * <p>
@@ -264,8 +184,7 @@ public interface Component extends UifDictionaryBean, LifecycleElement, Serializ
      * </p>
      *
      * @return List of component modifiers
-     * @see org.kuali.rice.krad.uif.service.ViewHelperService#performInitialization(org.kuali.rice.krad.uif.view.View,
-     *      Object)
+     * @see RunComponentModifiersTask
      */
     List<ComponentModifier> getComponentModifiers();
 
@@ -610,7 +529,7 @@ public interface Component extends UifDictionaryBean, LifecycleElement, Serializ
      *
      * @return the css classes to apply to the wrapping td (or th) element for this component
      */
-    public List<String> getCellCssClasses();
+    public List<String> getWrapperCssClasses();
 
     /**
      * Set the cellCssClasses property which defines the classes that will be placed on the corresponding td (or th)
@@ -618,14 +537,14 @@ public interface Component extends UifDictionaryBean, LifecycleElement, Serializ
      *
      * @param cellCssClasses
      */
-    public void setCellCssClasses(List<String> cellCssClasses);
+    public void setWrapperCssClasses(List<String> cellCssClasses);
 
     /**
      * Add a cell css class to the cell classes list
      *
      * @param cssClass the name of the class to add
      */
-    public void addCellCssClass(String cssClass);
+    public void addWrapperCssClass(String cssClass);
 
     /**
      * CSS style string to be applied to the cell containing the component (only applies within
@@ -637,14 +556,14 @@ public interface Component extends UifDictionaryBean, LifecycleElement, Serializ
      *
      * @return String css style string
      */
-    public String getCellStyle();
+    public String getWrapperStyle();
 
     /**
      * Setter for the cell style attribute
      *
      * @param cellStyle
      */
-    public void setCellStyle(String cellStyle);
+    public void setWrapperStyle(String cellStyle);
 
     /**
      * Width setting for the cell containing the component (only applies within table based
@@ -660,75 +579,6 @@ public interface Component extends UifDictionaryBean, LifecycleElement, Serializ
      * @param cellWidth
      */
     public void setCellWidth(String cellWidth);
-
-    /**
-     * Context map for the component
-     *
-     * <p>
-     * Any el statements configured for the components properties (e.g.
-     * title="@{foo.property}") are evaluated using the el context map. This map
-     * will get populated with default objects like the model, view, and request
-     * from the {@code ViewHelperService}. Other components can push
-     * further objects into the context so that they are available for use with
-     * that component. For example, {@code Field} instances that are part
-     * of a collection line as receive the current line instance
-     * </p>
-     *
-     * <p>
-     * Context map also provides objects to methods that are invoked for
-     * {@code GeneratedField} instances
-     * </p>
-     *
-     * <p>
-     * The Map key gives the name of the variable that can be used within
-     * expressions, and the Map value gives the object instance for which
-     * expressions containing the variable should evaluate against
-     * </p>
-     *
-     * <p>
-     * NOTE: Calling getContext().putAll() will skip updating any configured property replacers for the
-     * component. Instead you should call #pushAllToContext
-     * </p>
-     *
-     * @return Map<String, Object> context
-     */
-    Map<String, Object> getContext();
-
-    /**
-     * Setter for the context Map
-     *
-     * @param context
-     */
-    void setContext(Map<String, Object> context);
-
-    /**
-     * Places the given object into the context Map for the component with the
-     * given name
-     *
-     * <p>
-     * Note this also will push context to property replacers configured on the component.
-     * To place multiple objects in the context, you should use #pushAllToContext since that
-     * will call this method for each and update property replacers. Using {@link #getContext().putAll()}
-     * will bypass property replacers.
-     * </p>
-     *
-     * @param objectName - name the object should be exposed under in the context map
-     * @param object - object instance to place into context
-     */
-    void pushObjectToContext(String objectName, Object object);
-
-    /**
-     * Places each entry of the given Map into the context for the component
-     *
-     * <p>
-     * Note this will call #pushObjectToContext for each entry which will update any configured property
-     * replacers as well. This should be used in place of getContext().putAll()
-     * </p>
-     *
-     * @param objects - Map<String, Object> objects to add to context, where the entry key will be the context key
-     * and the entry value will be the context value
-     */
-    void pushAllToContext(Map<String, Object> objects);
 
     /**
      * gets a list of {@code PropertyReplacer} instances
@@ -1202,20 +1052,9 @@ public interface Component extends UifDictionaryBean, LifecycleElement, Serializ
     void setRefreshTimer(int refreshTimer);
 
     /**
-     * Add a data attribute to the dataAttributes map
+     * The DataAttributes that will be written to the html element for this component as data-
      *
-     * @param key
-     * @param value
-     */
-    void addDataAttribute(String key, String value);
-
-    /**
-     * The DataAttributes that will be written to the html and/or through script to be consumed by jQuery
-     *
-     * <p>The attributes that are complex objects (contain {}) they will be written through script.
-     * The attributes that are simple (contain no objects) will be written directly to the html of the
-     * component using standard data-.</p>
-     * <p>Either way they can be access through .data() call in jQuery.</p>
+     * <p>They can be access through .data() call in jQuery.</p>
      *
      * @return map of data attributes, where key is data attribute name and the map value is the data
      * attribute value
@@ -1230,14 +1069,53 @@ public interface Component extends UifDictionaryBean, LifecycleElement, Serializ
     void setDataAttributes(Map<String, String> dataAttributes);
 
     /**
+     * Setter for script data attributes to include for the component
+     *
+     * @param dataAttributes
+     */
+    void setScriptDataAttributes(Map<String, String> dataAttributes);
+
+    /**
+     * The DataAttributes that will be written to the html as a script call to data for this component (these cannot be
+     * used for jQuery selection directly)
+     *
+     * <p>They can be accessed through .data() call in jQuery.</p>
+     *
+     * @return map of data attributes, where key is data attribute name and the map value is the data
+     * attribute value
+     */
+    Map<String, String> getScriptDataAttributes();
+
+
+    /**
+     * Add a data attribute to the dataAttributes map
+     *
+     * @param key
+     * @param value
+     */
+    void addDataAttribute(String key, String value);
+
+    /**
+     * Add a script data attribute to the scriptDataAttributes map
+     *
+     * @param key
+     * @param value
+     */
+    void addScriptDataAttribute(String key, String value);
+
+    /**
      * The string that can be put into a the tag of a component to add data attributes inline
      *
-     * <p>
-     * This does not include the complex attributes which contain {}</p>
-     *
-     * @return html string for data attributes for the simple attributes
+     * @return html string for data attributes as html formatted element attributes
      */
     String getSimpleDataAttributes();
+
+    /**
+     * Returns a js string that can be used to right js data attributes to for the component
+     *
+     * @return html string for the js required to add the script data attributes
+     */
+    String getScriptDataAttributesJs();
 
     /**
      * Validates different requirements of component compiling a series of reports detailing information on errors
@@ -1274,5 +1152,19 @@ public interface Component extends UifDictionaryBean, LifecycleElement, Serializ
      * @param postRenderContent
      */
     public void setPostRenderContent(String postRenderContent);
+
+    /**
+     * Gets the method to call on refresh.
+     * 
+     * @return method to call
+     */
+    String getMethodToCallOnRefresh();
+
+    /**
+     * Gets a string representing all CSS style classes.
+     * 
+     * @return string representation of CSS classes
+     */
+    String getStyleClassesAsString();
 
 }

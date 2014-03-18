@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ public interface KualiDocumentEvent {
     /**
      * Returns the interface that classes must implement to receive this event.
      *
-     * @return
+     * @return rule interface
      */
     public Class<? extends BusinessRule> getRuleInterfaceClass();
 
@@ -66,15 +66,15 @@ public interface KualiDocumentEvent {
     /**
      * Invokes the event handling method on the rule object.
      *
-     * @param rule
-     * @return
+     * @param rule business rule
+     * @return true if the rule matches
      */
     public boolean invokeRuleMethod(BusinessRule rule);
 
     /**
      * This will return a list of events that are spawned from this event.
      *
-     * @return
+     * @return list of events
      */
     public List<KualiDocumentEvent> generateEvents();
 }

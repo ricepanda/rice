@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,18 @@ package org.kuali.rice.krad.uif.lifecycle.finalize;
 
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.component.DataBinding;
-import org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleTaskBase;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.view.ViewModel;
 
 /**
- * Perform custom finalize behavior for the component defined by the helper.
+ * Sets data bindings to read-only at the end of the apply model phase.
  * 
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-public class SetReadOnlyOnDataBindingTask extends AbstractViewLifecycleTask {
+public class SetReadOnlyOnDataBindingTask extends ViewLifecycleTaskBase<DataBinding> {
 
     /**
      * Constructor.
@@ -35,23 +36,24 @@ public class SetReadOnlyOnDataBindingTask extends AbstractViewLifecycleTask {
      * @param phase The finalize phase for the component.
      */
     public SetReadOnlyOnDataBindingTask(ViewLifecyclePhase phase) {
-        super(phase);
+        super(phase, DataBinding.class);
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask#performLifecycleTask()
+     * {@inheritDoc}
      */
     @Override
     protected void performLifecycleTask() {
         // implement readonly request overrides
-        Component component = getPhase().getComponent();
-        ViewModel viewModel = (ViewModel) getPhase().getModel();
-        if ((component instanceof DataBinding)
+        LifecycleElement element = getElementState().getElement();
+        ViewModel viewModel = (ViewModel) ViewLifecycle.getModel();
+        if ((element instanceof DataBinding)
                 && ViewLifecycle.getView().isSupportsRequestOverrideOfReadOnlyFields()
                 && !viewModel.getReadOnlyFieldsList().isEmpty()) {
-            String propertyName = ((DataBinding) component).getPropertyName();
+            DataBinding dataBinding = (DataBinding) element;
+            String propertyName = dataBinding.getPropertyName();
             if (viewModel.getReadOnlyFieldsList().contains(propertyName)) {
-                component.setReadOnly(true);
+                ((Component) dataBinding).setReadOnly(true);
             }
         }
     }

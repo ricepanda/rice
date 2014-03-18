@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -148,7 +148,7 @@ public class DocumentConfigurationViewAction extends KewKualiAction {
 		while ( docType != null) {
 			String documentTypeName = docType.getName();
             Predicate p = and(
-                equal("active", "Y"),
+                equal("active", Boolean.TRUE),
                 equal("attributes[" + KimConstants.AttributeConstants.DOCUMENT_TYPE_NAME + "]", docType.getName()));
 			List<Permission> perms = getPermissionService().findPermissions(QueryByCriteria.Builder.fromPredicates(p)).getResults();
 			for ( Permission perm : perms ) {
@@ -197,7 +197,7 @@ public class DocumentConfigurationViewAction extends KewKualiAction {
             Predicate p = and(
                 equal("template.namespaceCode", KRADConstants.KUALI_RICE_WORKFLOW_NAMESPACE),
                 equal("template.name", KewApiConstants.EXCEPTION_ROUTING_RESPONSIBILITY_TEMPLATE_NAME),
-                equal("active", "Y"),
+                equal("active", Boolean.TRUE),
                 equal("attributes[documentTypeName]", docType.getName())
             );
             builder.setPredicates(p);
@@ -308,7 +308,7 @@ public class DocumentConfigurationViewAction extends KewKualiAction {
                 Predicate p = and(
                         equal("template.namespaceCode", KRADConstants.KUALI_RICE_WORKFLOW_NAMESPACE),
                         equal("template.name", KewApiConstants.DEFAULT_RESPONSIBILITY_TEMPLATE_NAME),
-                        equal("active", "Y"),
+                        equal("active", Boolean.TRUE),
                         equal("attributes[documentTypeName]", docType.getName())
                 );
                 builder.setPredicates(p);

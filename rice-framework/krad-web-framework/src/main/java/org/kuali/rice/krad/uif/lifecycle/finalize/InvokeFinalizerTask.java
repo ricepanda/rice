@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.krad.uif.component.Component;
-import org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleTaskBase;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase;
 import org.slf4j.Logger;
@@ -32,7 +32,7 @@ import org.springframework.util.MethodInvoker;
  * 
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-public class InvokeFinalizerTask extends AbstractViewLifecycleTask {
+public class InvokeFinalizerTask extends ViewLifecycleTaskBase<Component> {
     
     private final Logger LOG = LoggerFactory.getLogger(InvokeFinalizerTask.class);
 
@@ -42,20 +42,16 @@ public class InvokeFinalizerTask extends AbstractViewLifecycleTask {
      * @param phase The apply model phase for the component.
      */
     public InvokeFinalizerTask(ViewLifecyclePhase phase) {
-        super(phase);
+        super(phase, Component.class);
     }
 
     /**
      * Invokes the finalize method for the component (if configured) and sets the render output for
      * the component to the returned method string (if method is not a void type)
-     * 
-     * @param view view instance that contains the component
-     * @param component component to run finalize method for
-     * @param model top level object containing the data
      */
     @Override
     protected void performLifecycleTask() {
-        Component component = getPhase().getComponent();
+        Component component = (Component) getElementState().getElement();
         String finalizeMethodToCall = component.getFinalizeMethodToCall();
         MethodInvoker finalizeMethodInvoker = component.getFinalizeMethodInvoker();
 
@@ -86,7 +82,7 @@ public class InvokeFinalizerTask extends AbstractViewLifecycleTask {
 
         Object[] arguments = new Object[2 + additionalArguments.size()];
         arguments[0] = component;
-        arguments[1] = getPhase().getModel();
+        arguments[1] = ViewLifecycle.getModel();
 
         int argumentIndex = 1;
         for (Object argument : additionalArguments) {

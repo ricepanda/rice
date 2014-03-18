@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,12 +26,10 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
-import org.kuali.rice.core.api.config.property.ConfigurationService;
+import org.apache.log4j.Logger;
+import org.junit.Assume;
 import org.kuali.rice.core.api.util.ClassLoaderUtils;
 import org.kuali.rice.core.web.format.Formatter;
-import org.kuali.rice.kew.api.KewApiServiceLocator;
-import org.kuali.rice.kew.api.doctype.DocumentType;
-import org.kuali.rice.kew.api.doctype.DocumentTypeService;
 import org.kuali.rice.krad.bo.BusinessObject;
 import org.kuali.rice.krad.datadictionary.AttributeDefinition;
 import org.kuali.rice.krad.datadictionary.AttributeSecurity;
@@ -51,9 +49,9 @@ import org.kuali.rice.krad.datadictionary.validation.ValidationPattern;
 import org.kuali.rice.krad.document.Document;
 import org.kuali.rice.krad.keyvalues.KeyValuesFinder;
 import org.kuali.rice.krad.service.DataDictionaryService;
-import org.kuali.rice.krad.service.KualiModuleService;
 import org.kuali.rice.krad.uif.UifConstants.ViewType;
 import org.kuali.rice.krad.uif.view.View;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 
 /**
  * Data dictionary service for unit testing.
@@ -62,6 +60,8 @@ import org.kuali.rice.krad.uif.view.View;
  */
 public class TestDataDictionaryService implements DataDictionaryService {
 
+    private static final Logger LOG = Logger.getLogger(TestDataDictionaryService.class);
+    
     private DataDictionary dataDictionary;
 
     /**
@@ -912,19 +912,29 @@ public class TestDataDictionaryService implements DataDictionaryService {
     }
 
     /**
-     * @see org.kuali.rice.krad.service.DataDictionaryService#getDictionaryObject(java.lang.String)
+     * @see org.kuali.rice.krad.service.DataDictionaryService#getDictionaryBean(java.lang.String)
      */
     @Override
-    public Object getDictionaryObject(String id) {
-        return dataDictionary.getDictionaryObject(id);
+    public Object getDictionaryBean(String id) {
+        try {
+            return dataDictionary.getDictionaryBean(id);
+        } catch (NoSuchBeanDefinitionException e) {
+            Assume.assumeNoException("Missing testing resources,  skipping", e);
+            return null;
+        }
     }
 
     /**
-     * @see org.kuali.rice.krad.service.DataDictionaryService#containsDictionaryObject(java.lang.String)
+     * @see org.kuali.rice.krad.service.DataDictionaryService#containsDictionaryBean(java.lang.String)
      */
     @Override
-    public boolean containsDictionaryObject(String id) {
-        return dataDictionary.containsDictionaryObject(id);
+    public boolean containsDictionaryBean(String id) {
+        return dataDictionary.containsDictionaryBean(id);
+    }
+
+    @Override
+    public Object getDictionaryBeanProperty(String beanName, String propertyName) {
+        return dataDictionary.getDictionaryBeanProperty(beanName, propertyName);
     }
 
     /**

@@ -78,9 +78,9 @@
 @line-height-large:              1.33;
 @line-height-small:              1.5;
 
-@border-radius-base:             4px;
-@border-radius-large:            6px;
-@border-radius-small:            3px;
+@border-radius-base:             0px;
+@border-radius-large:            0px;
+@border-radius-small:            0px;
 
 @component-active-bg:            @brand-primary;
 
@@ -111,7 +111,7 @@
 @btn-default-border:             #ccc;
 
 @btn-primary-color:              #fff;
-@btn-primary-bg:                 #333;
+@btn-primary-bg:                 @brand-primary;
 @btn-primary-border:             darken(@btn-primary-bg, 5%);
 
 @btn-success-color:              #fff;
@@ -618,6 +618,19 @@
 
 // Large screen / wide desktop
 @container-lg-desktop:        ((1140px + @grid-gutter-width));
+
+
+
+
+
+
+//Bootstrap overrides
+
+@brand-primary:       #0055cc;
+@font-size-base:      13px;
+@btn-primary-bg:      #aa003e;
+@screen-md:           0px;
+
 
 
 // Kboot theme extenstions

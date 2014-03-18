@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,14 @@ public interface MetadataChild extends MetadataCommon {
 	 * List must not be empty. There always must be at least one related field.
 	 */
 	List<DataObjectAttributeRelationship> getAttributeRelationships();
+
+    /**
+     * If this metadata element is part of a bi-directional relationship, this method returns the other side of the
+     * bi-directional relationship.
+     *
+     * @return the inverse of this relationship if it is bi-directional, false otherwise
+     */
+    MetadataChild getInverseRelationship();
 
 	/**
 	 * For related objects, whether this object will be automatically saved when the containing object is persisted.

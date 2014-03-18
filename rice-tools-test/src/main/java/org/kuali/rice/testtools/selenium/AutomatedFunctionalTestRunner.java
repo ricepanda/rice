@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,15 @@ import org.junit.runners.model.Statement;
 import java.lang.reflect.Method;
 
 /**
- * JUnit Test Runner to run test SmokeTests.  Enables bookmark mode for test methods
- * ending in Bookmark and navigation mode for test methods ending in Nav.
+ * JUnit Test Runner to run test Automated Functional Tests.  Enables bookmark mode for test methods
+ * ending in Bookmark and navigation mode for test methods ending in Nav. {@see AutomatedFunctionalTestBase}.
+ * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 public class AutomatedFunctionalTestRunner extends BlockJUnit4ClassRunner {
 
     /**
-     * AutomatedFunctionalTestRunner constructor
+     * AutomatedFunctionalTestRunner constructor.
+     *
      * @param type
      * @throws InitializationError
      */
@@ -37,16 +39,20 @@ public class AutomatedFunctionalTestRunner extends BlockJUnit4ClassRunner {
         super(type);
     }
 
+    /**
+     * Test methods ending with Bookmark will have {@see AutomatedFunctionalTestBase#enableBookmarkMode} called,
+     * test methods ending with Nav will have {@see AutomatedFunctionalTestBase#enableNavigationMode} called.
+     *
+     * @param method test method to check for ending in Bookmark or Nav
+     * @param test which extends AutomatedFunctionalTestBase
+     * @return {@see BlockJUnit4ClassRunner#methodInvoker}
+     */
     @Override
     protected Statement methodInvoker(FrameworkMethod method, Object test) {
         Method testMethod = method.getMethod();
-        final String testClass = test.getClass().toString();
-        if (testMethod.getName().endsWith("Bookmark") ||
-           (testClass.endsWith("WDIT")) ||
-           (testClass.endsWith("BkMrkGen"))) {
+        if (testMethod.getName().endsWith("Bookmark")) {
             ((AutomatedFunctionalTestBase) test).enableBookmarkMode();
-        } else if (testMethod.getName().endsWith("Nav") ||
-                  (testClass.endsWith("NavIT"))) {
+        } else if (testMethod.getName().endsWith("Nav")) {
             ((AutomatedFunctionalTestBase) test).enableNavigationMode();
         }
         return super.methodInvoker(method, test);

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,24 +19,43 @@ import java.util.Queue;
 
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.component.Component;
+import org.kuali.rice.krad.uif.container.InitializeContainerFromHelperTask;
+import org.kuali.rice.krad.uif.container.ProcessRemoteFieldsHolderTask;
+import org.kuali.rice.krad.uif.field.InitializeDataFieldFromDictionaryTask;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle.LifecycleEvent;
-import org.kuali.rice.krad.uif.lifecycle.initialize.AddComponentStateToViewIndexTask;
 import org.kuali.rice.krad.uif.lifecycle.initialize.AssignIdsTask;
 import org.kuali.rice.krad.uif.lifecycle.initialize.ComponentDefaultInitializeTask;
 import org.kuali.rice.krad.uif.lifecycle.initialize.HelperCustomInitializeTask;
 import org.kuali.rice.krad.uif.lifecycle.initialize.PopulateComponentFromExpressionGraphTask;
+import org.kuali.rice.krad.uif.lifecycle.initialize.PopulatePathTask;
 import org.kuali.rice.krad.uif.lifecycle.initialize.PopulateReplacersAndModifiersFromExpressionGraphTask;
-import org.kuali.rice.krad.uif.view.View;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 
 /**
  * Lifecycle phase processing task for initializing a component.
- * 
+ *
+ * <p>
+ * During the initialize phase each component of the tree is invoked to setup state based on the
+ * configuration and request options.
+ * </p>
+ *
+ * <p>
+ * The initialize phase is only called once per <code>View</code> lifecycle
+ * </p>
+ *
+ * <p>
+ * Note the <code>View</code> instance also contains the context Map that was created based on the
+ * parameters sent to the view service
+ * </p>
+ *
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 public class InitializeComponentPhase extends ViewLifecyclePhaseBase {
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase#getViewPhase()
+     * {@inheritDoc}
+     *
+     * @return UifConstants.ViewPhases.INITIALIZE
      */
     @Override
     public String getViewPhase() {
@@ -44,7 +63,8 @@ public class InitializeComponentPhase extends ViewLifecyclePhaseBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase#getStartViewStatus()
+     * {@inheritDoc}
+     * return UifConstants.ViewStatus.CREATED
      */
     @Override
     public String getStartViewStatus() {
@@ -52,7 +72,9 @@ public class InitializeComponentPhase extends ViewLifecyclePhaseBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase#getEndViewStatus()
+     * {@inheritDoc}
+     *
+     * @return UifConstants.ViewStatus.INITIALIZED
      */
     @Override
     public String getEndViewStatus() {
@@ -60,7 +82,7 @@ public class InitializeComponentPhase extends ViewLifecyclePhaseBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase#getEventToNotify()
+     * {@inheritDoc}
      */
     @Override
     public LifecycleEvent getEventToNotify() {
@@ -69,49 +91,30 @@ public class InitializeComponentPhase extends ViewLifecyclePhaseBase {
 
     /**
      * Queues initialization phase tasks.
+     * {@inheritDoc}
      */
     @Override
-    protected void initializePendingTasks(Queue<ViewLifecycleTask> tasks) {
+    protected void initializePendingTasks(Queue<ViewLifecycleTask<?>> tasks) {
         tasks.offer(LifecycleTaskFactory.getTask(AssignIdsTask.class, this));
-
-        if (!(getComponent() instanceof View)) {
-            tasks.offer(LifecycleTaskFactory.getTask(AddComponentStateToViewIndexTask.class, this));
-        }
-
+        tasks.offer(LifecycleTaskFactory.getTask(PopulatePathTask.class, this));
         tasks.offer(LifecycleTaskFactory.getTask(PopulateComponentFromExpressionGraphTask.class, this));
         tasks.offer(LifecycleTaskFactory.getTask(ComponentDefaultInitializeTask.class, this));
         tasks.offer(LifecycleTaskFactory.getTask(PopulateReplacersAndModifiersFromExpressionGraphTask.class, this));
-
-        getComponent().initializePendingTasks(this, tasks);
-
-        tasks.offer(LifecycleTaskFactory.getTask(HelperCustomInitializeTask.class, this));
+        tasks.offer(LifecycleTaskFactory.getTask(InitializeContainerFromHelperTask.class, this));
+        tasks.offer(LifecycleTaskFactory.getTask(ProcessRemoteFieldsHolderTask.class, this));
+        tasks.offer(LifecycleTaskFactory.getTask(InitializeDataFieldFromDictionaryTask.class, this));
+        getElement().initializePendingTasks(this, tasks);
         tasks.offer(LifecycleTaskFactory.getTask(RunComponentModifiersTask.class, this));
+        tasks.offer(LifecycleTaskFactory.getTask(HelperCustomInitializeTask.class, this));
     }
 
     /**
-     * Define all nested lifecycle components, and component prototypes, as successors.
-     * 
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhaseBase#initializeSuccessors(java.util.List)
+     * {@inheritDoc}
      */
     @Override
-    protected void initializeSuccessors(Queue<ViewLifecyclePhase> successors) {
-        Component component = getComponent();
-        Object model = getModel();
-
-        // initialize nested components
-        int index = 0;
-        for (Component nestedComponent : component.getComponentsForLifecycle()) {
-            if (nestedComponent != null && !nestedComponent.isInitialized()) {
-                successors.offer(LifecyclePhaseFactory.initialize(nestedComponent, model, index++, this));
-            }
-        }
-
-        // initialize component prototypes
-        for (Component nestedComponent : component.getComponentPrototypes()) {
-            if (nestedComponent != null) {
-                successors.add(LifecyclePhaseFactory.initialize(nestedComponent, model, index++, this));
-            }
-        }
+    protected ViewLifecyclePhase initializeSuccessor(LifecycleElement nestedElement, String nestedPath,
+            Component parent) {
+        return LifecyclePhaseFactory.initialize(nestedElement, getModel(), nestedPath, getRefreshPaths(), parent, null);
     }
 
 }

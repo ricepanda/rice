@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,34 +15,33 @@
  */
 package org.kuali.rice.krad.uif.element;
 
-import java.beans.PropertyEditor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Queue;
 
 import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
+import org.kuali.rice.krad.datadictionary.uif.UifDictionaryBeanBase;
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.container.Container;
 import org.kuali.rice.krad.uif.container.ContainerBase;
-import org.kuali.rice.krad.uif.container.PageGroup;
 import org.kuali.rice.krad.uif.field.FieldGroup;
 import org.kuali.rice.krad.uif.field.InputField;
-import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleUtils;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.util.MessageStructureUtils;
+import org.kuali.rice.krad.uif.util.RecycleUtils;
 import org.kuali.rice.krad.uif.view.View;
 import org.kuali.rice.krad.util.ErrorMessage;
 import org.kuali.rice.krad.util.GlobalVariables;
 import org.kuali.rice.krad.util.KRADUtils;
 import org.kuali.rice.krad.util.MessageMap;
-import org.springframework.util.AutoPopulatingList;
 
 /**
  * Field that displays error, warning, and info messages for the keys that are
@@ -58,7 +57,7 @@ import org.springframework.util.AutoPopulatingList;
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 @BeanTag(name = "validationMessages-bean", parent = "Uif-ValidationMessagesBase")
-public class ValidationMessages extends ContentElementBase {
+public class ValidationMessages extends UifDictionaryBeanBase {
     private static final long serialVersionUID = 780940788435330077L;
 
     private List<String> additionalKeysToMatch;
@@ -70,39 +69,17 @@ public class ValidationMessages extends ContentElementBase {
     private List<String> warnings;
     private List<String> infos;
 
-    private Map<String, String> validationDataDefaults;
-
-    /**
-     * PerformFinalize will generate the messages and counts used by the
-     * errorsField based on the keys that were matched from the MessageMap for
-     * this ValidationMessages. It will also set up nestedComponents of its
-     * parentComponent correctly based on the flags that were chosen for this
-     * ValidationMessages.
-     *
-     * @see org.kuali.rice.krad.uif.field.FieldBase#performFinalize(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object, org.kuali.rice.krad.uif.component.Component)
-     */
-    @Override
-    public void performFinalize(Object model, Component parent) {
-        super.performFinalize(model, parent);
-
-        generateMessages(true, ViewLifecycle.getActiveLifecycle().getView(), model, parent);
-    }
-
     /**
      * Generates the messages based on the content in the messageMap
      *
-     * @param reset true to reset the errors, warnings, and info lists
      * @param view the current View
      * @param model the current model
      * @param parent the parent of this ValidationMessages
      */
-    public void generateMessages(boolean reset, View view, Object model, Component parent) {
-        if (reset) {
-            errors = new ArrayList<String>();
-            warnings = new ArrayList<String>();
-            infos = new ArrayList<String>();
-        }
+    public void generateMessages(View view, Object model, Component parent) {
+        errors = new ArrayList<String>();
+        warnings = new ArrayList<String>();
+        infos = new ArrayList<String>();
 
         List<String> masterKeyList = getKeys(parent);
         MessageMap messageMap = GlobalVariables.getMessageMap();
@@ -120,7 +97,7 @@ public class ValidationMessages extends ContentElementBase {
 
         // special message component case
         if (parentContainer != null && parentContainer instanceof Message && ((Message) parentContainer)
-                .isGenerateSpan()) {
+                .isRenderWrapperTag()) {
             parentContainerId = ((Component) parentContainer).getId();
         }
 
@@ -135,9 +112,6 @@ public class ValidationMessages extends ContentElementBase {
             }
         }
 
-        //Add identifying data attributes
-        this.addDataAttribute(UifConstants.DataAttributes.MESSAGES_FOR, parent.getId());
-
         if ((parent.getDataAttributes() == null) || (parent.getDataAttributes().get(UifConstants.DataAttributes.PARENT)
                 == null)) {
             parent.addDataAttribute(UifConstants.DataAttributes.PARENT, parentContainerId);
@@ -147,32 +121,6 @@ public class ValidationMessages extends ContentElementBase {
         //be a group if its parent is FieldGroup)
         if (parentContainer != null && parentContainer instanceof FieldGroup) {
             masterKeyList.add(parentContainerId);
-        }
-
-        //Check for message keys that are not matched anywhere on the page - these unmatched messages must still be
-        //displayed at the page level
-        if (parent instanceof PageGroup) {
-            Map<String, PropertyEditor> propertyEditors = view.getViewIndex().getFieldPropertyEditors();
-            Map<String, PropertyEditor> securePropertyEditors = view.getViewIndex().getSecureFieldPropertyEditors();
-            List<String> allPossibleKeys = new ArrayList<String>(propertyEditors.keySet());
-            allPossibleKeys.addAll(securePropertyEditors.keySet());
-
-            this.addNestedGroupKeys(allPossibleKeys, parent);
-            if (additionalKeysToMatch != null) {
-                allPossibleKeys.addAll(additionalKeysToMatch);
-            }
-            if (StringUtils.isNotBlank(parent.getId())) {
-                allPossibleKeys.add(parent.getId());
-            }
-
-            Set<String> messageKeys = new HashSet<String>();
-            messageKeys.addAll(messageMap.getAllPropertiesWithErrors());
-            messageKeys.addAll(messageMap.getAllPropertiesWithWarnings());
-            messageKeys.addAll(messageMap.getAllPropertiesWithInfo());
-
-            messageKeys.removeAll(allPossibleKeys);
-
-            masterKeyList.addAll(messageKeys);
         }
 
         for (String key : masterKeyList) {
@@ -193,9 +141,9 @@ public class ValidationMessages extends ContentElementBase {
      * @param view
      * @param key
      * @param lists
-     * @return
+     * @return list of messages
      */
-    private List<String> getMessages(View view, String key, List<AutoPopulatingList<ErrorMessage>> lists) {
+    protected List<String> getMessages(View view, String key, List<List<ErrorMessage>> lists) {
         List<String> result = new ArrayList<String>();
         for (List<ErrorMessage> errorList : lists) {
             if (errorList != null && StringUtils.isNotBlank(key)) {
@@ -218,16 +166,19 @@ public class ValidationMessages extends ContentElementBase {
      * used to match errors with their component and display them as part of its
      * ValidationMessages.
      *
-     * @return
+     * @return list of keys
      */
     protected List<String> getKeys(Component parent) {
         List<String> keyList = new ArrayList<String>();
+
         if (additionalKeysToMatch != null) {
             keyList.addAll(additionalKeysToMatch);
         }
+
         if (StringUtils.isNotBlank(parent.getId())) {
             keyList.add(parent.getId());
         }
+
         if (parent instanceof InputField) {
             if (((InputField) parent).getBindingInfo() != null && StringUtils.isNotEmpty(
                     ((InputField) parent).getBindingInfo().getBindingPath())) {
@@ -245,18 +196,30 @@ public class ValidationMessages extends ContentElementBase {
      * @param keyList
      * @param component
      */
-    private void addNestedGroupKeys(Collection<String> keyList, Component component) {
-        for (Component c : component.getComponentsForLifecycle()) {
-            ValidationMessages ef = null;
-            if (c instanceof ContainerBase) {
-                ef = ((ContainerBase) c).getValidationMessages();
-            } else if (c instanceof FieldGroup) {
-                ef = ((FieldGroup) c).getGroup().getValidationMessages();
+    protected void addNestedGroupKeys(Collection<String> keyList, Component component) {
+        @SuppressWarnings("unchecked")
+        Queue<LifecycleElement> elementQueue = RecycleUtils.getInstance(LinkedList.class);
+        try {
+            elementQueue.addAll(ViewLifecycleUtils.getElementsForLifecycle(component).values());
+            while (!elementQueue.isEmpty()) {
+                LifecycleElement element = elementQueue.poll();
+
+                ValidationMessages ef = null;
+                if (element instanceof ContainerBase) {
+                    ef = ((ContainerBase) element).getValidationMessages();
+                } else if (element instanceof FieldGroup) {
+                    ef = ((FieldGroup) element).getGroup().getValidationMessages();
+                }
+                
+                if (ef != null) {
+                    keyList.addAll(ef.getKeys((Component) element));
+                }
+
+                elementQueue.addAll(ViewLifecycleUtils.getElementsForLifecycle(element).values());
             }
-            if (ef != null) {
-                keyList.addAll(ef.getKeys(c));
-                addNestedGroupKeys(keyList, c);
-            }
+        } finally {
+            elementQueue.clear();
+            RecycleUtils.recycle(elementQueue);
         }
     }
 
@@ -350,14 +313,16 @@ public class ValidationMessages extends ContentElementBase {
         return this.infos;
     }
 
-    public Map<String, String> getValidationDataDefaults() {
-        return validationDataDefaults;
-    }
-
-    public void setValidationDataDefaults(Map<String, String> validationDataDefaults) {
-        this.validationDataDefaults = validationDataDefaults;
-    }
-
+    /**
+     * Adds the value passed to the valueMap with the key specified, if the value does not match the
+     * value which already exists in defaults (to avoid having to write out extra data that can later
+     * be derived from the defaults in the js)
+     *
+     * @param valueMap the data map being constructed
+     * @param defaults defaults for validation messages
+     * @param key the variable name being added
+     * @param value the value set on this object
+     */
     protected void addValidationDataSettingsValue(Map<String, Object> valueMap, Map<String, String> defaults,
             String key, Object value) {
         String defaultValue = defaults.get(key);
@@ -392,38 +357,6 @@ public class ValidationMessages extends ContentElementBase {
      */
     protected void setInfos(List<String> infos) {
         this.infos = infos;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        ValidationMessages validationMessagesCopy = (ValidationMessages) component;
-
-        if (additionalKeysToMatch != null) {
-            validationMessagesCopy.setAdditionalKeysToMatch(new ArrayList<String>(this.additionalKeysToMatch));
-        }
-
-        validationMessagesCopy.setDisplayMessages(this.displayMessages);
-
-        if (warnings != null) {
-            validationMessagesCopy.setWarnings(new ArrayList<String>(this.warnings));
-        }
-
-        if (errors != null) {
-            validationMessagesCopy.setErrors(new ArrayList<String>(this.errors));
-        }
-
-        if (infos != null) {
-            validationMessagesCopy.setInfos(new ArrayList<String>(this.infos));
-        }
-
-        if (this.getValidationDataDefaults() != null) {
-            validationMessagesCopy.setValidationDataDefaults(new HashMap<String, String>(this.validationDataDefaults));
-        }
     }
 
 }

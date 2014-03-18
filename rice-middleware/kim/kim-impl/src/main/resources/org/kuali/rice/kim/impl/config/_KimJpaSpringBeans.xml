@@ -1,6 +1,6 @@
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -27,6 +27,23 @@
                            http://www.springframework.org/schema/context
                            http://www.springframework.org/schema/context/spring-context-3.2.xsd">
 
+
+  <bean id="kimDataSource"
+        class="org.kuali.rice.core.framework.persistence.jdbc.datasource.PrimaryDataSourceFactoryBean"
+        lazy-init="true"
+        p:serverDataSource="true">
+    <property name="preferredDataSourceParams">
+      <list>
+        <value>kim.datasource</value>
+      </list>
+    </property>
+    <property name="preferredDataSourceJndiParams">
+      <list>
+        <value>kim.datasource.jndi.location</value>
+      </list>
+    </property>
+  </bean>
+
 	<alias
 		alias="kradApplicationDataSource"
 		name="kimDataSource" />
@@ -37,19 +54,18 @@
 	</bean>
 
 	<util:list id="jpaPackagesToScan">
-	    <value>org.kuali.rice.kim.impl.common.attribute</value>
-	    <value>org.kuali.rice.kim.impl.membership</value>
-	    <value>org.kuali.rice.kim.impl.common.active</value>
-	    <value>org.kuali.rice.kim.impl.group</value>
+	    <value>org.kuali.rice.kim.impl</value>
+	    <value>org.kuali.rice.kim.document</value>
+	    <value>org.kuali.rice.kim.bo</value>
 	</util:list>
 
-	<util:list id="managedClassNames">
-		<value>org.kuali.rice.krad.bo.PersistableBusinessObjectBase</value>
-	</util:list>
-
+	<util:list id="managedClassNames" />
 	<util:list id="additionalMetadataProviders" />
 	<util:list id="springMetadataFileLocations" />
 
 	<import resource="classpath:org/kuali/rice/krad/config/KRADSpringBeans-jpa-common.xml" />
 
+	<bean id="kimRoleDao" class="org.kuali.rice.kim.impl.role.RoleDaoJdbc" lazy-init="true">
+	    <property name="dataSource" ref="kimDataSource"/>
+	</bean>
 </beans>

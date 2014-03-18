@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,46 +15,12 @@
  */
 package org.kuali.rice.krad.uif.control;
 
-import org.kuali.rice.krad.datadictionary.parse.BeanTag;
-import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
-import org.kuali.rice.krad.datadictionary.parse.BeanTags;
-
 /**
- * Represents a HTML Select control. Provides preset options for the User to
- * choose from by a drop down
- *
+ * Control interface for a select box. 
+ * 
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-@BeanTags({@BeanTag(name = "dropdownControl-bean", parent = "Uif-DropdownControl"),
-        @BeanTag(name = "multiSelectControl-bean", parent = "Uif-MultiSelectControl")})
-public class SelectControl extends MultiValueControlBase implements SizedControl {
-    private static final long serialVersionUID = 6443247954759096815L;
-
-    private int size;
-    private boolean multiple;
-
-    public SelectControl() {
-        size = 1;
-        multiple = false;
-    }
-
-    /**
-     * Vertical size of the control. This determines how many options can be
-     * seen without using the control scoll bar. Defaults to 1
-     *
-     * @return size
-     */
-    @BeanTagAttribute(name="size")
-    public int getSize() {
-        return this.size;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.uif.control.SizedControl#setSize(int)
-     */
-    public void setSize(int size) {
-        this.size = size;
-    }
+public interface SelectControl extends Control, MultiValueControl, SizedControl {
 
     /**
      * Indicates whether multiple values can be selected. Defaults to false
@@ -65,30 +31,13 @@ public class SelectControl extends MultiValueControlBase implements SizedControl
      * @return true if multiple values can be selected, false if only
      *         one value can be selected
      */
-    @BeanTagAttribute(name="multiple")
-    public boolean isMultiple() {
-        return this.multiple;
-    }
+    boolean isMultiple();
 
     /**
      * Set whether multiple values can be selected
      *
      * @param multiple
      */
-    public void setMultiple(boolean multiple) {
-        this.multiple = multiple;
-    }
+    void setMultiple(boolean multiple);
 
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        SelectControl selectControlCopy = (SelectControl) component;
-
-        selectControlCopy.setSize(this.size);
-        selectControlCopy.setMultiple(this.multiple);
-    }
 }

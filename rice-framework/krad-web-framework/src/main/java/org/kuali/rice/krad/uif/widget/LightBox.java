@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ public class LightBox extends WidgetBase {
     /**
      * Override to add property values to the template options
      *
-     * @see org.kuali.rice.krad.uif.component.Component#getTemplateOptions()
+     * {@inheritDoc}
      */
     @Override
     public Map<String, String> getTemplateOptions() {
@@ -139,20 +139,5 @@ public class LightBox extends WidgetBase {
      */
     public void setLookupReturnByScript(boolean lookupReturnByScript) {
         this.lookupReturnByScript = lookupReturnByScript;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        LightBox lightBoxCopy = (LightBox) component;
-
-        lightBoxCopy.setHeight(this.height);
-        lightBoxCopy.setWidth(this.width);
-        lightBoxCopy.setAddAppParms(this.addAppParms);
-        lightBoxCopy.setLookupReturnByScript(this.lookupReturnByScript);
     }
 }

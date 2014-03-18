@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.kuali.rice.kim.api.identity.personal;
 
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
@@ -23,6 +22,7 @@ import org.joda.time.Years;
 import org.kuali.rice.core.api.CoreConstants;
 import org.kuali.rice.core.api.mo.AbstractDataTransferObject;
 import org.kuali.rice.core.api.mo.ModelBuilder;
+import org.kuali.rice.core.api.util.jaxb.PrimitiveBooleanDefaultToFalseAdapter;
 import org.kuali.rice.kim.api.KimConstants;
 import org.w3c.dom.Element;
 
@@ -30,17 +30,13 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAnyElement;
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
 import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
-import java.util.List;
 
 @XmlRootElement(name = EntityBioDemographics.Constants.ROOT_ELEMENT_NAME)
 @XmlAccessorType(XmlAccessType.NONE)
@@ -70,10 +66,6 @@ import java.util.List;
     EntityBioDemographics.Elements.GEOGRAPHIC_ORIGIN_UNMASKED,
     EntityBioDemographics.Elements.NOTE_MESSAGE,
     EntityBioDemographics.Elements.SUPPRESS_PERSONAL,
-    EntityBioDemographics.Elements.DISABLED,
-    EntityBioDemographics.Elements.DISABILITIES,
-    EntityBioDemographics.Elements.VETERAN,
-    EntityBioDemographics.Elements.MILITARY_RECORDS,
     CoreConstants.CommonElements.VERSION_NUMBER,
     CoreConstants.CommonElements.OBJECT_ID,
     CoreConstants.CommonElements.FUTURE_ELEMENTS
@@ -131,16 +123,8 @@ public final class EntityBioDemographics extends AbstractDataTransferObject
 
     @XmlElement(name = Elements.NOTE_MESSAGE, required = false)
     private final String noteMessage;
-    @XmlElement(name = Elements.SUPPRESS_PERSONAL, required = false)
+    @XmlElement(name = Elements.SUPPRESS_PERSONAL, required = true)
     private final boolean suppressPersonal;
-
-    @XmlElementWrapper(name = Elements.DISABILITIES, required = false)
-    @XmlElement(name = Elements.DISABILITY, required = false)
-    private final List<EntityDisability> disabilities;
-    @XmlElementWrapper(name = Elements.MILITARY_RECORDS, required = false)
-    @XmlElement(name = Elements.MILITARY_RECORD, required = false)
-    private final List<EntityMilitary> militaryRecords;
-
     @XmlElement(name = CoreConstants.CommonElements.VERSION_NUMBER, required = false)
     private final Long versionNumber;
     @XmlElement(name = CoreConstants.CommonElements.OBJECT_ID, required = false)
@@ -179,8 +163,6 @@ public final class EntityBioDemographics extends AbstractDataTransferObject
         this.geographicOriginUnmasked = null;
 
         this.noteMessage = null;
-        this.militaryRecords = null;
-        this.disabilities = null;
         this.suppressPersonal = false;
         this.versionNumber = null;
         this.objectId = null;
@@ -212,20 +194,6 @@ public final class EntityBioDemographics extends AbstractDataTransferObject
         this.geographicOriginUnmasked = builder.getGeographicOriginUnmasked();
 
         this.noteMessage = builder.getNoteMessage();
-        this.disabilities = new ArrayList<EntityDisability>();
-        if (CollectionUtils.isNotEmpty(builder.getDisabilities())) {
-            for (EntityDisability.Builder disability : builder.getDisabilities()) {
-                this.disabilities.add(disability.build());
-            }
-        }
-
-        this.militaryRecords = new ArrayList<EntityMilitary>();
-        if (CollectionUtils.isNotEmpty(builder.getMilitaryRecords())) {
-            for (EntityMilitary.Builder military : builder.getMilitaryRecords()) {
-                this.militaryRecords.add(military.build());
-            }
-        }
-
         this.suppressPersonal = builder.isSuppressPersonal();
         this.versionNumber = builder.getVersionNumber();
         this.objectId = builder.getObjectId();
@@ -244,18 +212,6 @@ public final class EntityBioDemographics extends AbstractDataTransferObject
     @Override
     public String getBirthDate() {
         return this.birthDate;
-    }
-
-    @Override
-    @XmlElement(name = Elements.VETERAN, required = false)
-    public boolean isVeteran() {
-        return CollectionUtils.isNotEmpty(this.militaryRecords);
-    }
-
-    @Override
-    @XmlElement(name = Elements.DISABLED, required = false)
-    public boolean isDisabled() {
-        return CollectionUtils.isNotEmpty(this.disabilities);
     }
 
     @Override
@@ -379,16 +335,6 @@ public final class EntityBioDemographics extends AbstractDataTransferObject
         return this.objectId;
     }
 
-    @Override
-    public List<EntityDisability> getDisabilities() {
-        return Collections.unmodifiableList(this.disabilities);
-    }
-
-    @Override
-    public List<EntityMilitary> getMilitaryRecords() {
-        return Collections.unmodifiableList(this.militaryRecords);
-    }
-
     /**
      * Helper to parse the birth date for age calculation
      * @param birthDate the birth date in EntityBioDemographicsContract BIRTH_DATE_FORMAT format
@@ -443,8 +389,6 @@ public final class EntityBioDemographics extends AbstractDataTransferObject
         private String genderChangeCode;
         private String noteMessage;
         private boolean suppressPersonal;
-        private List<EntityDisability.Builder> disabilities;
-        private List<EntityMilitary.Builder> militaryRecords;
         private Long versionNumber;
         private String objectId;
 
@@ -475,21 +419,6 @@ public final class EntityBioDemographics extends AbstractDataTransferObject
             builder.setGenderChangeCode(contract.getGenderChangeCode());
             builder.setNoteMessage(contract.getNoteMessage());
             builder.setSuppressPersonal(contract.isSuppressPersonal());
-            if (contract.getDisabilities() != null) {
-                List<EntityDisability.Builder> disabilities = new ArrayList<EntityDisability.Builder>();
-                for (EntityDisabilityContract disability : contract.getDisabilities()) {
-                    disabilities.add(EntityDisability.Builder.create(disability));
-                }
-                builder.setDisabilities(disabilities);
-            }
-            if (contract.getMilitaryRecords() != null) {
-                List<EntityMilitary.Builder> militaryRecs = new ArrayList<EntityMilitary.Builder>();
-                for (EntityMilitaryContract military : contract.getMilitaryRecords()) {
-                    militaryRecs.add(EntityMilitary.Builder.create(military));
-                }
-                builder.setMilitaryRecords(militaryRecs);
-            }
-
             builder.setVersionNumber(contract.getVersionNumber());
             builder.setObjectId(contract.getObjectId());
             return builder;
@@ -664,26 +593,6 @@ public final class EntityBioDemographics extends AbstractDataTransferObject
             return this.objectId;
         }
 
-        @Override
-        public boolean isVeteran() {
-            return CollectionUtils.isNotEmpty(this.militaryRecords);
-        }
-
-        @Override
-        public boolean isDisabled() {
-            return CollectionUtils.isNotEmpty(this.disabilities);
-        }
-
-        @Override
-        public List<EntityDisability.Builder> getDisabilities() {
-            return this.disabilities;
-        }
-
-        @Override
-        public List<EntityMilitary.Builder> getMilitaryRecords() {
-            return this.militaryRecords;
-        }
-
         public void setEntityId(String entityId) {
             if (StringUtils.isEmpty(entityId)) {
                 throw new IllegalArgumentException("id is empty");
@@ -780,15 +689,7 @@ public final class EntityBioDemographics extends AbstractDataTransferObject
             this.objectId = objectId;
         }
 
-        public void setDisabilities(List<EntityDisability.Builder> disabilities) {
-            this.disabilities = disabilities;
         }
-
-        public void setMilitaryRecords(List<EntityMilitary.Builder> militaryRecords) {
-            this.militaryRecords = militaryRecords;
-        }
-
-    }
 
 
     /**
@@ -832,14 +733,6 @@ public final class EntityBioDemographics extends AbstractDataTransferObject
         final static String GENDER_CHANGE_CODE = "genderChangeCode";
         final static String GENDER_CHANGE_CODE_UNMASKED = "genderChangeCodeUnmasked";
         final static String NOTE_MESSAGE = "noteMessage";
-
-        final static String DISABLED = "disabled";
-        final static String DISABILITIES = "disabilities";
-        final static String DISABILITY = "disability";
-        final static String VETERAN = "veteran";
-        final static String MILITARY_RECORDS = "militaryRecords";
-        final static String MILITARY_RECORD = "militaryRecord";
-
         final static String SUPPRESS_PERSONAL = "suppressPersonal";
 
     }

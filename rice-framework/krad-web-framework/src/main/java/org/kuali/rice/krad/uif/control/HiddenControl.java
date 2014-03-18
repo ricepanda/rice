@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 package org.kuali.rice.krad.uif.control;
 
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
+import org.kuali.rice.krad.uif.component.Component;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 
 /**
  * Represents a HTML Hidden control, generally rendered as an input control of
@@ -32,4 +34,10 @@ public class HiddenControl extends ControlBase {
        super();
 	}
 
+    @Override
+    public void performFinalize(Object model, LifecycleElement parent) {
+        super.performFinalize(model, parent);
+
+        ((Component) parent).setStyle(null);
+    }
 }

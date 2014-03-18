@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -165,14 +165,13 @@
                 <list>
                   <bean parent="Uif-MessageField" p:label="Seats Left" p:fieldLabel.render="true"
                         p:messageText="@{#line.registeredNumber} (of @{#line.totalMaxEnrollment}) &lt;span class='kr-highlight-red'&gt;@{#line.waitlistNumber} on waitlist&lt;/span&gt;"
-                        p:fieldLabel.cssClasses="labelLeft" p:fieldLabel.renderColon="false"/>
-                  <bean parent="GenericTextFieldMedium" p:propertyName="instructor" p:label="Instructor"
-                        p:fieldLabel.cssClasses="labelLeft" p:labelPlacement="LEFT"/>
+                        p:fieldLabel.renderColon="false"/>
+                  <bean parent="GenericTextFieldMedium" p:propertyName="instructor" p:label="Instructor"/>
                   <bean parent="Uif-MessageField" p:label="Location" p:fieldLabel.render="true"
                         p:messageText="&lt;span class='kr-highlight-blue'&gt;@{#line.location}&lt;/span&gt;"
-                        p:fieldLabel.cssClasses="labelLeft" p:fieldLabel.renderColon="false"/>
+                        p:fieldLabel.renderColon="false"/>
                   <bean parent="Uif-LinkField" p:label="Syllabus" p:linkText="Download" p:target="foo"
-                        p:fieldLabel.cssClasses="labelLeft" p:fieldLabel.renderColon="false"/>
+                        p:fieldLabel.renderColon="false"/>
                 </list>
               </property>
             </bean>

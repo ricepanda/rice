@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -211,7 +211,7 @@ public final class Permission extends AbstractDataTransferObject implements Perm
         private String description;
         private Template.Builder template;
         private Map<String, String> attributes;
-        private Long versionNumber = 1L;
+        private Long versionNumber;
         private String objectId;
         private boolean active;
 

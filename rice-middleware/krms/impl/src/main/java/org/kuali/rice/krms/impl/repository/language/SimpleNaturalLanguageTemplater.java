@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 package org.kuali.rice.krms.impl.repository.language;
 
 import java.util.Map;
+
+import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.krms.api.repository.language.NaturalLanguageTemplate;
 import org.kuali.rice.krms.api.repository.language.NaturalLanguageTemplaterContract;
 
@@ -27,7 +29,9 @@ public class SimpleNaturalLanguageTemplater implements NaturalLanguageTemplaterC
 
     @Override
     public String translate(NaturalLanguageTemplate naturalLanguageTemplate, Map<String, Object> contextMap) {
-        StringBuilder sb = new StringBuilder (naturalLanguageTemplate.getTemplate());
+        String template = naturalLanguageTemplate != null ? naturalLanguageTemplate.getTemplate() : "Empty Template";
+
+        StringBuilder sb = new StringBuilder(template);
         sb.append(" applied with the following ");
         sb.append (contextMap.size());        
         sb.append(" variables: ");

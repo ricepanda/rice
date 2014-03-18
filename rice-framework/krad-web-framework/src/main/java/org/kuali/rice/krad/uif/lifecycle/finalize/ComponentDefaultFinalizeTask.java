@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,18 @@
  */
 package org.kuali.rice.krad.uif.lifecycle.finalize;
 
-import org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask;
+import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.lifecycle.FinalizeComponentPhase;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleTaskBase;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 
 /**
  * Perform default finalize behavior defined for the component.
  * 
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-public class ComponentDefaultFinalizeTask extends AbstractViewLifecycleTask {
+public class ComponentDefaultFinalizeTask extends ViewLifecycleTaskBase<Component> {
 
     /**
      * Constructor.
@@ -32,25 +34,25 @@ public class ComponentDefaultFinalizeTask extends AbstractViewLifecycleTask {
      * @param phase The finalize phase for the component.
      */
     public ComponentDefaultFinalizeTask(ViewLifecyclePhase phase) {
-        super(phase);
+        super(phase, Component.class);
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask#getPhase()
+     * {@inheritDoc}
      */
     @Override
-    public FinalizeComponentPhase getPhase() {
-        return (FinalizeComponentPhase) super.getPhase();
+    public FinalizeComponentPhase getElementState() {
+        return (FinalizeComponentPhase) super.getElementState();
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask#performLifecycleTask()
+     * {@inheritDoc}
      */
     @SuppressWarnings("deprecation")
     @Override
     protected void performLifecycleTask() {
-        FinalizeComponentPhase phase = getPhase();
-        phase.getComponent().performFinalize(phase.getModel(), phase.getParent());
+        FinalizeComponentPhase phase = getElementState();
+        phase.getElement().performFinalize(phase.getModel(), phase.getParent());
     }
 
 }

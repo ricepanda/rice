@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,11 @@
  */
 package org.kuali.rice.krad.document;
 
-import org.kuali.rice.krad.data.DataObjectUtils;
 import org.kuali.rice.krad.uif.view.View;
 import org.kuali.rice.krad.uif.view.ViewModel;
 import org.kuali.rice.krad.uif.view.ViewPresentationControllerBase;
 import org.kuali.rice.krad.util.KRADConstants;
+import org.kuali.rice.krad.util.KRADUtils;
 import org.kuali.rice.krad.web.form.DocumentFormBase;
 import org.kuali.rice.krad.web.form.UifFormBase;
 
@@ -169,7 +169,7 @@ public class DocumentViewPresentationControllerBase extends ViewPresentationCont
     }
 
     public boolean canCancel(Document document) {
-        return getDocumentPresentationController().canEdit(document);
+        return getDocumentPresentationController().canCancel(document);
     }
 
     public boolean canRecall(Document document) {
@@ -234,6 +234,6 @@ public class DocumentViewPresentationControllerBase extends ViewPresentationCont
 
     public void setDocumentPresentationControllerClass(
             Class<? extends DocumentPresentationController> documentPresentationControllerClass) {
-        this.documentPresentationController = DataObjectUtils.newInstance(documentPresentationControllerClass);
+        this.documentPresentationController = KRADUtils.createNewObjectFromClass(documentPresentationControllerClass);
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,9 @@ import org.kuali.rice.krad.datadictionary.DefaultListableBeanFactory;
 import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.UifConstants.ViewType;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.service.ViewTypeService;
-import org.kuali.rice.krad.uif.util.CopyUtils;
+import org.kuali.rice.krad.uif.util.ProcessLogger;
 import org.kuali.rice.krad.uif.util.ViewModelUtils;
 import org.kuali.rice.krad.uif.view.View;
 import org.kuali.rice.krad.util.KRADConstants;
@@ -115,13 +116,22 @@ public class UifDictionaryIndex implements Runnable {
             if (StringUtils.isBlank(beanName)) {
                 throw new DataDictionaryException("Unable to find View with id: " + viewId);
             }
-
+            ProcessLogger.trace("view:init:" + viewId);
+           
             View view = ddBeans.getBean(beanName, View.class);
+            ProcessLogger.trace("view:getBean");
             
-            CopyUtils.preventModification(view);
+            if (UifConstants.ViewStatus.CREATED.equals(view.getViewStatus())) {
+                try {
+                    ViewLifecycle.preProcess(view);
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Updating view status to CREATED for view: " + view.getId());
+                    ProcessLogger.trace("view:preProcess");
+                } catch (IllegalStateException ex) {
+                    if ( LOG.isDebugEnabled() ) {
+                        LOG.debug("preProcess not run due to an IllegalStateException.  "
+                                + "Exception message: " + ex.getMessage());
+                    }
+                }
             }
 
             boolean inDevMode = ConfigContext.getCurrentContextConfig().getBooleanProperty(
@@ -131,8 +141,10 @@ public class UifDictionaryIndex implements Runnable {
                 synchronized (viewCache) {
                     viewCache.put(viewId, view);
                 }
+                ProcessLogger.trace("view:cache");
             } else if ( LOG.isDebugEnabled() ) {
                 LOG.debug( "DEV MODE - View " + viewId + " will not be cached");
+                ProcessLogger.trace("view:dev-mode");
             }
             
             cachedView = view;

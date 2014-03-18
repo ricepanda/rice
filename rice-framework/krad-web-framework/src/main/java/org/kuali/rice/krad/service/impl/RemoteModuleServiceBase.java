@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import org.kuali.rice.krad.bo.BusinessObject;
 import org.kuali.rice.krad.bo.DataObjectRelationship;
 import org.kuali.rice.krad.bo.ExternalizableBusinessObject;
 import org.kuali.rice.krad.bo.ModuleConfiguration;
-import org.kuali.rice.krad.data.DataObjectUtils;
+import org.kuali.rice.krad.data.KradDataServiceLocator;
 import org.kuali.rice.krad.data.provider.PersistenceProvider;
 import org.kuali.rice.krad.data.provider.Provider;
 import org.kuali.rice.krad.datadictionary.BusinessObjectEntry;
@@ -341,8 +341,7 @@ public abstract class RemoteModuleServiceBase implements ModuleService {
      * This method assumes that the property type for externalizable relationship in the business object is an interface
      * and gets the concrete implementation for it
      *
-     * @see org.kuali.rice.krad.service.ModuleService#retrieveExternalizableBusinessObjectIfNecessary(org.kuali.rice.krad.bo.BusinessObject,
-     *      org.kuali.rice.krad.bo.BusinessObject, java.lang.String)
+     * {@inheritDoc}
      */
     @Override
     public <T extends ExternalizableBusinessObject> T retrieveExternalizableBusinessObjectIfNecessary(
@@ -379,11 +378,11 @@ public abstract class RemoteModuleServiceBase implements ModuleService {
         Object targetPropertyValue = null;
         boolean sourceTargetPropertyValuesSame = true;
         for (PrimitiveAttributeDefinition primitiveAttributeDefinition : primitiveAttributeDefinitions) {
-            sourcePropertyValue = DataObjectUtils.getPropertyValue(businessObject,
+            sourcePropertyValue = KradDataServiceLocator.getDataObjectService().wrap(businessObject).getPropertyValueNullSafe(
                     primitiveAttributeDefinition.getSourceName());
             if (currentInstanceExternalizableBO != null) {
-                targetPropertyValue = DataObjectUtils.getPropertyValue(currentInstanceExternalizableBO,
-                        primitiveAttributeDefinition.getTargetName());
+                targetPropertyValue = KradDataServiceLocator.getDataObjectService().wrap(currentInstanceExternalizableBO).getPropertyValueNullSafe(
+                    primitiveAttributeDefinition.getTargetName());
             }
             if (sourcePropertyValue == null) {
                 return null;
@@ -404,8 +403,7 @@ public abstract class RemoteModuleServiceBase implements ModuleService {
      * This method assumes that the externalizableClazz is an interface
      * and gets the concrete implementation for it
      *
-     * @see org.kuali.rice.krad.service.ModuleService#retrieveExternalizableBusinessObjectIfNecessary(org.kuali.rice.krad.bo.BusinessObject,
-     *      org.kuali.rice.krad.bo.BusinessObject, java.lang.String)
+     * {@inheritDoc}
      */
     @Override
     public List<? extends ExternalizableBusinessObject> retrieveExternalizableBusinessObjectsList(
@@ -427,7 +425,7 @@ public abstract class RemoteModuleServiceBase implements ModuleService {
         Map<String, Object> fieldValuesInEBO = new HashMap<String, Object>();
         Object sourcePropertyValue;
         for (PrimitiveAttributeDefinition primitiveAttributeDefinition : primitiveAttributeDefinitions) {
-            sourcePropertyValue = DataObjectUtils.getPropertyValue(businessObject,
+            sourcePropertyValue = KradDataServiceLocator.getDataObjectService().wrap(businessObject).getPropertyValueNullSafe(
                     primitiveAttributeDefinition.getSourceName());
             if (sourcePropertyValue == null) {
                 return null;

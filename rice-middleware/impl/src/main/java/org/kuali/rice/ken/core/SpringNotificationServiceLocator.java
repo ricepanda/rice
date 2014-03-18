@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,9 @@
  */
 package org.kuali.rice.ken.core;
 
-import org.kuali.rice.core.framework.persistence.dao.GenericDao;
 import org.kuali.rice.ken.dao.NotificationDao;
-import org.kuali.rice.ken.dao.NotificationMessegeDeliveryDao;
 import org.kuali.rice.ken.api.service.KENAPIService;
+import org.kuali.rice.ken.dao.NotificationMessegeDeliveryDao;
 import org.kuali.rice.ken.service.NotificationAuthorizationService;
 import org.kuali.rice.ken.service.NotificationChannelService;
 import org.kuali.rice.ken.service.NotificationContentTypeService;
@@ -43,7 +42,6 @@ public class SpringNotificationServiceLocator implements NotificationServiceLoca
     private static final String NOTIFICATION_SERVICE = "notificationService";
     private static final String NOTIFICATION_CONTENT_TYPE_SERVICE = "notificationContentTypeService";
     private static final String MESSAGE_CONTENT_SERVICE = "messageContentService";
-    private static final String GENERIC_DAO = "kenGenericDao";
     private static final String NOTIFICATION_DAO = "kenNotificationDao";
     private static final String NOTIFICATION_MESSEGE_DELIVERY_DAO = "kenNotificationMessegeDeliveryDao";
     
@@ -97,13 +95,6 @@ public class SpringNotificationServiceLocator implements NotificationServiceLoca
         return (NotificationMessageContentService) beanFactory.getBean(MESSAGE_CONTENT_SERVICE);
     }
 
-    /**
-     * @see org.kuali.rice.ken.core.NotificationServiceLocator#getGenericDao()
-     */
-    public GenericDao getGenericDao() {
-        return (GenericDao) beanFactory.getBean(GENERIC_DAO);
-    }
-    
     public NotificationDao getNotificationDao() {
         return (NotificationDao) beanFactory.getBean(NOTIFICATION_DAO);
     }

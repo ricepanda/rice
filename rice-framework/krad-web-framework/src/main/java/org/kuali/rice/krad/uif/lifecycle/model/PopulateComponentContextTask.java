@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,19 +18,18 @@ package org.kuali.rice.krad.uif.lifecycle.model;
 import java.util.Map;
 
 import org.kuali.rice.krad.uif.UifConstants;
-import org.kuali.rice.krad.uif.component.Component;
-import org.kuali.rice.krad.uif.container.Container;
 import org.kuali.rice.krad.uif.layout.LayoutManager;
-import org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask;
 import org.kuali.rice.krad.uif.lifecycle.ApplyModelComponentPhase;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleTaskBase;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 
 /**
 * * Push attributes to the component context.
  * 
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-public class PopulateComponentContextTask extends AbstractViewLifecycleTask {
+public class PopulateComponentContextTask extends ViewLifecycleTaskBase<LifecycleElement> {
 
     /**
      * Constructor.
@@ -38,42 +37,37 @@ public class PopulateComponentContextTask extends AbstractViewLifecycleTask {
      * @param phase The apply model phase for the component.
      */
     public PopulateComponentContextTask(ViewLifecyclePhase phase) {
-        super(phase);
+        super(phase, LifecycleElement.class);
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask#getPhase()
+     * {@inheritDoc}
      */
     @Override
-    public ApplyModelComponentPhase getPhase() {
-        return (ApplyModelComponentPhase) super.getPhase();
+    public ApplyModelComponentPhase getElementState() {
+        return (ApplyModelComponentPhase) super.getElementState();
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask#performLifecycleTask()
+     * {@inheritDoc}
      */
     @Override
     protected void performLifecycleTask() {
-        Component component = getPhase().getComponent();
-        Component parent = getPhase().getParent();
-        Map<String, Object> commonContext = getPhase().getCommonContext();
+        LifecycleElement element = getElementState().getElement();
+        LifecycleElement parent = getElementState().getParent();
+       
+        Map<String, Object> commonContext = getElementState().getCommonContext();
         
         if (parent != null) {
-            component.pushObjectToContext(UifConstants.ContextVariableNames.PARENT, parent);
+            element.pushObjectToContext(UifConstants.ContextVariableNames.PARENT, parent);
         }
 
         // set context on component for evaluating expressions
-        component.pushAllToContext(commonContext);
+        element.pushAllToContext(commonContext);
 
         // set context evaluate expressions on the layout manager
-        if (component instanceof Container) {
-            LayoutManager layoutManager = ((Container) component).getLayoutManager();
-
-            if (layoutManager != null) {
-                layoutManager.pushAllToContext(commonContext);
-                layoutManager.pushObjectToContext(UifConstants.ContextVariableNames.PARENT, component);
-                layoutManager.pushObjectToContext(UifConstants.ContextVariableNames.MANAGER, layoutManager);
-            }
+        if (element instanceof LayoutManager) {
+            element.pushObjectToContext(UifConstants.ContextVariableNames.MANAGER, element);
         }
     }
 

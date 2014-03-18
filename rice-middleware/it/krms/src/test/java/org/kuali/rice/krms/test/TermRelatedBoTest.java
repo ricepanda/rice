@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ import java.util.Collections;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.kuali.rice.core.api.resourceloader.GlobalResourceLoader;
+import org.kuali.rice.krad.data.DataObjectService;
 import org.kuali.rice.krms.api.repository.context.ContextDefinition;
 import org.kuali.rice.krms.api.repository.term.TermDefinition;
 import org.kuali.rice.krms.api.repository.term.TermParameterDefinition;
@@ -47,13 +49,16 @@ public class TermRelatedBoTest extends AbstractBoTest {
 		// wire up BO services
 
 		termBoService = new TermBoServiceImpl();
-		((TermBoServiceImpl)termBoService).setBusinessObjectService(getBoService());
+
+        // TODO: fix
+		((TermBoServiceImpl)termBoService).setDataObjectService(GlobalResourceLoader.<DataObjectService>getService(
+                "dataObjectService"));
 
 		contextRepository = new ContextBoServiceImpl();
-		((ContextBoServiceImpl)contextRepository).setBusinessObjectService(getBoService());
+		((ContextBoServiceImpl)contextRepository).setDataObjectService(getDataObjectService());
 		
 		krmsTypeBoService = new KrmsTypeBoServiceImpl();
-		((KrmsTypeBoServiceImpl)krmsTypeBoService).setBusinessObjectService(getBoService());
+		((KrmsTypeBoServiceImpl)krmsTypeBoService).setDataObjectService(getDataObjectService());
 	}
 	
 	@Test

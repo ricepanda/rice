@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
 import org.kuali.rice.krad.uif.component.Component;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.util.ScriptUtils;
 import org.kuali.rice.krad.util.KRADUtils;
 
@@ -31,8 +32,8 @@ import org.kuali.rice.krad.util.KRADUtils;
  */
 @BeanTag(name = "locationSuggest-bean", parent = "Uif-LocationSuggest")
 public class LocationSuggest extends Suggest {
-
     private static final long serialVersionUID = 5940714417896326889L;
+
     private String baseUrl;
     private String additionalUrlPathPropertyName;
     private String hrefPropertyName;
@@ -43,10 +44,10 @@ public class LocationSuggest extends Suggest {
     /**
      * Process the objectIdPropertyName, if set
      *
-     * @see Component#performFinalize(org.kuali.rice.krad.uif.view.View, Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performFinalize(Object model, Component parent) {
+    public void performFinalize(Object model, LifecycleElement parent) {
         super.performFinalize(model, parent);
 
         if (requestParameterPropertyNames == null) {
@@ -56,6 +57,14 @@ public class LocationSuggest extends Suggest {
         if (StringUtils.isNotBlank(objectIdPropertyName)) {
             requestParameterPropertyNames.put(objectIdPropertyName, objectIdPropertyName);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public LocationSuggestPostData getPostData() {
+        return new LocationSuggestPostData(this);
     }
 
     /**
@@ -182,7 +191,7 @@ public class LocationSuggest extends Suggest {
      * construction).
      * </p>
      *
-     * @return
+     * @return mapping of additional request parameters
      */
     @BeanTagAttribute(name = "additionalRequestParameters", type = BeanTagAttribute.AttributeType.MAPVALUE)
     public Map<String, String> getAdditionalRequestParameters() {
@@ -225,27 +234,74 @@ public class LocationSuggest extends Suggest {
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
+     * Holds post data for the location suggest component.
      */
-    @Override
-    protected <T> void copyProperties(T locationSuggest) {
-        super.copyProperties(locationSuggest);
+    public static class LocationSuggestPostData extends SuggestPostData {
+        private static final long serialVersionUID = -4326794621463438438L;
 
-        LocationSuggest locationSuggestCopy = (LocationSuggest) locationSuggest;
+        private String baseUrl;
+        private String additionalUrlPathPropertyName;
+        private String hrefPropertyName;
+        private String objectIdPropertyName;
+        private Map<String, String> requestParameterPropertyNames;
+        private Map<String, String> additionalRequestParameters;
 
-        locationSuggestCopy.setBaseUrl(this.baseUrl);
-        locationSuggestCopy.setAdditionalUrlPathPropertyName(this.additionalUrlPathPropertyName);
-        locationSuggestCopy.setHrefPropertyName(this.hrefPropertyName);
-        locationSuggestCopy.setObjectIdPropertyName(this.objectIdPropertyName);
+        /**
+         * Constructor taking suggest widget to pull post data from.
+         *
+         * @param suggest component instance to pull data
+         */
+        public LocationSuggestPostData(LocationSuggest suggest) {
+            super(suggest);
 
-        if (this.requestParameterPropertyNames != null) {
-            locationSuggestCopy.setRequestParameterPropertyNames(new HashMap<String, String>(
-                    this.requestParameterPropertyNames));
+            this.baseUrl = suggest.getBaseUrl();
+            this.additionalUrlPathPropertyName = suggest.getAdditionalUrlPathPropertyName();
+            this.hrefPropertyName = suggest.getHrefPropertyName();
+            this.objectIdPropertyName = suggest.getObjectIdPropertyName();
+            this.requestParameterPropertyNames = suggest.getRequestParameterPropertyNames();
+            this.additionalRequestParameters = suggest.getAdditionalRequestParameters();
         }
 
-        if (this.additionalRequestParameters != null) {
-            locationSuggestCopy.setAdditionalRequestParameters(new HashMap<String, String>(
-                    this.additionalRequestParameters));
+        /**
+         * @see LocationSuggest#getBaseUrl()
+         */
+        public String getBaseUrl() {
+            return baseUrl;
+        }
+
+        /**
+         * @see LocationSuggest#getAdditionalUrlPathPropertyName()
+         */
+        public String getAdditionalUrlPathPropertyName() {
+            return additionalUrlPathPropertyName;
+        }
+
+        /**
+         * @see LocationSuggest#getHrefPropertyName()
+         */
+        public String getHrefPropertyName() {
+            return hrefPropertyName;
+        }
+
+        /**
+         * @see LocationSuggest#getObjectIdPropertyName()
+         */
+        public String getObjectIdPropertyName() {
+            return objectIdPropertyName;
+        }
+
+        /**
+         * @see LocationSuggest#getRequestParameterPropertyNames()
+         */
+        public Map<String, String> getRequestParameterPropertyNames() {
+            return requestParameterPropertyNames;
+        }
+
+        /**
+         * @see LocationSuggest#getAdditionalRequestParameters()
+         */
+        public Map<String, String> getAdditionalRequestParameters() {
+            return additionalRequestParameters;
         }
     }
 }

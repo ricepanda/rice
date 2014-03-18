@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,22 @@ package org.kuali.rice.krad.data.jpa.eclipselink;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.persistence.config.SessionCustomizer;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.exceptions.DescriptorException;
 import org.eclipse.persistence.internal.databaseaccess.Accessor;
+import org.eclipse.persistence.internal.descriptors.OptimisticLockingPolicy;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
+import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.sequencing.Sequence;
 import org.eclipse.persistence.sessions.DatabaseLogin;
 import org.eclipse.persistence.sessions.JNDIConnector;
 import org.eclipse.persistence.sessions.Session;
+import org.kuali.rice.krad.data.jpa.DisableVersioning;
+import org.kuali.rice.krad.data.jpa.Filter;
+import org.kuali.rice.krad.data.jpa.FilterGenerator;
+import org.kuali.rice.krad.data.jpa.FilterGenerators;
+import org.kuali.rice.krad.data.jpa.PortableSequenceGenerator;
+import org.kuali.rice.krad.data.jpa.RemoveMapping;
+import org.kuali.rice.krad.data.jpa.RemoveMappings;
 import org.kuali.rice.krad.data.platform.MaxValueIncrementerFactory;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.jdbc.support.incrementer.DataFieldMaxValueIncrementer;
@@ -32,6 +42,7 @@ import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
@@ -39,7 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * EclipseLink Session Customizer which understands {@link PortableSequenceGenerator} annotations and automatically
+ * EclipseLink Session Customizer which understands {@link org.kuali.rice.krad.data.jpa.PortableSequenceGenerator} annotations and automatically
  * registers custom EclipseLink Sequences.
  *
  * <p>Since SessionCustomizers are stateless instances, and because concrete
@@ -51,8 +62,14 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class KradEclipseLinkCustomizer implements SessionCustomizer {
 
-    private static ConcurrentMap<String, List<Sequence>> sequenceMap =
-            new ConcurrentHashMap<String, List<Sequence>>(8, 0.9f, 1);
+    private static ConcurrentMap<String, List<Sequence>> sequenceMap = new ConcurrentHashMap<String, List<Sequence>>(8,
+            0.9f, 1);
+
+    /* Keyed by the session name determines if the class descriptors have been modified for the current session. */
+    private static ConcurrentMap<String, Boolean> modDescMap = new ConcurrentHashMap<String, Boolean>();
+
+    private static ConcurrentMap<String, List<FilterGenerator>> queryCustomizerMap =
+            new ConcurrentHashMap<String, List<FilterGenerator>>();
 
     @Override
     public void customize(Session session) throws Exception {
@@ -67,18 +84,176 @@ public class KradEclipseLinkCustomizer implements SessionCustomizer {
             }
         }
 
+        loadQueryCustomizers(session);
+
         DatabaseLogin login = session.getLogin();
         for (Sequence sequence : sequences) {
             login.addSequence(sequence);
         }
+
+        handleDescriptorModifications(session);
+
+    }
+
+    /**
+     * Load Query Customizer based on annotations on fields and call customizer to
+     * modify descriptor
+     * @param session
+     */
+    protected void loadQueryCustomizers(Session session) {
+        Map<Class, ClassDescriptor> descriptors = session.getDescriptors();
+        for (Class<?> entityClass : descriptors.keySet()) {
+            for (Field field : entityClass.getDeclaredFields()) {
+                String queryCustEntry = entityClass.getName() + "_" + field.getName();
+                buildQueryCustomizers(entityClass,field,queryCustEntry);
+
+                List<FilterGenerator> queryCustomizers = queryCustomizerMap.get(queryCustEntry);
+                if (queryCustomizers != null && !queryCustomizers.isEmpty()) {
+                    Filter.customizeField(queryCustomizers, descriptors.get(entityClass), field.getName());
+                }
+            }
+        }
+
+    }
+
+    /**
+     * Build and populate map of QueryCustomizer annotations
+     * @param entityClass
+     * @param field
+     * @param key
+     */
+    protected void buildQueryCustomizers(Class<?> entityClass,Field field, String key){
+        FilterGenerators customizers = field.getAnnotation(FilterGenerators.class);
+        List<FilterGenerator> filterGenerators = new ArrayList<FilterGenerator>();
+        if(customizers != null){
+            filterGenerators.addAll(Arrays.asList(customizers.value()));
+        } else {
+            FilterGenerator customizer = field.getAnnotation(FilterGenerator.class);
+            if(customizer != null){
+                filterGenerators.add(customizer);
+            }
+        }
+        for(FilterGenerator customizer : filterGenerators){
+            List<FilterGenerator> filterCustomizers = queryCustomizerMap.get(key);
+            if (filterCustomizers == null) {
+                filterCustomizers =
+                        new ArrayList<FilterGenerator>();
+                filterCustomizers.add(customizer);
+                queryCustomizerMap.putIfAbsent(key, filterCustomizers);
+            } else {
+                filterCustomizers.add(customizer);
+                queryCustomizerMap.put(key,filterCustomizers);
+            }
+        }
+    }
+
+    /**
+     * Determines if the class descriptors have been modified for the given session name.
+     *
+     * @param session the current session.
+     */
+    protected void handleDescriptorModifications(Session session) {
+        String sessionName = session.getName();
+
+        // double-checked locking on ConcurrentMap
+        Boolean descModified = modDescMap.get(sessionName);
+        if (descModified == null) {
+            descModified = modDescMap.putIfAbsent(sessionName, Boolean.FALSE);
+            if (descModified == null) {
+                descModified = modDescMap.get(sessionName);
+            }
+        }
+
+        if (Boolean.FALSE.equals(descModified)) {
+            modDescMap.put(sessionName, Boolean.TRUE);
+            handleDisableVersioning(session);
+            handleRemoveMapping(session);
+        }
+    }
+
+    /**
+     * Checks class descriptors for {@link @DisableVersioning} annotations at the class level and removes the version
+     * database mapping for optimistic locking.
+     *
+     * @param session the current session
+     */
+    protected void handleDisableVersioning(Session session) {
+        Map<Class, ClassDescriptor> descriptors = session.getDescriptors();
+
+        if (descriptors == null || descriptors.isEmpty()) {
+            return;
+        }
+
+        for (ClassDescriptor classDescriptor : descriptors.values()) {
+            if (classDescriptor != null && AnnotationUtils.findAnnotation(classDescriptor.getJavaClass(),
+                    DisableVersioning.class) != null) {
+                OptimisticLockingPolicy olPolicy = classDescriptor.getOptimisticLockingPolicy();
+                if (olPolicy != null) {
+                    classDescriptor.setOptimisticLockingPolicy(null);
+                }
+            }
+        }
+    }
+
+    /**
+     * Checks class descriptors for {@link @RemoveMapping} and {@link RemoveMappings} annotations at the class level
+     * and
+     * removes any specified mappings from the ClassDescriptor.
+     *
+     * @param session the current session
+     */
+    protected void handleRemoveMapping(Session session) {
+        Map<Class, ClassDescriptor> descriptors = session.getDescriptors();
+
+        if (descriptors == null || descriptors.isEmpty()) {
+            return;
+        }
+
+        for (ClassDescriptor classDescriptor : descriptors.values()) {
+            List<RemoveMapping> removeMappings = scanForRemoveMappings(classDescriptor);
+            if (!removeMappings.isEmpty()) {
+                List<DatabaseMapping> mappingsToRemove = new ArrayList<DatabaseMapping>();
+                for (RemoveMapping removeMapping : removeMappings) {
+                    if (StringUtils.isBlank(removeMapping.name())) {
+                        throw DescriptorException.attributeNameNotSpecified();
+                    }
+                    DatabaseMapping databaseMapping = classDescriptor.getMappingForAttributeName(removeMapping.name());
+                    if (databaseMapping == null) {
+                        throw DescriptorException.mappingForAttributeIsMissing(removeMapping.name(), classDescriptor);
+                    }
+                    mappingsToRemove.add(databaseMapping);
+                }
+                for (DatabaseMapping mappingToRemove : mappingsToRemove) {
+                    classDescriptor.removeMappingForAttributeName(mappingToRemove.getAttributeName());
+                }
+            }
+        }
+    }
+
+    protected List<RemoveMapping> scanForRemoveMappings(ClassDescriptor classDescriptor) {
+        List<RemoveMapping> removeMappings = new ArrayList<RemoveMapping>();
+        RemoveMappings removeMappingsAnnotation = AnnotationUtils.findAnnotation(classDescriptor.getJavaClass(),
+                RemoveMappings.class);
+        if (removeMappingsAnnotation == null) {
+            RemoveMapping removeMappingAnnotation = AnnotationUtils.findAnnotation(classDescriptor.getJavaClass(),
+                    RemoveMapping.class);
+            if (removeMappingAnnotation != null) {
+                removeMappings.add(removeMappingAnnotation);
+            }
+        } else {
+            for (RemoveMapping removeMapping : removeMappingsAnnotation.value()) {
+                removeMappings.add(removeMapping);
+            }
+        }
+        return removeMappings;
     }
 
     protected List<Sequence> loadSequences(Session session) {
         Map<Class, ClassDescriptor> descriptors = session.getDescriptors();
         List<PortableSequenceGenerator> sequenceGenerators = new ArrayList<PortableSequenceGenerator>();
         for (Class<?> entityClass : descriptors.keySet()) {
-            PortableSequenceGenerator sequenceGenerator =
-                    AnnotationUtils.findAnnotation(entityClass, PortableSequenceGenerator.class);
+            PortableSequenceGenerator sequenceGenerator = AnnotationUtils.findAnnotation(entityClass,
+                    PortableSequenceGenerator.class);
             if (sequenceGenerator != null) {
                 sequenceGenerators.add(sequenceGenerator);
             }
@@ -132,6 +307,7 @@ public class KradEclipseLinkCustomizer implements SessionCustomizer {
         public boolean shouldAcquireValueAfterInsert() {
             return false;
         }
+
         @Override
         public boolean shouldUseTransaction() {
             return true;

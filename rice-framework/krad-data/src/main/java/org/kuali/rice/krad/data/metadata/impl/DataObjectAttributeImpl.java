@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,15 @@
  */
 package org.kuali.rice.krad.data.metadata.impl;
 
-import java.beans.PropertyEditor;
-import java.util.Collections;
-import java.util.Set;
-
 import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.core.api.data.DataType;
 import org.kuali.rice.krad.data.metadata.DataObjectAttribute;
 import org.kuali.rice.krad.data.provider.annotation.UifDisplayHint;
 import org.kuali.rice.krad.keyvalues.KeyValuesFinder;
+
+import java.beans.PropertyEditor;
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * Base implementation class for attribute metadata for data object classes.
@@ -63,8 +63,8 @@ public class DataObjectAttributeImpl extends MetadataCommonBase implements DataO
 
 	protected PropertyEditor propertyEditor;
 	protected KeyValuesFinder validValues;
-	protected DataType dataType = DataType.STRING;
-	protected Class<?> type = String.class;
+	protected DataType dataType;
+	protected Class<?> type;
 	
 	protected Set<UifDisplayHint> displayHints;
 
@@ -292,7 +292,10 @@ public class DataObjectAttributeImpl extends MetadataCommonBase implements DataO
 	}
 
 	public Class<?> getType() {
-		return type;
+		if (type != null) {
+            return type;
+        }
+        return String.class;
 	}
 
 	public void setType(Class<?> javaType) {
@@ -387,7 +390,7 @@ public class DataObjectAttributeImpl extends MetadataCommonBase implements DataO
 		this.sensitive = sensitive;
 	}
 
-	@Override
+    @Override
 	public Set<UifDisplayHint> getDisplayHints() {
 		if (displayHints != null) {
 			return displayHints;

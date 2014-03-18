@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.kuali.rice.krad.datadictionary.validator.Validator;
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.element.Message;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 
 /**
  * Field wrapper for a Message
@@ -49,26 +50,13 @@ public class MessageField extends FieldBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#getComponentsForLifecycle()
-     */
-    @Override
-    public List<Component> getComponentsForLifecycle() {
-        List<Component> components = super.getComponentsForLifecycle();
-
-        components.add(message);
-
-        return components;
-    }
-
-    /**
      * PerformFinalize override - calls super, corrects the field's Label for attribute to point to this field's content
      *
-     * @param view the view
      * @param model the model
      * @param parent the parent component
      */
     @Override
-    public void performFinalize(Object model, Component parent) {
+    public void performFinalize(Object model, LifecycleElement parent) {
         super.performFinalize(model, parent);
 
         //determine what id to use for the for attribute of the label, if present
@@ -143,21 +131,7 @@ public class MessageField extends FieldBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        MessageField messageFieldCopy = (MessageField) component;
-
-        if (this.message != null) {
-            messageFieldCopy.setMessage((Message)this.message.copy());
-        }
-    }
-
-    /**
-     * @see org.kuali.rice.krad.uif.component.Component#completeValidation
+     * {@inheritDoc}
      */
     @Override
     public void completeValidation(ValidationTrace tracer){

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,6 +109,7 @@ public class ThemeBuilder implements Executable {
      * {@link #isSkipThemeProcessing()} to true
      * </p>
      */
+    @Override
     public void execute() {
         Assert.hasText(this.webappSourceDir, "Webapp source directory not set");
 
@@ -391,7 +392,8 @@ public class ThemeBuilder implements Executable {
                 ThemeBuilderConstants.ThemeConfiguration.THEME_JS_LOAD_ORDER,
                 ThemeBuilderConstants.ThemeConfiguration.THEME_CSS_LOAD_ORDER,
                 ThemeBuilderConstants.ThemeConfiguration.JS_LOAD_FIRST,
-                ThemeBuilderConstants.ThemeConfiguration.JS_LOAD_LAST};
+                ThemeBuilderConstants.ThemeConfiguration.JS_LOAD_LAST,
+                ThemeBuilderConstants.ThemeConfiguration.DEV_JS_INCLUDES};
 
         for (String propertyKey : propertiesToCopy) {
             ThemeBuilderUtils.copyProperty(propertyKey, parentThemeProperties, themeProperties);

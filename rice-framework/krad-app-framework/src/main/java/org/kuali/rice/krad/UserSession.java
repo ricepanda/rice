@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -235,6 +235,9 @@ public class UserSession implements Serializable {
      * @return the stored object
      */
     public Object retrieveObject(String objectKey) {
+        if (objectKey == null) {
+            return null;
+        }
         Object object = objectMap.get(objectKey);
 
         if (!NULL_VALUE.equals(object)) {
@@ -252,7 +255,9 @@ public class UserSession implements Serializable {
      * @param objectKey
      */
     public void removeObject(String objectKey) {
-        this.objectMap.remove(objectKey);
+        if (objectKey != null) {
+            this.objectMap.remove(objectKey);
+        }
     }
 
     /**

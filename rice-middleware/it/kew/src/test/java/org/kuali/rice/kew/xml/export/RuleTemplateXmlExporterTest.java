@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,9 @@ import static org.junit.Assert.*;
 public class RuleTemplateXmlExporterTest extends XmlExporterTestCase {
 
     @Test public void testExport() throws Exception {
+        // Previous tests may not have forced a full clear of the tables,
+        new ClearDatabaseLifecycle(getPerTestTablesToClear(), getPerTestTablesNotToClear()).start();
+
         loadXmlFile("RuleTemplateExportConfig.xml");
         assertExport();
     }

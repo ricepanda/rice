@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,30 @@
  */
 package org.kuali.rice.krad.uif.freemarker;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.io.StringReader;
-import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.ServletContext;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.ServletResponseWrapper;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.kuali.rice.core.api.CoreApiServiceLocator;
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.UifParameters;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.util.ProcessLogger;
+import org.kuali.rice.krad.uif.util.UifRenderHelperMethods;
 import org.kuali.rice.krad.util.GlobalVariables;
 import org.kuali.rice.krad.util.KRADConstants;
 import org.springframework.web.servlet.support.RequestContext;
@@ -56,7 +65,7 @@ import freemarker.template.TemplateException;
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 public class LifecycleRenderingContext {
-
+    
     /**
      * The FreeMarker environment to use for rendering.
      */
@@ -68,18 +77,24 @@ public class LifecycleRenderingContext {
     private final Set<String> importedTemplates;
 
     /**
-     * The FreeMarker writer, for capturing rendered output.
+     * The buffer to use for capturing rendered output.
      */
-    private final StringWriter buffer;
+    private final ByteArrayOutputStream buffer;
+
+    /**
+     * The FreeMarker writer, for passing character data to the output buffer.
+     */
+    private final PrintWriter writer;
 
     /**
      * Create FreeMarker environment for rendering within the view lifecycle.
      * 
      * @param request The active servlet request.
-     * @param response The active servlet response.
+     * @param rawresponse The active servlet response.
      */
-    public LifecycleRenderingContext(Object model, HttpServletRequest request, HttpServletResponse response) {
+    public LifecycleRenderingContext(Object model, HttpServletRequest request, HttpServletResponse rawresponse) {
         try {
+            ProcessLogger.countBegin("render");
             Map<String, Object> modelAttrs = new HashMap<String, Object>();
             modelAttrs.put(UifConstants.DEFAULT_MODEL_NAME, model);
             modelAttrs.put(KRADConstants.USER_SESSION_KEY, GlobalVariables.getUserSession());
@@ -88,7 +103,11 @@ public class LifecycleRenderingContext {
             request.setAttribute(KRADConstants.USER_SESSION_KEY, GlobalVariables.getUserSession());
             modelAttrs.put(UifParameters.REQUEST, request);
 
-            StringWriter out = new StringWriter();
+            modelAttrs.put(UifParameters.RENDER_HELPER_METHODS, new UifRenderHelperMethods());
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            writer = new PrintWriter(new OutputStreamWriter(out, "UTF-8"));
+
             Configuration config = FreeMarkerInlineRenderBootstrap.getFreeMarkerConfig();
             Template template = new Template("", new StringReader(""), config);
 
@@ -98,6 +117,7 @@ public class LifecycleRenderingContext {
                     .getServletContextHashModel();
             TaglibFactory taglibFactory = FreeMarkerInlineRenderBootstrap.getTaglibFactory();
 
+            Response response = new Response(rawresponse);
             AllHttpScopesHashModel global =
                     new AllHttpScopesHashModel(objectWrapper, servletContext, request);
             global.put(FreemarkerServlet.KEY_JSP_TAGLIBS, taglibFactory);
@@ -111,20 +131,27 @@ public class LifecycleRenderingContext {
             global.put(AbstractTemplateView.SPRING_MACRO_REQUEST_CONTEXT_ATTRIBUTE,
                     new RequestContext(request, response, servletContext, modelAttrs));
 
+            global.put(UifParameters.VIEW, ViewLifecycle.getView());
+            
             Map<String, String> properties = CoreApiServiceLocator.getKualiConfigurationService()
                     .getAllProperties();
             global.put(UifParameters.CONFIG_PROPERTIES, properties);
+            global.put(UifParameters.RENDER_HELPER_METHODS, new UifRenderHelperMethods());
 
-            Environment env = template.createProcessingEnvironment(global, out);
+            Environment env = template.createProcessingEnvironment(global, writer);
             env.importLib("/krad/WEB-INF/ftl/lib/krad.ftl", "krad");
             env.importLib("/krad/WEB-INF/ftl/lib/spring.ftl", "spring");
+            
             environment = env;
             buffer = out;
             importedTemplates = new HashSet<String>();
+
         } catch (IOException e) {
             throw new IllegalStateException("Failed to initialize FreeMarker for rendering", e);
         } catch (TemplateException e) {
             throw new IllegalStateException("Failed to initialize FreeMarker for rendering", e);
+        } finally {
+            ProcessLogger.countEnd("render", model.getClass().getName());
         }
     }
 
@@ -144,14 +171,22 @@ public class LifecycleRenderingContext {
      * using the same environment.
      */
     public void clearRenderingBuffer() {
-        buffer.getBuffer().setLength(0);
+        buffer.reset();
     }
 
     /**
      * Get all output rendered in the FreeMarker environment.
      */
     public String getRenderedOutput() {
-        return buffer.toString();
+        try {
+            writer.flush();
+            buffer.flush();
+            return buffer.toString("UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalStateException("UTF-8 is unsupported", e);
+        } catch (IOException e) {
+            throw new IllegalStateException("Unexpected exception flusing buffer", e);
+        }
     }
 
     /**
@@ -160,8 +195,7 @@ public class LifecycleRenderingContext {
      * @param template The path to the FreeMarker template.
      */
     public void importTemplate(String template) {
-        if (template == null || !importedTemplates.add(template)) {
-            // No template for component, or already imported in this lifecycle.
+        if (isImported(template)) {
             return;
         }
 
@@ -176,5 +210,81 @@ public class LifecycleRenderingContext {
             throw new IllegalStateException("Error importing template " + template, e);
         }
     }
+    
+    public boolean isImported(String template) {
+        return template == null || !importedTemplates.add(template);
+    }
+    
+    /**
+     * Wraps the lifcycle's servlet response in order to redirect output to the rendering context
+     * buffer.
+     * 
+     * @author Kuali Rice Team (rice.collab@kuali.org)
+     */
+    private class Response extends HttpServletResponseWrapper {
 
+        /**
+         * Constructor.
+         * 
+         * @param response The response to wrap.
+         */
+        public Response(HttpServletResponse response) {
+            super(response);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public ServletOutputStream getOutputStream() throws IOException {
+            return new ServletOutputStream() {
+                @Override
+                public void write(int b) throws IOException {
+                    buffer.write(b);
+                }
+            };
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public PrintWriter getWriter() throws IOException {
+            return writer;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public int getBufferSize() {
+            return buffer.size();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void flushBuffer() throws IOException {
+            writer.flush();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void reset() {
+            throw new UnsupportedOperationException("reset() should not be used during rendering");
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void resetBuffer() {
+            writer.flush();
+            buffer.reset();
+        }
+
+    }
 }

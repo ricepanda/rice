@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package org.kuali.rice.krad.uif.element;
 
-import java.util.List;
-
 import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
@@ -25,6 +23,7 @@ import org.kuali.rice.krad.datadictionary.validator.ValidationTrace;
 import org.kuali.rice.krad.datadictionary.validator.Validator;
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.util.ComponentFactory;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 
 /**
  * Content element that renders a HTML <code>&lt;IMG&gt;</code> tag
@@ -64,8 +63,7 @@ public class Image extends ContentElementBase {
      * <li>Initializes the cutline message and caption header components if necessary</li>
      * </ul>
      *
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#performInitialization(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object)
+     * {@inheritDoc}
      */
     @Override
     public void performInitialization(Object model) {
@@ -90,11 +88,10 @@ public class Image extends ContentElementBase {
      * <li>Set the cutline text on the cutline message</li>
      * </ul>
      *
-     * @see Component#performFinalize(org.kuali.rice.krad.uif.view.View, java.lang.Object,
-     * org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performApplyModel(Object model, Component parent) {
+    public void performApplyModel(Object model, LifecycleElement parent) {
         super.performApplyModel(model, parent);
 
         if (StringUtils.isNotBlank(captionHeaderText)) {
@@ -104,19 +101,6 @@ public class Image extends ContentElementBase {
         if (StringUtils.isNotBlank(cutlineText)) {
             cutlineMessage.setMessageText(cutlineText);
         }
-    }
-
-    /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#getComponentsForLifecycle()
-     */
-    @Override
-    public List<Component> getComponentsForLifecycle() {
-        List<Component> components = super.getComponentsForLifecycle();
-
-        components.add(captionHeader);
-        components.add(cutlineMessage);
-
-        return components;
     }
 
     /**
@@ -333,35 +317,7 @@ public class Image extends ContentElementBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        Image imageCopy = (Image) component;
-
-        imageCopy.setAltText(this.altText);
-
-        if (this.captionHeader != null) {
-            imageCopy.setCaptionHeader((Header)this.captionHeader.copy());
-        }
-
-        imageCopy.setCaptionHeaderPlacementAboveImage(this.captionHeaderPlacementAboveImage);
-        imageCopy.setCaptionHeaderText(this.captionHeaderText);
-
-        if (this.cutlineMessage != null) {
-            imageCopy.setCutlineMessage((Message)this.cutlineMessage.copy());
-        }
-
-        imageCopy.setCutlineText(this.cutlineText);
-        imageCopy.setHeight(this.height);
-        imageCopy.setSource(this.source);
-        imageCopy.setWidth(this.width);
-    }
-
-    /**
-     * @see org.kuali.rice.krad.uif.component.Component#completeValidation
+     * {@inheritDoc}
      */
     @Override
     public void completeValidation(ValidationTrace tracer){

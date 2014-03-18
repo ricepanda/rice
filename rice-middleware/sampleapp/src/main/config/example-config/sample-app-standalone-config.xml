@@ -1,6 +1,6 @@
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -43,8 +43,9 @@
   <param name="rice.server.datasource.password"></param>
   -->
 
+  <param name="version">${project.name} :: ${project.version} :: ${kuali.build.timestamp}</param>
+
   <param name="config.location">classpath:META-INF/common-config-defaults.xml</param>
   <param name="config.location">classpath:META-INF/common-config-locations.xml</param>
   <param name="config.location">${alt.config.location}</param>
-  <param name="version">${project.name} :: ${project.version} :: ${kuali.build.timestamp}</param>
 </config>

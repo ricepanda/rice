@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 package org.kuali.rice.krad.service.impl;
-
-import groovy.util.logging.Log;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -55,7 +53,6 @@ import org.kuali.rice.krad.dao.DocumentDao;
 import org.kuali.rice.krad.dao.LookupDao;
 import org.kuali.rice.krad.dao.MaintenanceDocumentDao;
 import org.kuali.rice.krad.data.DataObjectService;
-import org.kuali.rice.krad.data.DataObjectUtils;
 import org.kuali.rice.krad.datadictionary.DataDictionaryEntry;
 import org.kuali.rice.krad.datadictionary.DataObjectEntry;
 import org.kuali.rice.krad.datadictionary.PrimitiveAttributeDefinition;
@@ -84,15 +81,17 @@ import org.kuali.rice.krad.util.KRADPropertyConstants;
 import org.kuali.rice.krad.util.KRADUtils;
 import org.kuali.rice.krad.util.LegacyUtils;
 import org.kuali.rice.krad.util.ObjectUtils;
+import org.springframework.beans.PropertyAccessorUtils;
 import org.springframework.beans.factory.annotation.Required;
 
 /**
 *
  */
 @Deprecated
-public class KNSLegacyDataAdapterImpl implements LegacyDataAdapter{
-	private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(KNSLegacyDataAdapterImpl.class);
-	
+public class KNSLegacyDataAdapterImpl implements LegacyDataAdapter {
+    private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(
+            KNSLegacyDataAdapterImpl.class);
+
     private static final Pattern VALUE_HOLDER_FIELD_PATTERN = Pattern.compile("^_persistence_(.*)_vh$");
 
     private final ConcurrentMap<Class<?>, List<ValueHolderFieldPair>> valueHolderFieldCache =
@@ -272,7 +271,10 @@ public class KNSLegacyDataAdapterImpl implements LegacyDataAdapter{
 
     @Override
     public boolean isProxied(Object object) {
-        return persistenceService.isProxied(object);
+    	if ( object == null || !(object instanceof BusinessObject) ) {
+    		return false;
+    	}
+		return persistenceService.isProxied(object);
     }
 
     @Override
@@ -641,13 +643,23 @@ public class KNSLegacyDataAdapterImpl implements LegacyDataAdapter{
     }
 
     @Override
-    public BusinessObject getReferenceIfExists(BusinessObject bo, String referenceName) {
-        return businessObjectService.getReferenceIfExists(bo, referenceName);
+    public BusinessObject getReferenceIfExists(Object bo, String referenceName) {
+        if (!(bo instanceof BusinessObject)) {
+            throw new UnsupportedOperationException("getReferenceIfExists only supports BusinessObject in KNS");
+        }
+
+        return businessObjectService.getReferenceIfExists((BusinessObject) bo, referenceName);
     }
 
     @Override
-    public boolean allForeignKeyValuesPopulatedForReference(PersistableBusinessObject bo, String referenceName) {
-        return persistenceService.allForeignKeyValuesPopulatedForReference(bo, referenceName);
+    public boolean allForeignKeyValuesPopulatedForReference(Object bo, String referenceName) {
+        if (!(bo instanceof PersistableBusinessObject)) {
+            throw new UnsupportedOperationException(
+                    "getReferenceIfExists only supports PersistableBusinessObject in KNS");
+        }
+
+        return persistenceService.allForeignKeyValuesPopulatedForReference((PersistableBusinessObject) bo,
+                referenceName);
     }
 
     /**
@@ -818,8 +830,8 @@ public class KNSLegacyDataAdapterImpl implements LegacyDataAdapter{
             String keyConversion = keyName;
             if (relationship != null) {
                 keyConversion = relationship.getParentAttributeForChildAttribute(keyName);
-            } else if (DataObjectUtils.isNestedAttribute(propertyName)) {
-                String nestedAttributePrefix = DataObjectUtils.getNestedAttributePrefix(propertyName);
+            } else if (PropertyAccessorUtils.isNestedOrIndexedProperty(propertyName)) {
+                String nestedAttributePrefix = KRADUtils.getNestedAttributePrefix(propertyName);
                 keyConversion = nestedAttributePrefix + "." + keyName;
             }
             inquiryParameters.put(keyConversion, keyName);

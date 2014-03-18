@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import java.util.Map.Entry;
 import java.util.Queue;
 
 import org.apache.commons.lang.StringUtils;
-import org.kuali.rice.krad.data.DataObjectUtils;
 import org.kuali.rice.krad.datadictionary.Copyable;
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
@@ -35,45 +34,46 @@ import org.kuali.rice.krad.uif.CssConstants;
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.UifConstants.ViewStatus;
 import org.kuali.rice.krad.uif.control.ControlBase;
-import org.kuali.rice.krad.uif.lifecycle.RenderComponentPhase;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleRestriction;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleTask;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleUtils;
 import org.kuali.rice.krad.uif.modifier.ComponentModifier;
-import org.kuali.rice.krad.uif.util.CloneUtils;
-import org.kuali.rice.krad.uif.util.ExpressionUtils;
 import org.kuali.rice.krad.uif.util.LifecycleAwareList;
 import org.kuali.rice.krad.uif.util.LifecycleAwareMap;
 import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.util.ScriptUtils;
 import org.kuali.rice.krad.uif.view.ExpressionEvaluator;
 import org.kuali.rice.krad.uif.view.View;
+import org.kuali.rice.krad.uif.view.ViewIndex;
 import org.kuali.rice.krad.uif.widget.Tooltip;
 import org.kuali.rice.krad.util.KRADUtils;
 
 /**
  * Base implementation of <code>Component</code> which other component implementations should extend
- * 
+ *
  * <p>
  * Provides base component properties such as id and template. Also provides default implementation
  * for the <code>ScriptEventSupport</code> and <code>Ordered</code> interfaces. By default no script
  * events except the onDocumentReady are supported.
  * </p>
- * 
+ *
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 @BeanTag(name = "componentBase-bean", parent = "Uif-ComponentBase")
 public abstract class ComponentBase extends UifDictionaryBeanBase implements Component {
-
     private static final long serialVersionUID = -4449335748129894350L;
-    
+
     private String id;
-    private String baseId;
+    private String viewPath;
+    private Map<String, String> phasePathMapping;
+
     private String template;
     private String templateName;
 
     private String viewStatus;
-    
+
     private String title;
 
     private boolean render;
@@ -113,12 +113,12 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     // optional table-backed layout options
     private int colSpan;
     private int rowSpan;
-    private List<String> cellCssClasses;
-    private String cellStyle;
+    private List<String> wrapperCssClasses;
+    private String wrapperStyle;
     private String cellWidth;
 
     private String style;
-    
+
     private List<String> libraryCssClasses;
     private List<String> cssClasses;
     private List<String> additionalCssClasses;
@@ -150,6 +150,7 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     private String onDblClickScript;
     private String onFocusScript;
     private String onSubmitScript;
+    private String onInputScript;
     private String onKeyPressScript;
     private String onKeyUpScript;
     private String onKeyDownScript;
@@ -172,21 +173,23 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     private List<PropertyReplacer> propertyReplacers;
 
     private Map<String, String> dataAttributes;
+    private Map<String, String> scriptDataAttributes;
+
+    @ReferenceCopy(referenceTransient = true)
+    private transient Map<String, Component> componentsForLifecycle;
 
     private String preRenderContent;
     private String postRenderContent;
-    
+
     public ComponentBase() {
         super();
-
-//        ProcessLogger.ntrace("new-comp:", ":" + getClass().getSimpleName(), 1000);
 
         order = 0;
         colSpan = 1;
         rowSpan = 1;
 
         viewStatus = ViewStatus.CREATED;
-        
+
         render = true;
         selfRendered = false;
         progressiveRenderViaAJAX = false;
@@ -196,21 +199,26 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
         disableSessionPersistence = false;
         forceSessionPersistence = false;
 
+        phasePathMapping = new HashMap<String, String>();
         context = Collections.emptyMap();
         dataAttributes = Collections.emptyMap();
+        scriptDataAttributes = Collections.emptyMap();
         templateOptions = Collections.emptyMap();
-        
+
         cssClasses = Collections.emptyList();
         libraryCssClasses = Collections.emptyList();
         additionalCssClasses = Collections.emptyList();
     }
-    
+
     /**
      * @see LifecycleElement#checkMutable(boolean)
      */
     public void checkMutable(boolean legalDuringInitialization) {
         if (UifConstants.ViewStatus.CACHED.equals(viewStatus)) {
-            ViewLifecycle.reportIllegalState("Cached component " + getClass() + " " + getId()
+            ViewLifecycle.reportIllegalState("Cached component "
+                    + getClass()
+                    + " "
+                    + getId()
                     + " is immutable, use copy() to get a mutable instance");
             return;
         }
@@ -218,17 +226,21 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
         if (ViewLifecycle.isActive()) {
             return;
         }
-        
+
         if (UifConstants.ViewStatus.CREATED.equals(viewStatus)) {
             if (!legalDuringInitialization) {
-                ViewLifecycle.reportIllegalState(
-                        "View has not been fully initialized, attempting to change component "
-                                + getClass() + " " + getId());
+                ViewLifecycle.reportIllegalState("View has not been fully initialized, attempting to change component "
+                        + getClass()
+                        + " "
+                        + getId());
                 return;
             }
         } else {
-            ViewLifecycle.reportIllegalState("Component " + getClass() + " " + getId()
-                    + " has been initialized, but the lifecycle is not active.");
+//            ViewLifecycle.reportIllegalState("Component "
+//                    + getClass()
+//                    + " "
+//                    + getId()
+//                    + " has been initialized, but the lifecycle is not active.");
             return;
         }
     }
@@ -237,10 +249,10 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
      * @see LifecycleElement#isMutable(boolean)
      */
     public boolean isMutable(boolean legalDuringInitialization) {
-        return (UifConstants.ViewStatus.CREATED.equals(viewStatus) && legalDuringInitialization)
-                || ViewLifecycle.isActive();
+        return (UifConstants.ViewStatus.CREATED.equals(viewStatus) && legalDuringInitialization) || ViewLifecycle
+                .isActive();
     }
-    
+
     /**
      * Indicates what lifecycle phase the component instance is in
      *
@@ -262,38 +274,36 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     /**
      * Setter for the view status
      *
-     * @param viewStatus
+     * @param status view status
      */
     @Override
     public void setViewStatus(String status) {
         if (!UifConstants.ViewStatus.CREATED.equals(status)) {
             checkMutable(true);
         }
-        
+
         this.viewStatus = status;
     }
 
     /**
      * Setter for the view status
      *
-     * @param viewStatus
+     * @param phase completed view lifecycle phase
      */
     @Override
     public void setViewStatus(ViewLifecyclePhase phase) {
-        if (!viewStatus.equals(phase.getStartViewStatus())) {
-            ViewLifecycle.reportIllegalState("Component " + getClass().getName() + " is not in expected status "
-                    + phase.getStartViewStatus() + " marking the completion of a lifecycle phase, found " + viewStatus
-                    + "\nPhase: " + phase);
-        }
-
         this.viewStatus = phase.getEndViewStatus();
     }
 
     /**
-     * @see Component#notifyCompleted(org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase)
+     * {@inheritDoc}
      */
     @Override
     public void notifyCompleted(ViewLifecyclePhase phase) {
+        ViewIndex viewIndex = ViewLifecycle.getView().getViewIndex();
+        if (viewIndex != null) {
+            viewIndex.indexComponent(this);
+        }
     }
 
     /**
@@ -334,14 +344,7 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * The following updates are done here:
-     * 
-     * <ul>
-     * <li></li>
-     * </ul>
-     * 
-     * @see org.kuali.rice.krad.uif.component.Component#performInitialization(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object)
+     * {@inheritDoc}
      */
     @Override
     public void performInitialization(Object model) {
@@ -355,16 +358,15 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
      * status to set the render status</li>
      * </ul>
      * 
-     * @see org.kuali.rice.krad.uif.component.Component#performApplyModel(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performApplyModel(Object model, Component parent) {
+    public void performApplyModel(Object model, LifecycleElement parent) {
         View view = ViewLifecycle.getView();
-        
+
         if (this.render && StringUtils.isNotEmpty(progressiveRender)) {
             // progressive anded with render, will not render at least one of the two are false
-            ExpressionEvaluator expressionEvaluator = view.getViewHelperService().getExpressionEvaluator();
+            ExpressionEvaluator expressionEvaluator = ViewLifecycle.getExpressionEvaluator();
 
             String adjustedProgressiveRender = expressionEvaluator.replaceBindingPrefixes(view, this,
                     progressiveRender);
@@ -385,34 +387,29 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
      * <li>Set the skipInTabOrder flag for nested components</li>
      * </ul>
      * 
-     * @see org.kuali.rice.krad.uif.component.Component#performFinalize(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performFinalize(Object model, Component parent) {
+    public void performFinalize(Object model, LifecycleElement parent) {
+        View view = ViewLifecycle.getView();
+        ExpressionEvaluator expressionEvaluator = ViewLifecycle.getExpressionEvaluator();
         // progressiveRender expression setup
         if (StringUtils.isNotEmpty(progressiveRender)) {
-            View view = ViewLifecycle.getView();
-            ExpressionEvaluator expressionEvaluator = ViewLifecycle.getHelper().getExpressionEvaluator();
             progressiveRender = expressionEvaluator.replaceBindingPrefixes(view, this, progressiveRender);
             progressiveDisclosureControlNames = new ArrayList<String>();
-            progressiveDisclosureConditionJs = ExpressionUtils.parseExpression(progressiveRender,
-                    progressiveDisclosureControlNames);
+            progressiveDisclosureConditionJs = expressionEvaluator.parseExpression(progressiveRender,
+                    progressiveDisclosureControlNames, this.getContext());
         }
 
         // conditional refresh expression setup
         if (StringUtils.isNotEmpty(conditionalRefresh)) {
-            View view = ViewLifecycle.getView();
-            ExpressionEvaluator expressionEvaluator = ViewLifecycle.getHelper().getExpressionEvaluator();
             conditionalRefresh = expressionEvaluator.replaceBindingPrefixes(view, this, conditionalRefresh);
             conditionalRefreshControlNames = new ArrayList<String>();
-            conditionalRefreshConditionJs = ExpressionUtils.parseExpression(conditionalRefresh,
-                    conditionalRefreshControlNames);
+            conditionalRefreshConditionJs = expressionEvaluator.parseExpression(conditionalRefresh,
+                    conditionalRefreshControlNames, this.getContext());
         }
 
         if (refreshWhenChangedPropertyNames != null) {
-            View view = ViewLifecycle.getView();
-            ExpressionEvaluator expressionEvaluator = ViewLifecycle.getHelper().getExpressionEvaluator();
             List<String> adjustedRefreshPropertyNames = new ArrayList<String>(refreshWhenChangedPropertyNames.size());
             for (String refreshPropertyName : refreshWhenChangedPropertyNames) {
                 adjustedRefreshPropertyNames.add(expressionEvaluator.replaceBindingPrefixes(view, this,
@@ -443,7 +440,7 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
         // Set the skipInTabOrder flag on all nested components
         // Set the tabIndex on controls to -1 in order to be skipped on tabbing
         if (skipInTabOrder) {
-            for (Component component : getComponentsForLifecycle()) {
+            for (LifecycleElement component : ViewLifecycleUtils.getElementsForLifecycle(this).values()) {
                 if (component != null && component instanceof ComponentBase) {
                     ((ComponentBase) component).setSkipInTabOrder(skipInTabOrder);
                     if (component instanceof ControlBase) {
@@ -501,8 +498,8 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
         // put together all css class names for this component, in order
         List<String> finalCssClasses = new ArrayList<String>();
 
-        if (this.libraryCssClasses != null && (!ViewLifecycle.isActive() ||
-                ViewLifecycle.getView().isUseLibraryCssClasses())) {
+        if (this.libraryCssClasses != null && (!ViewLifecycle.isActive() || ViewLifecycle.getView()
+                .isUseLibraryCssClasses())) {
             finalCssClasses.addAll(libraryCssClasses);
         }
 
@@ -518,55 +515,25 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.util.LifecycleElement#initializePendingTasks(org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase, java.util.Queue)
+     * @see org.kuali.rice.krad.uif.util.LifecycleElement#initializePendingTasks(org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase,
+     *      java.util.Queue)
      */
     @Override
-    public void initializePendingTasks(ViewLifecyclePhase phase, Queue<ViewLifecycleTask> pendingTasks) {
-        // TODO: migrate tasks
+    public void initializePendingTasks(ViewLifecyclePhase phase, Queue<ViewLifecycleTask<?>> pendingTasks) {
     }
-
-    /**
-     * @see org.kuali.rice.krad.uif.component.Component#getComponentsForLifecycle()
-     */
-    public List<Component> getComponentsForLifecycle() {
-        List<Component> components = new ArrayList<Component>();
-
-        components.add(toolTip);
-
-        return components;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.uif.component.Component#getComponentPrototypes()
-     */
-    public List<Component> getComponentPrototypes() {
-        List<Component> components = new ArrayList<Component>();
-
-        if (componentModifiers != null) {
-            for (ComponentModifier modifier : componentModifiers) {
-                components.addAll(modifier.getComponentPrototypes());
-            }
-        }
-
-        List<Component> propertyReplacerComponents = getPropertyReplacerComponents();
-        if (propertyReplacerComponents != null) {
-            components.addAll(propertyReplacerComponents);
-        }
-
-        return components;
-    }
-
+    
     /**
      * Returns list of components that are being held in property replacers configured for this
      * component
-     * 
+     *
      * @return List<Component>
      */
+    @ViewLifecycleRestriction
     public List<Component> getPropertyReplacerComponents() {
         if (propertyReplacers == null) {
             return Collections.emptyList();
         }
-        
+
         List<Component> components = new ArrayList<Component>();
         for (Object replacer : propertyReplacers) {
             components.addAll(((PropertyReplacer) replacer).getNestedComponents());
@@ -576,328 +543,391 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getId()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "id")
+    @Override
     public String getId() {
         return this.id;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setId(java.lang.String)
+     * {@inheritDoc}
      */
+    @Override
     public void setId(String id) {
         checkMutable(true);
         this.id = id;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getBaseId()
+     * {@inheritDoc}
      */
-    public String getBaseId() {
-        return this.baseId;
+    @Override
+    public String getViewPath() {
+        return this.viewPath;
     }
-
+    
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setBaseId(java.lang.String)
+     * {@inheritDoc}
      */
-    public void setBaseId(String baseId) {
+    @Override
+    public void setViewPath(String viewPath) {
         checkMutable(true);
-        this.baseId = baseId;
+        this.viewPath = viewPath;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getTemplate()
+     * {@inheritDoc}
+     */
+    @Override
+    public Map<String, String> getPhasePathMapping() {
+        return phasePathMapping;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setPhasePathMapping(Map<String, String> phasePathMapping) {
+        this.phasePathMapping = phasePathMapping;
+    }
+
+    /**
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "template")
+    @Override
     public String getTemplate() {
         return this.template;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setTemplate(java.lang.String)
+     * {@inheritDoc}
      */
+    @Override
     public void setTemplate(String template) {
         checkMutable(true);
         this.template = template;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getTemplateName()
+     * {@inheritDoc}
+     */
+    @Override
+    public List<String> getAdditionalTemplates() {
+        return Collections.emptyList();
+    }
+
+    /**
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "templateName")
+    @Override
     public String getTemplateName() {
         return templateName;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setTemplateName(java.lang.String)
+     * {@inheritDoc}
      */
+    @Override
     public void setTemplateName(String templateName) {
         checkMutable(true);
         this.templateName = templateName;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getTitle()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "title")
+    @Override
     public String getTitle() {
         return this.title;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setTitle(java.lang.String)
+     * {@inheritDoc}
      */
+    @Override
     public void setTitle(String title) {
         checkMutable(true);
         this.title = title;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#isHidden()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "hidden")
+    @Override
     public boolean isHidden() {
         return this.hidden;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setHidden(boolean)
+     * {@inheritDoc}
      */
+    @Override
     public void setHidden(boolean hidden) {
         checkMutable(true);
         this.hidden = hidden;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#isReadOnly()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "readOnly")
+    @Override
     public boolean isReadOnly() {
         return this.readOnly;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setReadOnly(boolean)
+     * {@inheritDoc}
      */
+    @Override
     public void setReadOnly(boolean readOnly) {
         checkMutable(true);
         this.readOnly = readOnly;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getRequired()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "required")
+    @Override
     public Boolean getRequired() {
         return this.required;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setRequired(java.lang.Boolean)
+     * {@inheritDoc}
      */
+    @Override
     public void setRequired(Boolean required) {
         checkMutable(true);
         this.required = required;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#isRender()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "render")
+    @Override
     public boolean isRender() {
         return this.render;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setRender(boolean)
+     * {@inheritDoc}
      */
+    @Override
     public void setRender(boolean render) {
         checkMutable(true);
         this.render = render;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#isRetrieveViaAjax()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "retrieveViaAjax")
+    @Override
     public boolean isRetrieveViaAjax() {
         return retrieveViaAjax;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setRetrieveViaAjax(boolean)
+     * {@inheritDoc}
      */
+    @Override
     public void setRetrieveViaAjax(boolean retrieveViaAjax) {
         checkMutable(true);
         this.retrieveViaAjax = retrieveViaAjax;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getColSpan()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "ColSpan")
+    @Override
     public int getColSpan() {
         return this.colSpan;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setColSpan(int)
+     * {@inheritDoc}
      */
+    @Override
     public void setColSpan(int colSpan) {
         checkMutable(true);
         this.colSpan = colSpan;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getRowSpan()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "rowSpan")
+    @Override
     public int getRowSpan() {
         return this.rowSpan;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setRowSpan(int)
+     * {@inheritDoc}
      */
+    @Override
     public void setRowSpan(int rowSpan) {
         checkMutable(true);
         this.rowSpan = rowSpan;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getCellCssClasses()
+     * {@inheritDoc}
      */
-    public List<String> getCellCssClasses() {
-        return cellCssClasses;
+    @Override
+    public List<String> getWrapperCssClasses() {
+        return wrapperCssClasses;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setCellCssClasses(java.util.List)
+     * {@inheritDoc}
      */
-    public void setCellCssClasses(List<String> cellCssClasses) {
+    @Override
+    public void setWrapperCssClasses(List<String> wrapperCssClasses) {
         checkMutable(true);
-        this.cellCssClasses = cellCssClasses;
+        this.wrapperCssClasses = wrapperCssClasses;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#addCellCssClass(String)
+     * {@inheritDoc}
      */
-    public void addCellCssClass(String cssClass) {
+    @Override
+    public void addWrapperCssClass(String cssClass) {
         checkMutable(false);
-        if (this.cellCssClasses == null) {
-            this.cellCssClasses = new ArrayList<String>();
+        if (this.wrapperCssClasses == null) {
+            this.wrapperCssClasses = new ArrayList<String>();
         }
 
         if (cssClass != null) {
-            this.cellCssClasses.add(cssClass);
+            this.wrapperCssClasses.add(cssClass);
         }
     }
 
     /**
      * Builds the HTML class attribute string by combining the cellStyleClasses list with a space
-     * delimiter
-     * 
+     * delimiter.
+     *
      * @return class attribute string
      */
-    public String getCellStyleClassesAsString() {
-        if (cellCssClasses != null) {
-            return StringUtils.join(cellCssClasses, " ");
+    public String getWrapperCssClassesAsString() {
+        if (wrapperCssClasses != null) {
+            return StringUtils.join(wrapperCssClasses, " ").trim();
         }
 
         return "";
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getCellStyle()
+     * {@inheritDoc}
      */
-    public String getCellStyle() {
-        return cellStyle;
+    @Override
+    public String getWrapperStyle() {
+        return wrapperStyle;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setCellStyle(java.lang.String)
+     * {@inheritDoc}
      */
-    public void setCellStyle(String cellStyle) {
+    @Override
+    public void setWrapperStyle(String wrapperStyle) {
         checkMutable(true);
-        this.cellStyle = cellStyle;
+        this.wrapperStyle = wrapperStyle;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getCellWidth()
+     * {@inheritDoc}
      */
+    @Override
     public String getCellWidth() {
         return cellWidth;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setCellWidth(java.lang.String)
+     * {@inheritDoc}
      */
+    @Override
     public void setCellWidth(String cellWidth) {
         checkMutable(true);
         this.cellWidth = cellWidth;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getAlign()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "align")
+    @Override
     public String getAlign() {
         return this.align;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setAlign(java.lang.String)
+     * {@inheritDoc}
      */
+    @Override
     public void setAlign(String align) {
         checkMutable(true);
         this.align = align;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getValign()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "valign")
+    @Override
     public String getValign() {
         return this.valign;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setValign(java.lang.String)
+     * {@inheritDoc}
      */
+    @Override
     public void setValign(String valign) {
         checkMutable(true);
         this.valign = valign;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getWidth()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "width")
+    @Override
     public String getWidth() {
         return this.width;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setWidth(java.lang.String)
+     * {@inheritDoc}
      */
+    @Override
     public void setWidth(String width) {
         checkMutable(true);
         this.width = width;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getStyle()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "style")
+    @Override
     public String getStyle() {
         return this.style;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setStyle(java.lang.String)
+     * {@inheritDoc}
      */
+    @Override
     public void setStyle(String style) {
         checkMutable(true);
         this.style = style;
@@ -905,25 +935,25 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
 
     /**
      * Additional css classes that come before css classes listed in the cssClasses property
-     * 
+     *
      * <p>
      * These are used by the framework for styling with a library (for example, bootstrap), and
      * should normally not be overridden.
      * </p>
-     * 
+     *
      * @return the library cssClasses
      */
     public List<String> getLibraryCssClasses() {
         if (libraryCssClasses == Collections.EMPTY_LIST && isMutable(true)) {
             libraryCssClasses = new LifecycleAwareList<String>(this);
         }
-        
+
         return libraryCssClasses;
     }
 
     /**
      * Set the libraryCssClasses
-     * 
+     *
      * @param libraryCssClasses
      */
     public void setLibraryCssClasses(List<String> libraryCssClasses) {
@@ -937,20 +967,22 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getCssClasses()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "cssClasses", type = BeanTagAttribute.AttributeType.LISTVALUE)
+    @Override
     public List<String> getCssClasses() {
         if (cssClasses == Collections.EMPTY_LIST && isMutable(true)) {
             cssClasses = new LifecycleAwareList<String>(this);
         }
-        
+
         return cssClasses;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setCssClasses(java.util.List)
+     * {@inheritDoc}
      */
+    @Override
     public void setCssClasses(List<String> cssClasses) {
         checkMutable(true);
         if (cssClasses == null) {
@@ -961,20 +993,22 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getAdditionalCssClasses()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "additionalCssClasses", type = BeanTagAttribute.AttributeType.LISTVALUE)
+    @Override
     public List<String> getAdditionalCssClasses() {
         if (additionalCssClasses == Collections.EMPTY_LIST && isMutable(true)) {
             additionalCssClasses = new LifecycleAwareList<String>(this);
         }
-        
+
         return additionalCssClasses;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setAdditionalCssClasses(java.util.List)
+     * {@inheritDoc}
      */
+    @Override
     public void setAdditionalCssClasses(List<String> additionalCssClasses) {
         checkMutable(true);
         if (additionalCssClasses == null) {
@@ -987,38 +1021,40 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     /**
      * Builds the HTML class attribute string by combining the styleClasses list with a space
      * delimiter
-     * 
+     *
      * @return class attribute string
      */
     public String getStyleClassesAsString() {
         if (cssClasses != null) {
-            return StringUtils.join(cssClasses, " ");
+            return StringUtils.join(cssClasses, " ").trim();
         }
 
         return "";
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#addStyleClass(java.lang.String)
+     * {@inheritDoc}
      */
+    @Override
     public void addStyleClass(String styleClass) {
         checkMutable(false);
         if (StringUtils.isEmpty(styleClass)) {
             return;
         }
-        
+
         if (cssClasses.isEmpty()) {
             setCssClasses(new ArrayList<String>());
         }
-        
+
         if (!cssClasses.contains(styleClass)) {
             cssClasses.add(styleClass);
         }
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#appendToStyle(java.lang.String)
+     * {@inheritDoc}
      */
+    @Override
     public void appendToStyle(String styleRules) {
         checkMutable(false);
         if (style == null) {
@@ -1028,16 +1064,17 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getFinalizeMethodToCall()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "finalizeMethodToCall")
+    @Override
     public String getFinalizeMethodToCall() {
         return this.finalizeMethodToCall;
     }
 
     /**
      * Setter for the finalize method
-     * 
+     *
      * @param finalizeMethodToCall
      */
     public void setFinalizeMethodToCall(String finalizeMethodToCall) {
@@ -1046,16 +1083,17 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getFinalizeMethodAdditionalArguments()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "finalizeMethodAdditionalArguments", type = BeanTagAttribute.AttributeType.LISTBEAN)
+    @Override
     public List<Object> getFinalizeMethodAdditionalArguments() {
         return finalizeMethodAdditionalArguments;
     }
 
     /**
      * Setter for the finalize additional arguments list
-     * 
+     *
      * @param finalizeMethodAdditionalArguments
      */
     public void setFinalizeMethodAdditionalArguments(List<Object> finalizeMethodAdditionalArguments) {
@@ -1064,16 +1102,17 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getFinalizeMethodInvoker()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "finalizeMethodInvoker", type = BeanTagAttribute.AttributeType.SINGLEBEAN)
+    @Override
     public MethodInvokerConfig getFinalizeMethodInvoker() {
         return this.finalizeMethodInvoker;
     }
 
     /**
      * Setter for the method invoker instance
-     * 
+     *
      * @param finalizeMethodInvoker
      */
     public void setFinalizeMethodInvoker(MethodInvokerConfig finalizeMethodInvoker) {
@@ -1082,88 +1121,88 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#isSelfRendered()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "selfRendered")
+    @Override
     public boolean isSelfRendered() {
         return this.selfRendered;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setSelfRendered(boolean)
+     * {@inheritDoc}
      */
+    @Override
     public void setSelfRendered(boolean selfRendered) {
-        ViewLifecyclePhase phase = ViewLifecycle.getPhase();
-        if (!(phase instanceof RenderComponentPhase) || this != phase.getComponent()) {
-            checkMutable(true);
-        }
-        
         this.selfRendered = selfRendered;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getRenderedHtmlOutput()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "renderedHtmlOutput")
+    @Override
     public String getRenderedHtmlOutput() {
         return this.renderedHtmlOutput;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setRenderedHtmlOutput(java.lang.String)
+     * {@inheritDoc}
      */
+    @Override
     public void setRenderedHtmlOutput(String renderedHtmlOutput) {
-        ViewLifecyclePhase phase = ViewLifecycle.getPhase();
-        if (!(phase instanceof RenderComponentPhase) || this != phase.getComponent()) {
-            checkMutable(true);
-        }
-        
         this.renderedHtmlOutput = renderedHtmlOutput;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#isDisableSessionPersistence()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "disableSessionPersistence")
+    @Override
     public boolean isDisableSessionPersistence() {
         return disableSessionPersistence;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setDisableSessionPersistence(boolean)
+     * {@inheritDoc}
      */
+    @Override
     public void setDisableSessionPersistence(boolean disableSessionPersistence) {
         checkMutable(true);
         this.disableSessionPersistence = disableSessionPersistence;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#isForceSessionPersistence()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "forceSessionPersistence")
+    @Override
     public boolean isForceSessionPersistence() {
         return forceSessionPersistence;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setForceSessionPersistence(boolean)
+     * {@inheritDoc}
      */
+    @Override
     public void setForceSessionPersistence(boolean forceSessionPersistence) {
         checkMutable(true);
         this.forceSessionPersistence = forceSessionPersistence;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getComponentSecurity()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "componentSecurity", type = BeanTagAttribute.AttributeType.SINGLEBEAN)
+    @Override
     public ComponentSecurity getComponentSecurity() {
         return componentSecurity;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setComponentSecurity(org.kuali.rice.krad.uif.component.ComponentSecurity)
+     * {@inheritDoc}
      */
+    @Override
     public void setComponentSecurity(ComponentSecurity componentSecurity) {
         checkMutable(true);
         this.componentSecurity = componentSecurity;
@@ -1174,7 +1213,7 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
      */
     protected void initializeComponentSecurity() {
         if (this.componentSecurity == null) {
-            this.componentSecurity = DataObjectUtils.newInstance(ComponentSecurity.class);
+            this.componentSecurity = KRADUtils.createNewObjectFromClass(ComponentSecurity.class);
         }
     }
 
@@ -1188,7 +1227,9 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.ComponentSecurity#setEditAuthz(boolean)
+     * Setter for {@link #isEditAuthz()}
+     * 
+     * @param editAuthz property value
      */
     public void setEditAuthz(Boolean editAuthz) {
         checkMutable(true);
@@ -1207,7 +1248,9 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.ComponentSecurity#setViewAuthz(boolean)
+     * Setter for {@link #isViewAuthz()}
+     * 
+     * @param viewAuthz property value
      */
     public void setViewAuthz(Boolean viewAuthz) {
         checkMutable(true);
@@ -1217,38 +1260,41 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getComponentModifiers()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "componentModifiers", type = BeanTagAttribute.AttributeType.LISTBEAN)
+    @Override
     public List<ComponentModifier> getComponentModifiers() {
         return this.componentModifiers;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setComponentModifiers(java.util.List)
+     * {@inheritDoc}
      */
+    @Override
     public void setComponentModifiers(List<ComponentModifier> componentModifiers) {
         checkMutable(true);
-        this.componentModifiers = componentModifiers == null
-                ? Collections.<ComponentModifier> emptyList()
-                : Collections.<ComponentModifier> unmodifiableList(componentModifiers);
+        this.componentModifiers = componentModifiers == null ? Collections.<ComponentModifier>emptyList() :
+                Collections.<ComponentModifier>unmodifiableList(componentModifiers);
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getContext()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "context", type = BeanTagAttribute.AttributeType.MAPBEAN)
+    @Override
     public Map<String, Object> getContext() {
         if (context == Collections.EMPTY_MAP && isMutable(true)) {
             context = new LifecycleAwareMap<String, Object>(this);
         }
-        
+
         return context;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setContext(java.util.Map)
+     * {@inheritDoc}
      */
+    @Override
     public void setContext(Map<String, Object> context) {
         checkMutable(true);
 
@@ -1260,9 +1306,9 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#pushObjectToContext(java.lang.String,
-     *      java.lang.Object)
+     * {@inheritDoc}
      */
+    @Override
     public void pushObjectToContext(String objectName, Object object) {
         checkMutable(true);
         if (context == Collections.EMPTY_MAP && isMutable(true)) {
@@ -1288,18 +1334,19 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#pushAllToContext
+     * {@inheritDoc}
      */
+    @Override
     public void pushAllToContext(Map<String, Object> objects) {
         checkMutable(true);
         if (objects == null || objects.isEmpty()) {
             return;
         }
-        
+
         if (context == Collections.EMPTY_MAP && isMutable(true)) {
             context = new LifecycleAwareMap<String, Object>(this);
         }
-        
+
         context.putAll(objects);
 
         List<Component> propertyReplacerComponents = getPropertyReplacerComponents();
@@ -1311,21 +1358,22 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getPropertyReplacers()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "propertyReplacers", type = BeanTagAttribute.AttributeType.LISTBEAN)
+    @Override
     public List<PropertyReplacer> getPropertyReplacers() {
         return this.propertyReplacers;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setPropertyReplacers(java.util.List)
+     * {@inheritDoc}
      */
+    @Override
     public void setPropertyReplacers(List<PropertyReplacer> propertyReplacers) {
         checkMutable(true);
-        this.propertyReplacers = propertyReplacers == null
-                ? Collections.<PropertyReplacer> emptyList()
-                : Collections.<PropertyReplacer> unmodifiableList(propertyReplacers);
+        this.propertyReplacers = propertyReplacers == null ? Collections.<PropertyReplacer>emptyList() :
+                Collections.<PropertyReplacer>unmodifiableList(propertyReplacers);
     }
 
     /**
@@ -1338,7 +1386,7 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
 
     /**
      * Setter for the component's order
-     * 
+     *
      * @param order
      */
     public void setOrder(int order) {
@@ -1347,24 +1395,27 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getToolTip()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "toolTip", type = BeanTagAttribute.AttributeType.SINGLEBEAN)
+    @Override
     public Tooltip getToolTip() {
         return toolTip;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setToolTip(Tooltip)
+     * {@inheritDoc}
      */
+    @Override
     public void setToolTip(Tooltip toolTip) {
         checkMutable(true);
         this.toolTip = toolTip;
     }
 
     /**
-     * @see Component#getEventHandlerScript()
+     * {@inheritDoc}
      */
+    @Override
     public String getEventHandlerScript() {
         StringBuilder sb = new StringBuilder();
 
@@ -1383,6 +1434,7 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
         sb.append(ScriptUtils.buildEventHandlerScript(getId(), "click", getOnClickScript()));
         sb.append(ScriptUtils.buildEventHandlerScript(getId(), "dblclick", getOnDblClickScript()));
         sb.append(ScriptUtils.buildEventHandlerScript(getId(), "focus", getOnFocusScript()));
+        sb.append(ScriptUtils.buildEventHandlerScript(getId(), "input", getOnInputScript()));
         sb.append(ScriptUtils.buildEventHandlerScript(getId(), "keypress", getOnKeyPressScript()));
         sb.append(ScriptUtils.buildEventHandlerScript(getId(), "keyup", getOnKeyUpScript()));
         sb.append(ScriptUtils.buildEventHandlerScript(getId(), "keydown", getOnKeyDownScript()));
@@ -1396,9 +1448,10 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.ScriptEventSupport#getOnLoadScript()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "onLoadScript")
+    @Override
     public String getOnLoadScript() {
         return onLoadScript;
     }
@@ -1412,9 +1465,10 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.ScriptEventSupport#getOnDocumentReadyScript()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "onDocumentReadyScript")
+    @Override
     public String getOnDocumentReadyScript() {
         return this.onDocumentReadyScript;
     }
@@ -1556,6 +1610,22 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
+     * @see org.kuali.rice.krad.uif.component.ScriptEventSupport#getOnInputScript()
+     */
+    @BeanTagAttribute(name = "onInputScript")
+    public String getOnInputScript() {
+        return onInputScript;
+    }
+
+    /**
+     * @see ScriptEventSupport#setOnInputScript(java.lang.String)
+     */
+    public void setOnInputScript(String onInputScript) {
+        checkMutable(true);
+        this.onInputScript = onInputScript;
+    }
+
+    /**
      * @see org.kuali.rice.krad.uif.component.ScriptEventSupport#getOnKeyPressScript()
      */
     @BeanTagAttribute(name = "onKeyPressScript")
@@ -1684,20 +1754,22 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getTemplateOptions()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "templateOptions", type = BeanTagAttribute.AttributeType.MAPVALUE)
+    @Override
     public Map<String, String> getTemplateOptions() {
         if (templateOptions == Collections.EMPTY_MAP && isMutable(true)) {
             templateOptions = new LifecycleAwareMap<String, String>(this);
         }
-        
+
         return templateOptions;
     }
 
     /**
-     * @see Component#setTemplateOptions(java.util.Map)
+     * {@inheritDoc}
      */
+    @Override
     public void setTemplateOptions(Map<String, String> templateOptions) {
         checkMutable(true);
         if (templateOptions == null) {
@@ -1710,7 +1782,7 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     /**
      * Builds a string from the underlying <code>Map</code> of template options that will export
      * that options as a JavaScript Map for use in js and jQuery plugins
-     * 
+     *
      * @return String of widget options formatted as JS Map.
      */
     @Override
@@ -1723,7 +1795,7 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
         if (templateOptions == null) {
             return "{}";
         }
-        
+
         StringBuilder sb = new StringBuilder();
         sb.append("{");
 
@@ -1757,19 +1829,19 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
      * #listContains, #emptyList, matches clause are allowed. String and regex values must use
      * single quotes ('), booleans must be either true or false, numbers must be a valid double,
      * either negative or positive.
-     * 
+     *
      * <p>
      * DO NOT use progressiveRender and a conditional refresh statement on the same component unless
      * it is known that the component will always be visible in all cases when a conditional refresh
      * happens (ie conditional refresh has progressiveRender's condition anded with its own
      * condition).
      * </p>
-     * 
+     *
      * <p>
      * <b>If a component should be refreshed every time it is shown, use the
      * progressiveRenderAndRefresh option with this property instead.</b>
      * </p>
-     * 
+     *
      * @return progressiveRender expression
      */
     @BeanTagAttribute(name = "progressiveRender")
@@ -1787,14 +1859,14 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
 
     /**
      * When set if the condition is satisfied, the component will be refreshed.
-     * 
+     *
      * <p>
      * The component MUST BE a container or field type. conditionalRefresh is defined in a limited
      * Spring EL syntax. Only valid form property names, and, or, logical comparison operators
      * (non-arithmetic), #listContains, #emptyList, and the matches clause are allowed. String and
      * regex values must use single quotes ('), booleans must be either true or false, numbers must
      * be a valid double either negative or positive.
-     * 
+     *
      * <p>
      * DO NOT use progressiveRender and conditionalRefresh on the same component unless it is known
      * that the component will always be visible in all cases when a conditionalRefresh happens (ie
@@ -1802,7 +1874,7 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
      * component should be refreshed every time it is shown, use the progressiveRenderAndRefresh
      * option with this property instead.</b>
      * </p>
-     * 
+     *
      * @return the conditionalRefresh
      */
     @BeanTagAttribute(name = "conditionalRefresh")
@@ -1812,7 +1884,7 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
 
     /**
      * Set the conditional refresh condition
-     * 
+     *
      * @param conditionalRefresh the conditionalRefresh to set
      */
     public void setConditionalRefresh(String conditionalRefresh) {
@@ -1822,7 +1894,7 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
 
     /**
      * Control names used to control progressive disclosure, set internally cannot be set.
-     * 
+     *
      * @return the progressiveDisclosureControlNames
      */
     public List<String> getProgressiveDisclosureControlNames() {
@@ -1832,7 +1904,7 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     /**
      * The condition to show this component progressively converted to a js expression, set
      * internally cannot be set.
-     * 
+     *
      * @return the progressiveDisclosureConditionJs
      */
     public String getProgressiveDisclosureConditionJs() {
@@ -1842,7 +1914,7 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     /**
      * The condition to refresh this component converted to a js expression, set internally cannot
      * be set.
-     * 
+     *
      * @return the conditionalRefreshConditionJs
      */
     public String getConditionalRefreshConditionJs() {
@@ -1851,7 +1923,7 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
 
     /**
      * Control names used to control conditional refresh, set internally cannot be set.
-     * 
+     *
      * @return the conditionalRefreshControlNames
      */
     public List<String> getConditionalRefreshControlNames() {
@@ -1861,14 +1933,14 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     /**
      * When progressiveRenderViaAJAX is true, this component will be retrieved from the server when
      * it first satisfies its progressive render condition.
-     * 
+     *
      * <p>
      * After the first retrieval, it is hidden/shown in the html by the js when its progressive
      * condition result changes. <b>By default, this is false, so components with progressive render
      * capabilities will always be already within the client html and toggled to be hidden or
      * visible.</b>
      * </p>
-     * 
+     *
      * @return the progressiveRenderViaAJAX
      */
     @BeanTagAttribute(name = "progressiveRenderViaAJAX")
@@ -1888,12 +1960,12 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
      * If true, when the progressiveRender condition is satisfied, the component will always be
      * retrieved from the server and shown(as opposed to being stored on the client, but hidden,
      * after the first retrieval as is the case with the progressiveRenderViaAJAX option).
-     * 
+     *
      * <p>
      * <b>By default, this is false, so components with progressive render capabilities will always
      * be already within the client html and toggled to be hidden or visible.</b>
      * </p>
-     * 
+     *
      * @return the progressiveRenderAndRefresh
      */
     @BeanTagAttribute(name = "progressiveRenderAndRefresh")
@@ -1903,7 +1975,7 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
 
     /**
      * Set the progressive render and refresh option.
-     * 
+     *
      * @param progressiveRenderAndRefresh the progressiveRenderAndRefresh to set.
      */
     public void setProgressiveRenderAndRefresh(boolean progressiveRenderAndRefresh) {
@@ -1912,47 +1984,49 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getRefreshWhenChangedPropertyNames()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "refreshWhenChangedPropertyNames", type = BeanTagAttribute.AttributeType.LISTVALUE)
+    @Override
     public List<String> getRefreshWhenChangedPropertyNames() {
         return this.refreshWhenChangedPropertyNames;
     }
 
     /**
-     * @see 
-     *      org.kuali.rice.krad.uif.component.Component#setRefreshWhenChangedPropertyNames(java.util.
-     *      List<java.lang.String>)
+     * {@inheritDoc}
      */
+    @Override
     public void setRefreshWhenChangedPropertyNames(List<String> refreshWhenChangedPropertyNames) {
         checkMutable(true);
-        this.refreshWhenChangedPropertyNames = refreshWhenChangedPropertyNames == null ?
-                Collections.<String> emptyList() :
-                Collections.<String> unmodifiableList(refreshWhenChangedPropertyNames);
+        this.refreshWhenChangedPropertyNames =
+                refreshWhenChangedPropertyNames == null ? Collections.<String>emptyList() :
+                        Collections.<String>unmodifiableList(refreshWhenChangedPropertyNames);
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getAdditionalComponentsToRefresh()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "additionalComponentsToRefresh", type = BeanTagAttribute.AttributeType.LISTVALUE)
+    @Override
     public List<String> getAdditionalComponentsToRefresh() {
         return additionalComponentsToRefresh;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setAdditionalComponentsToRefresh(java.util.List<java.lang.String>)
+     * {@inheritDoc}
      */
+    @Override
     public void setAdditionalComponentsToRefresh(List<String> additionalComponentsToRefresh) {
         checkMutable(true);
-        this.additionalComponentsToRefresh = additionalComponentsToRefresh == null
-                ? Collections.<String> emptyList()
-                : Collections.<String> unmodifiableList(additionalComponentsToRefresh);
+        this.additionalComponentsToRefresh = additionalComponentsToRefresh == null ? Collections.<String>emptyList() :
+                Collections.<String>unmodifiableList(additionalComponentsToRefresh);
         this.additionalComponentsToRefreshJs = null;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getAdditionalComponentsToRefreshJs
+     * {@inheritDoc}
      */
+    @Override
     public String getAdditionalComponentsToRefreshJs() {
         if (additionalComponentsToRefreshJs == null
                 && additionalComponentsToRefresh != null
@@ -1965,30 +2039,34 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#isRefreshedByAction()
+     * {@inheritDoc}
      */
+    @Override
     public boolean isRefreshedByAction() {
         return refreshedByAction;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setRefreshedByAction(boolean)
+     * {@inheritDoc}
      */
+    @Override
     public void setRefreshedByAction(boolean refreshedByAction) {
         checkMutable(true);
         this.refreshedByAction = refreshedByAction;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#isDisclosedByAction()
+     * {@inheritDoc}
      */
+    @Override
     public boolean isDisclosedByAction() {
         return disclosedByAction;
     }
 
     /**
-     * @see Component#setDisclosedByAction(boolean)
+     * {@inheritDoc}
      */
+    @Override
     public void setDisclosedByAction(boolean disclosedByAction) {
         checkMutable(true);
         this.disclosedByAction = disclosedByAction;
@@ -1996,13 +2074,13 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
 
     /**
      * Time in seconds that the component will be automatically refreshed
-     * 
+     *
      * <p>
      * This will invoke the refresh process just like the conditionalRefresh and
      * refreshWhenChangedPropertyNames. When using this property methodToCallOnRefresh and id should
      * also be specified
      * </p>
-     * 
+     *
      * @return refreshTimer
      */
     @BeanTagAttribute(name = "refreshTimer")
@@ -2012,7 +2090,7 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
 
     /**
      * Setter for refreshTimer
-     * 
+     *
      * @param refreshTimer
      */
     public void setRefreshTimer(int refreshTimer) {
@@ -2021,16 +2099,18 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#isResetDataOnRefresh()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "resetDataOnRefresh")
+    @Override
     public boolean isResetDataOnRefresh() {
         return resetDataOnRefresh;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#setResetDataOnRefresh(boolean)
+     * {@inheritDoc}
      */
+    @Override
     public void setResetDataOnRefresh(boolean resetDataOnRefresh) {
         checkMutable(true);
         this.resetDataOnRefresh = resetDataOnRefresh;
@@ -2039,7 +2119,7 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     /**
      * Name of a method on the controller that should be invoked as part of the component refresh
      * and disclosure process
-     * 
+     *
      * <p>
      * During the component refresh or disclosure process it might be necessary to perform other
      * operations, such as preparing data or executing a business process. This allows the
@@ -2047,12 +2127,12 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
      * component refresh action. In this method, the necessary logic can be performed and then the
      * base component update method invoked to carry out the component refresh.
      * </p>
-     * 
+     *
      * <p>
      * Controller method to invoke must accept the form, binding result, request, and response
      * arguments
      * </p>
-     * 
+     *
      * @return valid controller method name
      */
     @BeanTagAttribute(name = "methodToCallOnRefresh")
@@ -2062,7 +2142,7 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
 
     /**
      * Setter for the controller method to call for a refresh or disclosure action on this component
-     * 
+     *
      * @param methodToCallOnRefresh
      */
     public void setMethodToCallOnRefresh(String methodToCallOnRefresh) {
@@ -2081,7 +2161,7 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     /**
      * Flag indicating that this component and its nested components must be skipped when keyboard
      * tabbing.
-     * 
+     *
      * @return the skipInTabOrder flag
      */
     @BeanTagAttribute(name = "skipInTabOrder")
@@ -2090,31 +2170,22 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * Get the dataAttributes setup for this component - to be written to the html/jQuery data
-     * 
-     * <p>
-     * The attributes that are complex objects (contain {}) they will be written through script. The
-     * attritubes that are simple (contain no objects) will be written directly to the html of the
-     * component using standard data-. Either way they can be access through .data() call in jQuery
-     * </p>
-     * 
-     * @return map of dataAttributes
+     * {@inheritDoc}
      */
+    @Override
     @BeanTagAttribute(name = "dataAttributes", type = BeanTagAttribute.AttributeType.MAPVALUE)
     public Map<String, String> getDataAttributes() {
         if (dataAttributes == Collections.EMPTY_MAP) {
             dataAttributes = new LifecycleAwareMap<String, String>(this);
         }
-        
+
         return dataAttributes;
     }
 
     /**
-     * DataAttributes that will be written to the html and/or through script to be consumed by
-     * jQuery.
-     * 
-     * @param dataAttributes the data attributes to set for this component
+     * {@inheritDoc}
      */
+    @Override
     public void setDataAttributes(Map<String, String> dataAttributes) {
         checkMutable(true);
         if (dataAttributes == null) {
@@ -2125,14 +2196,33 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * Add a data attribute to the dataAttributes map - to be written to the html/jQuery data.
-     * 
-     * @param key key of the data attribute
-     * @param value value of the data attribute
+     * {@inheritDoc}
      */
+    @Override
+    @BeanTagAttribute(name = "scriptDataAttributes", type = BeanTagAttribute.AttributeType.MAPVALUE)
+    public Map<String, String> getScriptDataAttributes() {
+        if (scriptDataAttributes == Collections.EMPTY_MAP) {
+            scriptDataAttributes = new LifecycleAwareMap<String, String>(this);
+        }
+
+        return scriptDataAttributes;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setScriptDataAttributes(Map<String, String> scriptDataAttributes) {
+        this.scriptDataAttributes = scriptDataAttributes;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void addDataAttribute(String key, String value) {
         checkMutable(true);
-        
+
         if (dataAttributes == Collections.EMPTY_MAP) {
             dataAttributes = new LifecycleAwareMap<String, String>(this);
         }
@@ -2141,23 +2231,21 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
     }
 
     /**
-     * Add a data attribute to the dataAttributes map if the given value is non null or the empty
-     * string
-     * 
-     * @param key key for the data attribute entry
-     * @param value value for the data attribute
+     * {@inheritDoc}
      */
-    public void addDataAttributeIfNonEmpty(String key, String value) {
-        if (StringUtils.isNotBlank(value)) {
-            addDataAttribute(key, value);
+    @Override
+    public void addScriptDataAttribute(String key, String value) {
+        checkMutable(true);
+
+        if (scriptDataAttributes == Collections.EMPTY_MAP) {
+            scriptDataAttributes = new LifecycleAwareMap<String, String>(this);
         }
+
+        scriptDataAttributes.put(key, value);
     }
 
     /**
-     * Returns a string that can be put into a the tag of a component to add all data attributes
-     * inline.
-     * 
-     * @return html string for data attributes for the simple attributes
+     * {@inheritDoc}
      */
     @Override
     public String getSimpleDataAttributes() {
@@ -2177,42 +2265,73 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
         return attributes;
     }
 
+
+    @Override
+    public String getScriptDataAttributesJs() {
+        String script = "";
+
+        if (getScriptDataAttributes() == null || getScriptDataAttributes().isEmpty()) {
+            return script;
+        }
+
+        String id = this.getId().replace(".", "\\\\.");
+        String selector = "var dataComponent = jQuery('#" + id + "');";
+        script = ScriptUtils.appendScript(script, selector);
+
+        for (Map.Entry<String, String> data : getScriptDataAttributes().entrySet()) {
+            if (data != null && data.getValue() != null) {
+                script = ScriptUtils.appendScript(script,
+                        "dataComponent.data('" + data.getKey() + "'," + ScriptUtils.convertToJsValue(data.getValue())
+                                + ");");
+            }
+        }
+
+        return script;
+    }
+
     /**
-     * @see Component#getPreRenderContent()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "preRenderContent")
+    @Override
     public String getPreRenderContent() {
         return preRenderContent;
     }
 
     /**
-     * @see Component#setPreRenderContent(String)
+     * {@inheritDoc}
      */
+    @Override
     public void setPreRenderContent(String preRenderContent) {
         checkMutable(true);
         this.preRenderContent = preRenderContent;
     }
 
     /**
-     * @see Component#getPostRenderContent()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name = "postRenderContent")
+    @Override
     public String getPostRenderContent() {
         return postRenderContent;
     }
 
     /**
-     * @see Component#setPostRenderContent(String)
+     * {@inheritDoc}
      */
+    @Override
     public void setPostRenderContent(String postRenderContent) {
         checkMutable(true);
         this.postRenderContent = postRenderContent;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ComponentBase clone() throws CloneNotSupportedException {
         ComponentBase copy = (ComponentBase) super.clone();
-        
+
         // Copy initialized status, but reset to created for others.
         // This allows prototypes to bypass repeating the initialized phase.
         if (UifConstants.ViewStatus.INITIALIZED.equals(viewStatus)) {
@@ -2220,174 +2339,42 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
         } else {
             copy.viewStatus = UifConstants.ViewStatus.CREATED;
         }
-        
+
         return copy;
     }
 
     /**
-     * Set view status to {@link UifConstants.ViewStatus#CACHED} to prevent modification.
-     * 
+     * Set view status to {@link org.kuali.rice.krad.uif.UifConstants.ViewStatus#CACHED} to prevent modification.
+     *
      * @see Copyable#preventModification()
      */
     @Override
     public void preventModification() {
-        if (!UifConstants.ViewStatus.CREATED.equals(viewStatus)
-                && !UifConstants.ViewStatus.CACHED.equals(viewStatus)) {
-            ViewLifecycle.reportIllegalState("View status is " + viewStatus + " prior to caching "
-                    + getClass().getName() + " " + getId() + ", expected C or X");
+        if (!UifConstants.ViewStatus.CREATED.equals(viewStatus) && !UifConstants.ViewStatus.CACHED.equals(viewStatus)) {
+            ViewLifecycle.reportIllegalState("View status is "
+                    + viewStatus
+                    + " prior to caching "
+                    + getClass().getName()
+                    + " "
+                    + getId()
+                    + ", expected C or X");
         }
-     
+
         viewStatus = UifConstants.ViewStatus.CACHED;
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
+     * {@inheritDoc}
      */
     @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        ComponentBase componentCopy = ((ComponentBase) component);
-
-        componentCopy.setId(this.id);
-        componentCopy.setBaseId(this.baseId);
-
-        // Copy initialized status, but reset to created for others.
-        // This allows prototypes to bypass repeating the initialized phase.
-        if (UifConstants.ViewStatus.INITIALIZED.equals(viewStatus)) {
-            componentCopy.viewStatus = UifConstants.ViewStatus.INITIALIZED;
-        } else {
-            componentCopy.viewStatus = UifConstants.ViewStatus.CREATED;
-        }
-
-        List<String> copyAdditionalComponentsToRefresh = this.getAdditionalComponentsToRefresh();
-        if (copyAdditionalComponentsToRefresh != null) {
-            componentCopy.setAdditionalComponentsToRefresh(new ArrayList<String>(copyAdditionalComponentsToRefresh));
-        }
-
-        if (this.additionalCssClasses != null) {
-            componentCopy.setAdditionalCssClasses(new ArrayList<String>(this.additionalCssClasses));
-        }
-
-        componentCopy.setAlign(this.align);
-
-        if (this.cellCssClasses != null) {
-            componentCopy.setCellCssClasses(new ArrayList<String>(this.cellCssClasses));
-        }
-
-        componentCopy.setCellStyle(this.cellStyle);
-        componentCopy.setCellWidth(this.cellWidth);
-        componentCopy.setColSpan(this.colSpan);
-        componentCopy.setConditionalRefresh(this.conditionalRefresh);
-
-        if (this.libraryCssClasses != null) {
-            componentCopy.setLibraryCssClasses(new ArrayList<String>(this.libraryCssClasses));
-        }
-
-        if (this.cssClasses != null) {
-            componentCopy.setCssClasses(new ArrayList<String>(this.cssClasses));
-        }
-
-        if (this.dataAttributes != null) {
-            componentCopy.setDataAttributes(new HashMap<String, String>(this.dataAttributes));
-        }
-
-        componentCopy.setDisableSessionPersistence(this.disableSessionPersistence);
-        componentCopy.setDisclosedByAction(this.disclosedByAction);
-        componentCopy.setFinalizeMethodToCall(this.finalizeMethodToCall);
-        componentCopy.setFinalizeMethodAdditionalArguments(this.finalizeMethodAdditionalArguments);
-        componentCopy.setFinalizeMethodInvoker(CloneUtils.deepClone(this.finalizeMethodInvoker));
-        componentCopy.setForceSessionPersistence(this.forceSessionPersistence);
-        componentCopy.setHidden(this.hidden);
-        componentCopy.setMethodToCallOnRefresh(this.methodToCallOnRefresh);
-        componentCopy.setOnBlurScript(this.onBlurScript);
-        componentCopy.setOnChangeScript(this.onChangeScript);
-        componentCopy.setOnClickScript(this.onClickScript);
-        componentCopy.setOnCloseScript(this.onCloseScript);
-        componentCopy.setOnDblClickScript(this.onDblClickScript);
-        componentCopy.setOnDocumentReadyScript(this.onDocumentReadyScript);
-        componentCopy.setOnFocusScript(this.onFocusScript);
-        componentCopy.setOnKeyDownScript(this.onKeyDownScript);
-        componentCopy.setOnKeyPressScript(this.onKeyPressScript);
-        componentCopy.setOnKeyUpScript(this.onKeyUpScript);
-        componentCopy.setOnLoadScript(this.onLoadScript);
-        componentCopy.setOnMouseDownScript(this.onMouseDownScript);
-        componentCopy.setOnMouseMoveScript(this.onMouseMoveScript);
-        componentCopy.setOnMouseOutScript(this.onMouseOutScript);
-        componentCopy.setOnMouseOverScript(this.onMouseOverScript);
-        componentCopy.setOnMouseUpScript(this.onMouseUpScript);
-        componentCopy.setOnSubmitScript(this.onSubmitScript);
-        componentCopy.setOnUnloadScript(this.onUnloadScript);
-        componentCopy.setOrder(this.order);
-        componentCopy.setPostRenderContent(this.postRenderContent);
-        componentCopy.setPreRenderContent(this.preRenderContent);
-        componentCopy.setProgressiveRender(this.progressiveRender);
-        componentCopy.setProgressiveRenderViaAJAX(this.progressiveRenderViaAJAX);
-        componentCopy.setReadOnly(this.readOnly);
-        componentCopy.setRefreshedByAction(this.refreshedByAction);
-        componentCopy.setRefreshTimer(this.refreshTimer);
-
-        if (this.refreshWhenChangedPropertyNames != null) {
-            componentCopy.setRefreshWhenChangedPropertyNames(new ArrayList<String>(
-                    this.refreshWhenChangedPropertyNames));
-        }
-
-        componentCopy.setRender(this.render);
-        componentCopy.setRetrieveViaAjax(this.retrieveViaAjax);
-        componentCopy.setRenderedHtmlOutput(this.renderedHtmlOutput);
-        componentCopy.setRequired(this.required);
-        componentCopy.setResetDataOnRefresh(this.resetDataOnRefresh);
-        componentCopy.setRowSpan(this.rowSpan);
-        componentCopy.setSelfRendered(this.selfRendered);
-        componentCopy.setSkipInTabOrder(this.skipInTabOrder);
-        componentCopy.setStyle(this.style);
-        componentCopy.setTemplate(this.template);
-        componentCopy.setTemplateName(this.templateName);
-
-        if (this.templateOptions != null) {
-            componentCopy.setTemplateOptions(new HashMap<String, String>(this.templateOptions));
-        }
-
-        componentCopy.setTemplateOptionsJSString(this.templateOptionsJSString);
-
-        componentCopy.setTitle(this.title);
-        componentCopy.setValign(this.valign);
-        componentCopy.setWidth(this.width);
-
-        if (componentModifiers != null) {
-            List<ComponentModifier> componentModifiersCopy = new ArrayList<ComponentModifier>();
-            for (ComponentModifier componentModifer : this.componentModifiers) {
-                componentModifiersCopy.add((ComponentModifier) componentModifer.copy());
-            }
-
-            componentCopy.setComponentModifiers(componentModifiersCopy);
-        }
-
-        if (this.componentSecurity != null) {
-            componentCopy.setComponentSecurity((ComponentSecurity) this.componentSecurity.copy());
-        }
-
-        if (this.toolTip != null) {
-            componentCopy.setToolTip((Tooltip) this.toolTip.copy());
-        }
-
-        componentCopy.setContext(new HashMap<String, Object>(this.context));
-
-        if (propertyReplacers != null) {
-            List<PropertyReplacer> propertyReplacersCopy = new ArrayList<PropertyReplacer>();
-            for (PropertyReplacer propertyReplacer : this.propertyReplacers) {
-                propertyReplacersCopy.add((PropertyReplacer) propertyReplacer.copy());
-            }
-
-            componentCopy.setPropertyReplacers(propertyReplacersCopy);
-        }
-
-        componentCopy.setComponentSecurity(getComponentSecurity());
+    public boolean skipLifecycle() {
+            return this.isRetrieveViaAjax();
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#completeValidation
+     * {@inheritDoc}
      */
+    @Override
     public void completeValidation(ValidationTrace tracer) {
         tracer.addBean(this);
 
@@ -2418,7 +2405,7 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
         // Check for rendered html if the component is set to self render
         if (isSelfRendered() && getRenderedHtmlOutput() == null) {
             String currentValues[] =
-            {"selfRendered = " + isSelfRendered(), "renderedHtmlOutput = " + getRenderedHtmlOutput()};
+                    {"selfRendered = " + isSelfRendered(), "renderedHtmlOutput = " + getRenderedHtmlOutput()};
             tracer.createError("RenderedHtmlOutput must be set if selfRendered is true", currentValues);
         }
 
@@ -2453,12 +2440,11 @@ public abstract class ComponentBase extends UifDictionaryBeanBase implements Com
         if (StringUtils.isNotEmpty(getProgressiveRender()) && StringUtils.isNotEmpty(conditionalRefresh)) {
             String currentValues[] = {"progressiveRender = " + getProgressiveRender(),
                     "conditionalRefresh = " + getConditionalRefresh()};
-            tracer.createWarning(
-                    "DO NOT use progressiveRender and conditionalRefresh on the same component unless "
-                            + "it is known that the component will always be visible in all cases when a conditionalRefresh "
-                            + "happens (ie conditionalRefresh has progressiveRender's condition anded with its own condition). "
-                            + "If a component should be refreshed every time it is shown, use the progressiveRenderAndRefresh "
-                            + "option with this property instead.", currentValues);
+            tracer.createWarning("DO NOT use progressiveRender and conditionalRefresh on the same component unless "
+                    + "it is known that the component will always be visible in all cases when a conditionalRefresh "
+                    + "happens (ie conditionalRefresh has progressiveRender's condition anded with its own condition). "
+                    + "If a component should be refreshed every time it is shown, use the progressiveRenderAndRefresh "
+                    + "option with this property instead.", currentValues);
         }
 
         // Check for valid Spring EL format for progressiveRender

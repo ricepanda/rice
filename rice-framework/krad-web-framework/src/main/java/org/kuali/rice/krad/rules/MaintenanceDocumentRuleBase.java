@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import org.kuali.rice.krad.exception.ValidationException;
 import org.kuali.rice.krad.maintenance.Maintainable;
 import org.kuali.rice.krad.maintenance.MaintenanceDocument;
 import org.kuali.rice.krad.maintenance.MaintenanceDocumentAuthorizer;
+import org.kuali.rice.krad.rules.rule.event.AddCollectionLineEvent;
 import org.kuali.rice.krad.rules.rule.event.ApproveDocumentEvent;
 import org.kuali.rice.krad.service.DataDictionaryService;
 import org.kuali.rice.krad.service.DataObjectAuthorizationService;
@@ -52,6 +53,7 @@ import org.kuali.rice.krad.util.ForeignKeyFieldsPopulationState;
 import org.kuali.rice.krad.util.GlobalVariables;
 import org.kuali.rice.krad.util.KRADConstants;
 import org.kuali.rice.krad.util.KRADPropertyConstants;
+import org.kuali.rice.krad.util.MessageMap;
 import org.kuali.rice.krad.util.RouteToCompletionUtil;
 import org.kuali.rice.krad.util.UrlFactory;
 import org.kuali.rice.krad.workflow.service.WorkflowDocumentService;
@@ -59,6 +61,7 @@ import org.springframework.util.AutoPopulatingList;
 
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -387,6 +390,37 @@ public class MaintenanceDocumentRuleBase extends DocumentRuleBase implements Mai
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * This implementation additionally performs existence and duplicate checks.
+     */
+    @Override
+    public boolean processAddCollectionLine(AddCollectionLineEvent addEvent) {
+        MaintenanceDocument maintenanceDocument = (MaintenanceDocument) addEvent.getDocument();
+        String collectionName = addEvent.getCollectionName();
+        Object addLine = addEvent.getAddLine();
+
+        // setup convenience pointers to the old & new bo
+        setupBaseConvenienceObjects(maintenanceDocument);
+
+        // from here on, it is in a default-success mode, and will add the line unless one of the
+        // business rules stop it.
+        boolean success = true;
+
+        // TODO: Will be covered by KULRICE-7666
+        /*
+        // apply rules that check whether child objects that cannot be hooked up by normal means exist and are active   */
+
+        success &= getDictionaryValidationService().validateDefaultExistenceChecksForNewCollectionItem(
+                maintenanceDocument.getNewMaintainableObject().getDataObject(), addLine, collectionName);
+
+        // apply rules that are specific to the class of the maintenance document (if implemented)
+        success &= processCustomAddCollectionLineBusinessRules(maintenanceDocument, collectionName, addLine);
+
+        return success;
+    }
+
+    /**
      * This method is a convenience method to easily add a Document level error (ie, one not tied to a specific field,
      * but
      * applicable to the whole document).
@@ -632,7 +666,7 @@ public class MaintenanceDocumentRuleBase extends DocumentRuleBase implements Mai
      */
     protected boolean dataDictionaryValidate(MaintenanceDocument document) {
         LOG.debug("MaintenanceDocument validation beginning");
-
+        boolean success = true;
         // explicitly put the errorPath that the dictionaryValidationService
         // requires
         GlobalVariables.getMessageMap().addToErrorPath("document.newMaintainableObject");
@@ -667,14 +701,14 @@ public class MaintenanceDocumentRuleBase extends DocumentRuleBase implements Mai
 
         // validate default existence checks
         // TODO: Default existence checks need support for general data objects, see KULRICE-7666
-        //        success &= getDictionaryValidationService().validateDefaultExistenceChecks((BusinessObject) dataObject);
-        //        GlobalVariables.getMessageMap().removeFromErrorPath("dataObject");
+        success &= getDictionaryValidationService().validateDefaultExistenceChecks(dataObject);
+        GlobalVariables.getMessageMap().removeFromErrorPath("dataObject");
 
         // explicitly remove the errorPath we've added
         GlobalVariables.getMessageMap().removeFromErrorPath("document.newMaintainableObject");
 
         LOG.debug("MaintenanceDocument validation ending");
-        return true;
+        return success;
     }
 
     /**
@@ -732,22 +766,32 @@ public class MaintenanceDocumentRuleBase extends DocumentRuleBase implements Mai
                 // get a map of the pk field names and values
                 Map<String, ?> newPkFields = getLegacyDataAdapter().getPrimaryKeyFieldValuesDOMDS(newDataObject);
 
-                // TODO: Good suggestion from Aaron, dont bother checking the DB, if all of the
-                // objects PK fields dont have values. If any are null or empty, then
-                // we're done. The current way wont fail, but it will make a wasteful
-                // DB call that may not be necessary, and we want to minimize these.
+                //Remove any parts of the pk that has a null value as JPA will throw an error
+                Map<String, Object> filteredPkFields = new HashMap<String, Object>();
+                filteredPkFields.putAll(newPkFields);
 
-                // attempt to do a lookup, see if this object already exists by these Primary Keys
-                Object testBo = getLegacyDataAdapter().findByPrimaryKey(dataObjectClass, newPkFields);
-
-                // if the retrieve was successful, then this object already exists, and we need
-                // to complain
-                if (testBo != null) {
-                    putDocumentError(KRADConstants.DOCUMENT_ERRORS,
-                            RiceKeyConstants.ERROR_DOCUMENT_MAINTENANCE_KEYS_ALREADY_EXIST_ON_CREATE_NEW,
-                            getHumanReadablePrimaryKeyFieldNames(dataObjectClass));
-                    success &= false;
+                Iterator it = newPkFields.entrySet().iterator();
+                while (it.hasNext()) {
+                    Map.Entry pairs = (Map.Entry)it.next();
+                    if(pairs.getValue() == null){
+                       filteredPkFields.remove(pairs.getKey());
+                    }
                 }
+
+                if(!filteredPkFields.isEmpty()){
+                    // attempt to do a lookup, see if this object already exists by these Primary Keys
+                    Object testBo = getLegacyDataAdapter().findByPrimaryKey(dataObjectClass, filteredPkFields);
+
+                    // if the retrieve was successful, then this object already exists, and we need
+                    // to complain
+                    if (testBo != null) {
+                        putDocumentError(KRADConstants.DOCUMENT_ERRORS,
+                                RiceKeyConstants.ERROR_DOCUMENT_MAINTENANCE_KEYS_ALREADY_EXIST_ON_CREATE_NEW,
+                                getHumanReadablePrimaryKeyFieldNames(dataObjectClass));
+                        success &= false;
+                    }
+                }
+
             }
         }
 
@@ -759,7 +803,7 @@ public class MaintenanceDocumentRuleBase extends DocumentRuleBase implements Mai
      * DataDictionary.
      *
      * @param dataObjectClass
-     * @return
+     * @return human-readable string representation of the primary key field names
      */
     protected String getHumanReadablePrimaryKeyFieldNames(Class<?> dataObjectClass) {
         String delim = "";
@@ -881,9 +925,19 @@ public class MaintenanceDocumentRuleBase extends DocumentRuleBase implements Mai
      * This method should be overridden to provide custom rules for processing document approval.
      *
      * @param document
-     * @return booelan
+     * @return boolean
      */
     protected boolean processCustomApproveDocumentBusinessRules(MaintenanceDocument document) {
+        return true;
+    }
+
+    /**
+     * This method should be overridden to provide custom rules for processing adding collection lines.
+     *
+     * @param document
+     * @return boolean
+     */
+    protected boolean processCustomAddCollectionLineBusinessRules(MaintenanceDocument document, String collectionName, Object line) {
         return true;
     }
 
@@ -1266,11 +1320,6 @@ public class MaintenanceDocumentRuleBase extends DocumentRuleBase implements Mai
      */
     protected final Object getOldDataObject() {
         return oldDataObject;
-    }
-
-    public boolean processCustomAddCollectionLineBusinessRules(MaintenanceDocument document, String collectionName,
-            PersistableBusinessObject line) {
-        return true;
     }
 
     protected final ConfigurationService getConfigService() {

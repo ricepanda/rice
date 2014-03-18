@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,184 +15,103 @@
  */
 package org.kuali.rice.krad.uif.service.impl;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.google.common.collect.Sets;
+import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.kuali.rice.core.api.CoreApiServiceLocator;
 import org.kuali.rice.core.api.config.property.ConfigurationService;
-import org.kuali.rice.krad.data.DataObjectUtils;
+import org.kuali.rice.core.api.util.RiceKeyConstants;
+import org.kuali.rice.kim.api.identity.Person;
+import org.kuali.rice.krad.bo.PersistableBusinessObject;
+import org.kuali.rice.krad.data.DataObjectService;
+import org.kuali.rice.krad.data.DataObjectWrapper;
+import org.kuali.rice.krad.data.KradDataServiceLocator;
 import org.kuali.rice.krad.inquiry.Inquirable;
+import org.kuali.rice.krad.messages.MessageService;
 import org.kuali.rice.krad.service.DataDictionaryService;
+import org.kuali.rice.krad.service.KRADServiceLocator;
 import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
 import org.kuali.rice.krad.service.LegacyDataAdapter;
 import org.kuali.rice.krad.service.ModuleService;
 import org.kuali.rice.krad.uif.UifConstants;
+import org.kuali.rice.krad.uif.component.BindingInfo;
 import org.kuali.rice.krad.uif.component.Component;
+import org.kuali.rice.krad.uif.component.PropertyReplacer;
+import org.kuali.rice.krad.uif.component.RequestParameter;
 import org.kuali.rice.krad.uif.container.CollectionGroup;
 import org.kuali.rice.krad.uif.container.Container;
-import org.kuali.rice.krad.uif.element.Label;
-import org.kuali.rice.krad.uif.field.Field;
-import org.kuali.rice.krad.uif.layout.TableLayoutManager;
+import org.kuali.rice.krad.uif.field.DataField;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleUtils;
 import org.kuali.rice.krad.uif.service.ViewDictionaryService;
 import org.kuali.rice.krad.uif.service.ViewHelperService;
-import org.kuali.rice.krad.uif.util.ComponentFactory;
+import org.kuali.rice.krad.uif.util.BooleanMap;
+import org.kuali.rice.krad.uif.util.CloneUtils;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.util.ObjectPropertyUtils;
-import org.kuali.rice.krad.uif.view.DefaultExpressionEvaluator;
+import org.kuali.rice.krad.uif.util.RecycleUtils;
 import org.kuali.rice.krad.uif.view.ExpressionEvaluator;
+import org.kuali.rice.krad.uif.view.ExpressionEvaluatorFactory;
 import org.kuali.rice.krad.uif.view.View;
+import org.kuali.rice.krad.uif.view.ViewAuthorizer;
+import org.kuali.rice.krad.uif.view.ViewModel;
+import org.kuali.rice.krad.uif.view.ViewPresentationController;
 import org.kuali.rice.krad.uif.widget.Inquiry;
+import org.kuali.rice.krad.util.ErrorMessage;
+import org.kuali.rice.krad.util.GlobalVariables;
+import org.kuali.rice.krad.util.GrowlMessage;
+import org.kuali.rice.krad.util.KRADConstants;
 import org.kuali.rice.krad.util.KRADUtils;
+import org.kuali.rice.krad.util.MessageMap;
+import org.kuali.rice.krad.valuefinder.ValueFinder;
 import org.kuali.rice.krad.web.form.UifFormBase;
+import org.springframework.beans.PropertyAccessorUtils;
+
+import java.io.Serializable;
+import java.lang.annotation.Annotation;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Queue;
+import java.util.Set;
 
 /**
  * Default Implementation of {@code ViewHelperService}
- * 
+ *
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 public class ViewHelperServiceImpl implements ViewHelperService, Serializable {
-    
     private static final long serialVersionUID = 1772618197133239852L;
-    
     private static final Logger LOG = Logger.getLogger(ViewHelperServiceImpl.class);
-    
+
     private transient ConfigurationService configurationService;
     private transient DataDictionaryService dataDictionaryService;
-    private transient ExpressionEvaluator expressionEvaluator;
     private transient LegacyDataAdapter legacyDataAdapter;
-
+    private transient DataObjectService dataObjectService;
     private transient ViewDictionaryService viewDictionaryService;
+    private transient ExpressionEvaluatorFactory expressionEvaluatorFactory;
 
     /**
-     * Helper function to determine whether if column should be displayed. Used to help extract
-     * columns used in screen format such as action or select that is not needed for export.
-     * 
-     * @param layoutManager
-     * @param collectionGroup
-     * @return
-     */
-    private List<Integer> findIgnoredColumns(TableLayoutManager layoutManager, CollectionGroup collectionGroup) {
-        List<Integer> ignoreColumns = new ArrayList<Integer>();
-        int actionColumnIndex = layoutManager.getActionColumnIndex();
-        int numberOfColumns = layoutManager.getNumberOfColumns();
-        boolean renderActions = collectionGroup.isRenderLineActions() && !collectionGroup.isReadOnly();
-        boolean renderSelectField = collectionGroup.isIncludeLineSelectionField();
-        boolean renderSequenceField = layoutManager.isRenderSequenceField();
-
-        if (renderActions || renderSelectField || renderSequenceField) {
-            int shiftColumn = 0;
-
-            if (renderSelectField) {
-                ignoreColumns.add(shiftColumn);
-                shiftColumn++;
-            }
-            if (renderSequenceField) {
-                ignoreColumns.add(shiftColumn);
-                shiftColumn++;
-            }
-            if (renderActions) {
-                if (actionColumnIndex == 1) {
-                    ignoreColumns.add(shiftColumn);
-                } else if (actionColumnIndex == -1) {
-                    ignoreColumns.add(numberOfColumns - 1);
-                } else if (actionColumnIndex > 1) {
-                    ignoreColumns.add(actionColumnIndex);
-                }
-            }
-        }
-        return ignoreColumns;
-    }
-
-    /**
-     * Hook for creating new components with code and adding them to a container
-     * 
-     * <p>
-     * Subclasses can override this method to check for one or more containers by id and then adding
-     * components created in code. This is invoked before the initialize method on the container
-     * component, so the full lifecycle will be run on the components returned.
-     * </p>
-     * 
-     * <p>
-     * New components instances can be retrieved using {@link ComponentFactory}
-     * </p>
-     * 
-     * @param view view instance the container belongs to
-     * @param model object containing the view data
-     * @param container container instance to add components to
+     * {@inheritDoc}
      */
     @Override
-    public void addCustomContainerComponents(Object model, Container container) {
+    public void addCustomContainerComponents(ViewModel model, Container container) {
 
-    }
-
-    /**
-     * Generates formatted table data based on the posted view results and format type
-     * 
-     * @param view view instance where the table is located
-     * @param model top level object containing the data
-     * @param tableId id of the table being generated
-     * @param formatType format which the table should be generated in
-     * @return
-     */
-    public String buildExportTableData(View view, Object model, String tableId, String formatType) {
-        // load table format elements used for generated particular style
-        Map<String, String> exportTableFormatOptions = getExportTableFormatOptions(formatType);
-        String startTable = exportTableFormatOptions.get("startTable");
-        String endTable = exportTableFormatOptions.get("endTable");
-
-        Component component = view.getViewIndex().getComponentById(tableId);
-        StringBuilder tableRows = new StringBuilder("");
-
-        // table layout manager is needed for header and gathering field data
-        if (component instanceof CollectionGroup && ((CollectionGroup) component)
-                .getLayoutManager() instanceof TableLayoutManager) {
-
-            CollectionGroup collectionGroup = (CollectionGroup) component;
-            TableLayoutManager layoutManager = (TableLayoutManager) collectionGroup.getLayoutManager();
-            List<Label> headerLabels = layoutManager.getHeaderLabels();
-            List<Field> rowFields = layoutManager.getAllRowFields();
-            int numberOfColumns = layoutManager.getNumberOfColumns();
-            List<Integer> ignoredColumns = findIgnoredColumns(layoutManager, collectionGroup);
-
-            // append table header data as first row
-            if (headerLabels.size() > 0) {
-                List<String> labels = new ArrayList<String>();
-                for (Label label : headerLabels) {
-                    labels.add(label.getLabelText());
-                }
-
-                tableRows.append(buildExportTableRow(labels, exportTableFormatOptions, ignoredColumns));
-            }
-
-            // load all subsequent rows to the table
-            if (rowFields.size() > 0) {
-                List<String> columnData = new ArrayList<String>();
-                for (Field field : rowFields) {
-                    columnData.add(KRADUtils.getSimpleFieldValue(model, field));
-                    if (columnData.size() >= numberOfColumns) {
-                        tableRows.append(buildExportTableRow(columnData, exportTableFormatOptions, ignoredColumns));
-                        columnData.clear();
-                    }
-                }
-            }
-        }
-
-        return startTable + tableRows.toString() + endTable;
     }
 
     /**
      * Finds the <code>Inquirable</code> configured for the given data object class and delegates to
      * it for building the inquiry URL
-     * 
-     * @see org.kuali.rice.krad.uif.service.ViewHelperService#buildInquiryLink(java.lang.Object,
-     *      java.lang.String, org.kuali.rice.krad.uif.widget.Inquiry)
+     *
+     * {@inheritDoc}
      */
     public void buildInquiryLink(Object dataObject, String propertyName, Inquiry inquiry) {
         Inquirable inquirable = getViewDictionaryService().getInquirable(dataObject.getClass(), inquiry.getViewName());
@@ -207,156 +126,101 @@ public class ViewHelperServiceImpl implements ViewHelperService, Serializable {
     }
 
     /**
-     * Gets the expression evaluator service
-     * 
-     * @return expression evaluator service
-     */
-    public ExpressionEvaluator getExpressionEvaluator() {
-        if (this.expressionEvaluator == null) {
-            this.expressionEvaluator = new DefaultExpressionEvaluator();
-        }
-
-        return this.expressionEvaluator;
-    }
-
-    /**
-     * Hook for service overrides to perform custom apply model logic on the component
-     * 
-     * @param view view instance containing the component
-     * @param component component instance to apply model to
-     * @param model Top level object containing the data (could be the model or a top level business
-     *        object, dto)
+     * {@inheritDoc}
      */
     @Override
-    public void performCustomApplyModel(Component component, Object model) {
+    public void performCustomApplyModel(LifecycleElement element, Object model) {
 
     }
 
     /**
-     * Hook for service overrides to perform custom component finalization
-     * 
-     * @param view view instance containing the component
-     * @param component component instance to update
-     * @param model Top level object containing the data
-     * @param parent Parent component for the component being finalized
+     * {@inheritDoc}
      */
     @Override
-    public void performCustomFinalize(Component component, Object model, Component parent) {
+    public void performCustomFinalize(LifecycleElement element, Object model, LifecycleElement parent) {
 
     }
 
     /**
-     * Hook for service overrides to perform custom initialization on the component
-     * 
-     * @param view view instance containing the component
-     * @param component component instance to initialize
+     * {@inheritDoc}
      */
     @Override
-    public void performCustomInitialization(Component component) {
+    public void performCustomInitialization(LifecycleElement element) {
 
     }
 
     /**
-     * Hook for service overrides to perform custom component finalization.
-     * 
-     * @param model Top level object containing the data
+     * {@inheritDoc}
      */
     @Override
     public void performCustomViewFinalize(Object model) {
-        setExpressionEvaluator(null);
+
     }
 
     /**
-     * Hook for service overrides to perform custom initialization prior to view initialization.
-     * 
-     * @param model The model.
+     * {@inheritDoc}
      */
     @Override
     public void performCustomViewInitialization(Object model) {
-        
+
     }
 
     /**
-     * Hook for service overrides to process the new collection line after it has been added to the
-     * collection
-     * 
-     * @param view view instance that is being presented (the action was taken on)
-     * @param collectionGroup collection group component for the collection the line that was added
-     * @param model object instance that contain's the views data
-     * @param addLine the new line that was added
-     * @param isValidLine indicates if the line is valid
+     * {@inheritDoc}
      */
     @Override
-    public void processAfterAddLine(View view, CollectionGroup collectionGroup, Object model, Object addLine,
+    public void processAfterAddLine(ViewModel model, Object lineObject, String collectionId, String collectionPath,
             boolean isValidLine) {
 
     }
 
     /**
-     * Hook for service overrides to process the collection line after it has been deleted
-     * 
-     * @param view view instance that is being presented (the action was taken on)
-     * @param collectionGroup collection group component for the collection the line that was added
-     * @param model object instance that contains the views data
-     * @param lineIndex index of the line that was deleted
+     * {@inheritDoc}
      */
     @Override
-    public void processAfterDeleteLine(View view, CollectionGroup collectionGroup, Object model, int lineIndex) {
+    public void processAfterDeleteLine(ViewModel model, String collectionId, String collectionPath, int lineIndex) {
 
     }
 
     /**
-     * Hook for service overrides to process the save collection line after it has been validated
-     * 
-     * @param view view instance that is being presented (the action was taken on)
-     * @param collectionGroup collection group component for the collection
-     * @param model object instance that contains the views data
-     * @param addLine the new line that was added
+     * {@inheritDoc}
      */
     @Override
-    public void processAfterSaveLine(View view, CollectionGroup collectionGroup, Object model, Object addLine) {
+    public void processAfterSaveLine(ViewModel model, Object lineObject, String collectionId, String collectionPath) {
 
     }
 
     /**
-     * Hook for service overrides to process the new collection line before it is added to the
-     * collection
-     * 
-     * @param view view instance that is being presented (the action was taken on)
-     * @param collectionGroup collection group component for the collection the line will be added
-     *        to
-     * @param model object instance that contain's the views data
-     * @param addLine the new line instance to be processed
+     * {@inheritDoc}
      */
     @Override
-    public void processBeforeAddLine(View view, CollectionGroup collectionGroup, Object model, Object addLine) {
+    public void processBeforeAddLine(ViewModel model, Object addLine, String collectionId, String collectionPath) {
 
     }
 
     /**
-     * Hook for service overrides to process the save collection line before it is validated
-     * 
-     * @param view view instance that is being presented (the action was taken on)
-     * @param collectionGroup collection group component for the collection
-     * @param model object instance that contain's the views data
-     * @param addLine the new line instance to be processed
+     * {@inheritDoc}
      */
     @Override
-    public void processBeforeSaveLine(View view, CollectionGroup collectionGroup, Object model, Object addLine) {
+    public void processBeforeSaveLine(ViewModel model, Object lineObject, String collectionId, String collectionPath) {
 
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.service.ViewHelperService#processCollectionAddBlankLine(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object, java.lang.String)
+     * {@inheritDoc}
      */
     @SuppressWarnings("unchecked")
     @Override
-    public void processCollectionAddBlankLine(View view, Object model, String collectionPath) {
-        // get the collection group from the view
-        CollectionGroup collectionGroup = view.getViewIndex().getCollectionGroupByPath(collectionPath);
-        if (collectionGroup == null) {
-            logAndThrowRuntime("Unable to get collection group component for path: " + collectionPath);
+    public void processCollectionAddBlankLine(ViewModel model, String collectionId, String collectionPath) {
+        if (!(model instanceof ViewModel)) {
+            return;
+        }
+
+        ViewModel viewModel = (ViewModel) model;
+
+        if (collectionId == null) {
+            logAndThrowRuntime(
+                    "Unable to get collection group component for Id: " + collectionPath + " path: " + collectionPath);
         }
 
         // get the collection instance for adding the new line
@@ -365,71 +229,92 @@ public class ViewHelperServiceImpl implements ViewHelperService, Serializable {
             logAndThrowRuntime("Unable to get collection property from model for path: " + collectionPath);
         }
 
-        Object newLine = DataObjectUtils.newInstance(collectionGroup.getCollectionObjectClass());
-        ViewLifecycle.getActiveLifecycle()
-                .applyDefaultValuesForCollectionLine(view, model, collectionGroup, newLine);
-        addLine(collection, newLine, collectionGroup.getAddLinePlacement().equals("TOP"));
+        Class<?> collectionObjectClass = (Class<?>) viewModel.getViewPostMetadata().getComponentPostData(collectionId,
+                UifConstants.PostMetadata.COLL_OBJECT_CLASS);
+        Object newLine = KRADUtils.createNewObjectFromClass(collectionObjectClass);
 
-        ((UifFormBase) model).getAddedCollectionItems().add(newLine);
+        List<Object> lineDataObjects = new ArrayList<Object>();
+        lineDataObjects.add(newLine);
+        viewModel.getViewPostMetadata().getAddedCollectionObjects().put(collectionId, lineDataObjects);
+        processAndAddLineObject(viewModel, newLine, collectionId, collectionPath);
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.service.ViewHelperService#processCollectionAddLine(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object, java.lang.String)
+     * {@inheritDoc}
      */
     @SuppressWarnings("unchecked")
     @Override
-    public void processCollectionAddLine(View view, Object model, String collectionPath) {
-        // get the collection group from the view
-        CollectionGroup collectionGroup = view.getViewIndex().getCollectionGroupByPath(collectionPath);
-        if (collectionGroup == null) {
-            logAndThrowRuntime("Unable to get collection group component for path: " + collectionPath);
+    public void processCollectionAddLine(ViewModel model, String collectionId, String collectionPath) {
+        if (!(model instanceof ViewModel)) {
+            return;
         }
 
-        // get the collection instance for adding the new line
-        Collection<Object> collection = ObjectPropertyUtils.getPropertyValue(model, collectionPath);
-        if (collection == null) {
-            logAndThrowRuntime("Unable to get collection property from model for path: " + collectionPath);
+        ViewModel viewModel = (ViewModel) model;
+
+        if (collectionId == null) {
+            logAndThrowRuntime(
+                    "Unable to get collection group component for Id: " + collectionPath + " path: " + collectionPath);
         }
 
         // now get the new line we need to add
-        String addLinePath = collectionGroup.getAddLineBindingInfo().getBindingPath();
-        Object addLine = ObjectPropertyUtils.getPropertyValue(model, addLinePath);
+        BindingInfo addLineBindingInfo = (BindingInfo) viewModel.getViewPostMetadata().getComponentPostData(
+                collectionId, UifConstants.PostMetadata.ADD_LINE_BINDING_INFO);
+        Object addLine = ObjectPropertyUtils.getPropertyValue(model, addLineBindingInfo.getBindingPath());
         if (addLine == null) {
-            logAndThrowRuntime("Add line instance not found for path: " + addLinePath);
+            logAndThrowRuntime("Add line instance not found for path: " + addLineBindingInfo.getBindingPath());
         }
 
-        processBeforeAddLine(view, collectionGroup, model, addLine);
+        // Adding an empty list because this item does not need to be further processed, but needs to init
+        // a new add line
+        List<Object> lineDataObjects = new ArrayList<Object>();
+        viewModel.getViewPostMetadata().getAddedCollectionObjects().put(collectionId, lineDataObjects);
 
-        // validate the line to make sure it is ok to add
-        boolean isValidLine = performAddLineValidation(view, collectionGroup, model, addLine);
-        if (isValidLine) {
-            // TODO: should check to see if there is an add line method on the
-            // collection parent and if so call that instead of just adding to
-            // the collection (so that sequence can be set)
-            addLine(collection, addLine, collectionGroup.getAddLinePlacement().equals(
-                    UifConstants.Position.TOP.name()));
+        processAndAddLineObject(viewModel, addLine, collectionId, collectionPath);
 
-            // make a new instance for the add line
-            collectionGroup.initializeNewCollectionLine(view, model, collectionGroup, true);
-        }
-
-        ((UifFormBase) model).getAddedCollectionItems().add(addLine);
-
-        processAfterAddLine(view, collectionGroup, model, addLine, isValidLine);
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.service.ViewHelperService#processCollectionDeleteLine(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object, java.lang.String, int)
+     * Do all processing related to adding a line: calls processBeforeAddLine, performAddLineValidation, addLine,
+     * processAfterAddLine
+     *
+     * @param viewModel object instance that contain's the view's data
+     * @param newLine the new line instance to be processed
+     * @param collectionId the id of the collection being added to
+     * @param collectionPath the path to the collection being modified
      */
-    public void processCollectionDeleteLine(View view, Object model, String collectionPath, int lineIndex) {
-        // get the collection group from the view
-        CollectionGroup collectionGroup = view.getViewIndex().getCollectionGroupByPath(collectionPath);
-        if (collectionGroup == null) {
-            logAndThrowRuntime("Unable to get collection group component for path: " + collectionPath);
+    protected void processAndAddLineObject(ViewModel viewModel, Object newLine, String collectionId,
+            String collectionPath) {
+        String addLinePlacement = (String) viewModel.getViewPostMetadata().getComponentPostData(collectionId,
+                UifConstants.PostMetadata.ADD_LINE_PLACEMENT);
+
+        // get the collection instance for adding the new line
+        Collection<Object> collection = ObjectPropertyUtils.getPropertyValue(viewModel, collectionPath);
+        if (collection == null) {
+            logAndThrowRuntime("Unable to get collection property from model for path: " + collectionPath);
         }
 
+        processBeforeAddLine(viewModel, newLine, collectionId, collectionPath);
+
+        boolean isValidLine = performAddLineValidation(viewModel, newLine, collectionId, collectionPath);
+        if (isValidLine) {
+            int addedIndex = addLine(collection, newLine, addLinePlacement.equals("TOP"));
+            // now link the added line, this is important in situations where perhaps the collection element is
+            // bi-directional and needs to point back to it's parent
+            linkAddedLine(viewModel, collectionPath, addedIndex);
+            
+            if (viewModel instanceof UifFormBase) {
+                ((UifFormBase) viewModel).getAddedCollectionItems().add(newLine);
+            }
+            processAfterAddLine(viewModel, newLine, collectionId, collectionPath, isValidLine);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void processCollectionDeleteLine(ViewModel model, String collectionId, String collectionPath,
+            int lineIndex) {
         // get the collection instance for adding the new line
         Collection<Object> collection = ObjectPropertyUtils.getPropertyValue(model, collectionPath);
         if (collection == null) {
@@ -442,10 +327,10 @@ public class ViewHelperServiceImpl implements ViewHelperService, Serializable {
             Object deleteLine = ((List<Object>) collection).get(lineIndex);
 
             // validate the delete action is allowed for this line
-            boolean isValid = performDeleteLineValidation(view, collectionGroup, deleteLine);
+            boolean isValid = performDeleteLineValidation(model, collectionId, collectionPath, deleteLine);
             if (isValid) {
                 ((List<Object>) collection).remove(lineIndex);
-                processAfterDeleteLine(view, collectionGroup, model, lineIndex);
+                processAfterDeleteLine(model, collectionId, collectionPath, lineIndex);
             }
         } else {
             logAndThrowRuntime("Only List collection implementations are supported for the delete by index method");
@@ -453,17 +338,11 @@ public class ViewHelperServiceImpl implements ViewHelperService, Serializable {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.service.ViewHelperService#processCollectionSaveLine(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object, java.lang.String, int)
+     * {@inheritDoc}
      */
     @Override
-    public void processCollectionSaveLine(View view, Object model, String collectionPath, int selectedLineIndex) {
-        // get the collection group from the view
-        CollectionGroup collectionGroup = view.getViewIndex().getCollectionGroupByPath(collectionPath);
-        if (collectionGroup == null) {
-            logAndThrowRuntime("Unable to get collection group component for path: " + collectionPath);
-        }
-
+    public void processCollectionSaveLine(ViewModel model, String collectionId, String collectionPath,
+            int selectedLineIndex) {
         // get the collection instance for adding the new line
         Collection<Object> collection = ObjectPropertyUtils.getPropertyValue(model, collectionPath);
         if (collection == null) {
@@ -475,11 +354,11 @@ public class ViewHelperServiceImpl implements ViewHelperService, Serializable {
         if (collection instanceof List) {
             Object saveLine = ((List<Object>) collection).get(selectedLineIndex);
 
-            processBeforeSaveLine(view, collectionGroup, model, saveLine);
+            processBeforeSaveLine(model, saveLine, collectionId, collectionPath);
 
             ((UifFormBase) model).getAddedCollectionItems().remove(saveLine);
 
-            processAfterSaveLine(view, collectionGroup, model, saveLine);
+            processAfterSaveLine(model, saveLine, collectionId, collectionPath);
 
         } else {
             logAndThrowRuntime("Only List collection implementations are supported for the delete by index method");
@@ -488,33 +367,36 @@ public class ViewHelperServiceImpl implements ViewHelperService, Serializable {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.service.impl.ViewHelperServiceImpl#processMultipleValueLookupResults
+     * {@inheritDoc}
      */
-    @SuppressWarnings({"deprecation", "unchecked"})
-    public void processMultipleValueLookupResults(View view, Object model, String collectionPath,
+    @SuppressWarnings("unchecked")
+    public void processMultipleValueLookupResults(ViewModel model, String collectionId, String collectionPath,
             String lookupResultValues) {
         // if no line values returned, no population is needed
-        if (StringUtils.isBlank(lookupResultValues)) {
+        if (StringUtils.isBlank(lookupResultValues) || !(model instanceof ViewModel)) {
             return;
         }
 
+        ViewModel viewModel = (ViewModel) model;
+
+        if (StringUtils.isBlank(collectionId)) {
+            throw new RuntimeException(
+                    "Id is not set for this collection lookup: " + collectionId + ", " + "path: " + collectionPath);
+        }
+
         // retrieve the collection group so we can get the collection class and collection lookup
-        CollectionGroup collectionGroup = view.getViewIndex().getCollectionGroupByPath(collectionPath);
-        if (collectionGroup == null) {
-            throw new RuntimeException("Unable to find collection group for path: " + collectionPath);
-        }
-
-        Class<?> collectionObjectClass = collectionGroup.getCollectionObjectClass();
-        Collection<Object> collection = ObjectPropertyUtils.getPropertyValue(model,
-                collectionGroup.getBindingInfo().getBindingPath());
+        Class<?> collectionObjectClass = (Class<?>) viewModel.getViewPostMetadata().getComponentPostData(collectionId,
+                UifConstants.PostMetadata.COLL_OBJECT_CLASS);
+        Collection<Object> collection = ObjectPropertyUtils.getPropertyValue(model, collectionPath);
         if (collection == null) {
-            Class<?> collectionClass = ObjectPropertyUtils.getPropertyType(model,
-                    collectionGroup.getBindingInfo().getBindingPath());
-            collection = (Collection<Object>) DataObjectUtils.newInstance(collectionClass);
-            ObjectPropertyUtils.setPropertyValue(model, collectionGroup.getBindingInfo().getBindingPath(), collection);
+            Class<?> collectionClass = ObjectPropertyUtils.getPropertyType(model, collectionPath);
+            collection = (Collection<Object>) KRADUtils.createNewObjectFromClass(collectionClass);
+            ObjectPropertyUtils.setPropertyValue(model, collectionPath, collection);
         }
 
-        Map<String, String> fieldConversions = collectionGroup.getCollectionLookup().getFieldConversions();
+        Map<String, String> fieldConversions =
+                (Map<String, String>) viewModel.getViewPostMetadata().getComponentPostData(collectionId,
+                        UifConstants.PostMetadata.COLL_LOOKUP_FIELD_CONVERSIONS);
         List<String> toFieldNamesColl = new ArrayList<String>(fieldConversions.values());
         Collections.sort(toFieldNamesColl);
         String[] toFieldNames = new String[toFieldNamesColl.size()];
@@ -523,6 +405,7 @@ public class ViewHelperServiceImpl implements ViewHelperService, Serializable {
         // first split to get the line value sets
         String[] lineValues = StringUtils.split(lookupResultValues, ",");
 
+        List<Object> lineDataObjects = new ArrayList<Object>();
         // for each returned set create a new instance of collection class and populate with returned line values
         for (String lineValue : lineValues) {
             Object lineDataObject = null;
@@ -534,12 +417,8 @@ public class ViewHelperServiceImpl implements ViewHelperService, Serializable {
                 lineDataObject = moduleService.createNewObjectFromExternalizableClass(collectionObjectClass.asSubclass(
                         org.kuali.rice.krad.bo.ExternalizableBusinessObject.class));
             } else {
-                lineDataObject = DataObjectUtils.newInstance(collectionObjectClass);
+                lineDataObject = KRADUtils.createNewObjectFromClass(collectionObjectClass);
             }
-
-            // apply default values to new line
-            ViewLifecycle.getActiveLifecycle()
-                    .applyDefaultValuesForCollectionLine(view, model, collectionGroup, lineDataObject);
 
             String[] fieldValues = StringUtils.splitByWholeSeparatorPreserveAllTokens(lineValue, ":");
             if (fieldValues.length != toFieldNames.length) {
@@ -553,167 +432,515 @@ public class ViewHelperServiceImpl implements ViewHelperService, Serializable {
                 ObjectPropertyUtils.setPropertyValue(lineDataObject, fieldName, fieldValues[i]);
             }
 
-            // TODO: duplicate identifier check
-
-            collection.add(lineDataObject);
+            lineDataObjects.add(lineDataObject);
+            processAndAddLineObject(viewModel, lineDataObject, collectionId, collectionPath);
         }
+
+        viewModel.getViewPostMetadata().getAddedCollectionObjects().put(collectionId, lineDataObjects);
     }
 
     /**
      * Add addLine to collection while giving derived classes an opportunity to override for things
      * like sorting.
-     * 
+     *
      * @param collection the Collection to add the given addLine to
      * @param addLine the line to add to the given collection
      * @param insertFirst indicates if the item should be inserted as the first item
+     *
+     * @return the index at which the item was added to the collection, or -1 if it was not added
      */
-    protected void addLine(Collection<Object> collection, Object addLine, boolean insertFirst) {
+    protected int addLine(Collection<Object> collection, Object addLine, boolean insertFirst) {
+        int index = -1;
         if (insertFirst && (collection instanceof List)) {
             ((List<Object>) collection).add(0, addLine);
+            index = 0;
         } else {
-            collection.add(addLine);
-        }
-    }
-
-    /**
-     * Helper method used to build formatted table row data for export
-     * 
-     * @return
-     */
-    protected String buildExportTableRow(List<String> columnData, Map<String, String> tableFormatOptions,
-            List<Integer> ignoredColumns) {
-        String startRow = tableFormatOptions.get("startRow");
-        String endRow = tableFormatOptions.get("endRow");
-        String startColumn = tableFormatOptions.get("startColumn");
-        String endColumn = tableFormatOptions.get("endColumn");
-        boolean appendLastColumn = Boolean.valueOf(tableFormatOptions.get("appendLastColumn"));
-        int columnIndex = 0;
-
-        StringBuilder builder = new StringBuilder();
-        for (String columnItem : columnData) {
-            boolean displayColumn = !ignoredColumns.contains(columnIndex);
-            if (displayColumn) {
-                builder.append(startColumn + columnItem + endColumn);
+            boolean added = collection.add(addLine);
+            if (added) {
+                index = collection.size() - 1;
             }
-            if (columnIndex >= columnData.size() - 1 && !appendLastColumn) {
-                builder.delete(builder.length() - endColumn.length(), builder.length());
+        }
+        return index;
+    }
+
+    protected void linkAddedLine(Object model, String collectionPath, int addedIndex) {
+        int lastSepIndex = PropertyAccessorUtils.getLastNestedPropertySeparatorIndex(collectionPath);
+        if (lastSepIndex != -1) {
+            String collectionParentPath = collectionPath.substring(0, lastSepIndex);
+            Object parent = ObjectPropertyUtils.getPropertyValue(model, collectionParentPath);
+            if (parent != null && getDataObjectService().supports(parent.getClass())) {
+                DataObjectWrapper<?> wrappedParent = getDataObjectService().wrap(parent);
+                String collectionName = collectionPath.substring(lastSepIndex + 1);
+                wrappedParent.linkChanges(Sets.newHashSet(collectionName + "[" + addedIndex + "]"));
             }
-            columnIndex++;
         }
-
-        return startRow + builder.toString() + endRow;
     }
 
     /**
-     * Identify table formatting elements based on formatType. Defaults to txt format if not found
-     * 
-     * @param formatType
-     * @return
+     * Performs validation on the new collection line before it is added to the corresponding collection.
+     *
+     * @param viewModel object instance that contain's the view's data
+     * @param newLine the new line instance to be processed
+     * @param collectionId the id of the collection being added to
+     * @param collectionPath the path to the collection being modified
      */
-    protected Map<String, String> getExportTableFormatOptions(String formatType) {
-        HashMap<String, String> map = new HashMap<String, String>();
+    protected boolean performAddLineValidation(ViewModel viewModel, Object newLine, String collectionId,
+            String collectionPath) {
+        boolean isValid = true;
 
-        map.put("contentType", "text/plain");
-        map.put("formatType", "txt");
-        map.put("startTable", "");
-        map.put("endTable", "");
-        map.put("startRow", "");
-        map.put("endRow", "\n");
-        map.put("startColumn", "");
-        map.put("endColumn", ", ");
-        map.put("appendLastColumn", "false");
+        Collection<Object> collectionItems = ObjectPropertyUtils.getPropertyValue(viewModel, collectionPath);
 
-        if ("csv".equals(formatType)) {
-            map.put("contentType", "text/csv");
-            map.put("formatType", "csv");
-            map.put("startTable", "");
-            map.put("endTable", "");
-            map.put("startRow", "");
-            map.put("endRow", "\n");
-            map.put("startColumn", "");
-            map.put("endColumn", ", ");
-            map.put("appendLastColumn", "false");
-
-        } else if ("xls".equals(formatType)) {
-            map.put("contentType", "application/vnd.ms-excel");
-            map.put("formatType", "xls");
-            map.put("startTable", "");
-            map.put("endTable", "");
-            map.put("startRow", "");
-            map.put("endRow", "\n");
-            map.put("startColumn", "\"");
-            map.put("endColumn", "\"\t");
-            map.put("appendLastColumn", "true");
-
-        } else if ("xml".equals(formatType)) {
-            map.put("contentType", "application/xml");
-            map.put("formatType", "xml");
-            map.put("startTable", "<table>\n");
-            map.put("endTable", "</table>\n");
-            map.put("startRow", "  <row>\n");
-            map.put("endRow", "  </row>\n");
-            map.put("startColumn", "    <column>");
-            map.put("endColumn", "</column>\n");
-            map.put("appendLastColumn", "true");
-
+        if (viewModel.getViewPostMetadata().getComponentPostData(collectionId,
+                UifConstants.PostMetadata.DUPLICATE_LINE_PROPERTY_NAMES) == null) {
+            return isValid;
         }
 
-        return map;
+        List<String> duplicateLinePropertyNames = (List<String>) viewModel.getViewPostMetadata().getComponentPostData(
+                collectionId, UifConstants.PostMetadata.DUPLICATE_LINE_PROPERTY_NAMES);
+
+        String collectionLabel = null;
+        if (viewModel.getViewPostMetadata().getComponentPostData(collectionId, UifConstants.PostMetadata.COLL_LABEL)
+                != null) {
+            collectionLabel = (String) viewModel.getViewPostMetadata().getComponentPostData(collectionId,
+                    UifConstants.PostMetadata.COLL_LABEL);
+        }
+
+        String duplicateLineLabelString = null;
+        if (viewModel.getViewPostMetadata().getComponentPostData(collectionId,
+                UifConstants.PostMetadata.DUPLICATE_LINE_LABEL_STRING) != null) {
+            duplicateLineLabelString = (String) viewModel.getViewPostMetadata().getComponentPostData(collectionId,
+                    UifConstants.PostMetadata.DUPLICATE_LINE_LABEL_STRING);
+        }
+
+        if (containsDuplicateLine(newLine, collectionItems, duplicateLinePropertyNames)) {
+            isValid = false;
+            GlobalVariables.getMessageMap().putErrorForSectionId(collectionId, RiceKeyConstants.ERROR_DUPLICATE_ELEMENT,
+                    collectionLabel, duplicateLineLabelString);
+        }
+
+        return isValid;
     }
 
     /**
-     * Performs validation on the new collection line before it is added to the corresponding
-     * collection
-     * 
-     * @param view view instance that the action was taken on
-     * @param collectionGroup collection group component for the collection
+     * Determines whether the new line matches one of the entries in the existing collection, based on the
+     * {@code duplicateLinePropertyNames}.
+     *
      * @param addLine new line instance to validate
-     * @param model object instance that contain's the views data
-     * @return true if the line is valid and it should be added to the collection, false if it was
-     *         not valid and should not be added to the collection
+     * @param collectionItems items in the collection
+     * @param duplicateLinePropertyNames property names to check for duplicates
+     * @return true if there is a duplicate line, false otherwise
      */
-    protected boolean performAddLineValidation(View view, CollectionGroup collectionGroup, Object model,
-            Object addLine) {
-        boolean isValid = true;
+    private boolean containsDuplicateLine(Object addLine, Collection<Object> collectionItems,
+            List<String> duplicateLinePropertyNames) {
+        if (collectionItems.isEmpty() || duplicateLinePropertyNames.isEmpty()) {
+            return false;
+        }
 
-        // TODO: this should invoke rules, subclasses like the document view
-        // should create the document add line event
+        for (Object collectionItem : collectionItems) {
+            if (isDuplicateLine(addLine, collectionItem, duplicateLinePropertyNames)) {
+                return true;
+            }
+        }
 
-        return isValid;
+        return false;
     }
 
     /**
-     * Performs validation on the collection line before it is removed from the corresponding
-     * collection
-     * 
-     * @param view view instance that the action was taken on
-     * @param collectionGroup collection group component for the collection
+     * Determines whether the new {@code addLine} is a duplicate of {@code collectionItem}, based on the
+     * {@code duplicateLinePropertyNames}.
+     *
+     * @param addLine new line instance to validate
+     * @param collectionItem existing instance to validate
+     * @param duplicateLinePropertyNames the property names to check for duplicates
+     * @return true if {@code addLine} is a duplicate of {@code collectionItem}, false otherwise
+     */
+    private boolean isDuplicateLine(Object addLine, Object collectionItem, List<String> duplicateLinePropertyNames) {
+        if (duplicateLinePropertyNames.isEmpty()) {
+            return false;
+        }
+
+        for (String duplicateLinePropertyName : duplicateLinePropertyNames) {
+            Object addLinePropertyValue = ObjectPropertyUtils.getPropertyValue(addLine, duplicateLinePropertyName);
+            Object duplicateLinePropertyValue = ObjectPropertyUtils.getPropertyValue(collectionItem,
+                    duplicateLinePropertyName);
+
+            if (!ObjectUtils.equals(addLinePropertyValue, duplicateLinePropertyValue)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Performs validation on the collection line before it is removed from the corresponding collection.
+     *
+     * @param model object instance that contain's the view's data
+     * @param collectionId the id of the collection being added to
+     * @param collectionPath the path to the collection being modified
      * @param deleteLine line that will be removed
-     * @return true if the action is allowed and the line should be removed, false if the line
-     *         should not be removed
+     * @return true if the action is allowed and the line should be removed, false if the line should not be removed
      */
-    protected boolean performDeleteLineValidation(View view, CollectionGroup collectionGroup, Object deleteLine) {
-        boolean isValid = true;
-
-        // TODO: this should invoke rules, sublclasses like the document view
-        // should create the document delete line event
-
-        return isValid;
+    protected boolean performDeleteLineValidation(ViewModel model, String collectionId, String collectionPath,
+            Object deleteLine) {
+        return true;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void applyDefaultValuesForCollectionLine(CollectionGroup collectionGroup, Object line) {
+        // retrieve all data fields for the collection line
+        List<DataField> dataFields = ViewLifecycleUtils.getElementsOfTypeDeep(collectionGroup.getAddLineItems(),
+                DataField.class);
+        for (DataField dataField : dataFields) {
+            String bindingPath = "";
+            if (StringUtils.isNotBlank(dataField.getBindingInfo().getBindByNamePrefix())) {
+                bindingPath = dataField.getBindingInfo().getBindByNamePrefix() + ".";
+            }
+            bindingPath += dataField.getBindingInfo().getBindingName();
+
+            populateDefaultValueForField(line, dataField, bindingPath);
+        }
+    }
 
     /**
-     * Sets the expression evaluator service
-     * 
-     * @param expressionEvaluator
+     * {@inheritDoc}
      */
-    public void setExpressionEvaluator(ExpressionEvaluator expressionEvaluator) {
-        this.expressionEvaluator = expressionEvaluator;
+    @Override
+    public void applyDefaultValues(Component component) {
+        if (component == null) {
+            return;
+        }
+
+        View view = ViewLifecycle.getView();
+        Object model = ViewLifecycle.getModel();
+
+        @SuppressWarnings("unchecked") Queue<LifecycleElement> elementQueue = RecycleUtils.getInstance(
+                LinkedList.class);
+        try {
+            LifecycleElement currentElement = elementQueue.poll();
+
+            // if component is a data field apply default value
+            if (currentElement instanceof DataField) {
+                DataField dataField = ((DataField) currentElement);
+
+                // need to make sure binding is initialized since this could be on a page we have not initialized yet
+                dataField.getBindingInfo().setDefaults(view, dataField.getPropertyName());
+
+                populateDefaultValueForField(model, dataField, dataField.getBindingInfo().getBindingPath());
+            }
+
+            elementQueue.addAll(ViewLifecycleUtils.getElementsForLifecycle(currentElement).values());
+        } finally {
+            elementQueue.clear();
+            RecycleUtils.recycle(elementQueue);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void populateViewFromRequestParameters(Map<String, String> parameters) {
+        View view = ViewLifecycle.getView();
+
+        // build Map of property replacers by property name so that we can remove them
+        // if the property was set by a request parameter
+        Map<String, Set<PropertyReplacer>> viewPropertyReplacers = new HashMap<String, Set<PropertyReplacer>>();
+        List<PropertyReplacer> propertyReplacerSource = view.getPropertyReplacers();
+        if (propertyReplacerSource != null) {
+            for (PropertyReplacer replacer : propertyReplacerSource) {
+                String replacerPropertyName = replacer.getPropertyName();
+                Set<PropertyReplacer> propertyReplacers = viewPropertyReplacers.get(replacerPropertyName);
+
+                if (propertyReplacers == null) {
+                    viewPropertyReplacers.put(replacerPropertyName,
+                            propertyReplacers = new HashSet<PropertyReplacer>());
+                }
+
+                propertyReplacers.add(replacer);
+            }
+        }
+
+        Map<String, Annotation> annotatedFields = CloneUtils.getFieldsWithAnnotation(view.getClass(),
+                RequestParameter.class);
+
+        // for each request parameter allowed on the view, if the request contains a value use
+        // to set on View, and clear and conditional expressions or property replacers for that field
+        Map<String, String> viewRequestParameters = new HashMap<String, String>();
+        for (String fieldToPopulate : annotatedFields.keySet()) {
+            RequestParameter requestParameter = (RequestParameter) annotatedFields.get(fieldToPopulate);
+
+            // use specified parameter name if given, else use field name to retrieve parameter value
+            String requestParameterName = requestParameter.parameterName();
+            if (StringUtils.isBlank(requestParameterName)) {
+                requestParameterName = fieldToPopulate;
+            }
+
+            if (!parameters.containsKey(requestParameterName)) {
+                continue;
+            }
+
+            String fieldValue = parameters.get(requestParameterName);
+            if (StringUtils.isNotBlank(fieldValue)) {
+                viewRequestParameters.put(requestParameterName, fieldValue);
+                ObjectPropertyUtils.setPropertyValue(view, fieldToPopulate, fieldValue);
+
+                // remove any conditional configuration so value is not
+                // overridden later during the apply model phase
+                if (view.getPropertyExpressions().containsKey(fieldToPopulate)) {
+                    view.getPropertyExpressions().remove(fieldToPopulate);
+                }
+
+                if (viewPropertyReplacers.containsKey(fieldToPopulate)) {
+                    Set<PropertyReplacer> propertyReplacers = viewPropertyReplacers.get(fieldToPopulate);
+                    for (PropertyReplacer replacer : propertyReplacers) {
+                        view.getPropertyReplacers().remove(replacer);
+                    }
+                }
+            }
+        }
+
+        view.setViewRequestParameters(viewRequestParameters);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String buildGrowlScript() {
+        View view = ViewLifecycle.getView();
+        String growlScript = "";
+
+        MessageService messageService = KRADServiceLocatorWeb.getMessageService();
+
+        MessageMap messageMap = GlobalVariables.getMessageMap();
+        for (GrowlMessage growl : messageMap.getGrowlMessages()) {
+            if (view.isGrowlMessagingEnabled()) {
+                String message = messageService.getMessageText(growl.getNamespaceCode(), growl.getComponentCode(),
+                        growl.getMessageKey());
+
+                if (StringUtils.isNotBlank(message)) {
+                    if (growl.getMessageParameters() != null) {
+                        message = message.replace("'", "''");
+                        message = MessageFormat.format(message, (Object[]) growl.getMessageParameters());
+                    }
+
+                    // escape single quotes in message or title since that will cause problem with plugin
+                    message = message.replace("'", "\\'");
+
+                    String title = growl.getTitle();
+                    if (StringUtils.isNotBlank(growl.getTitleKey())) {
+                        title = messageService.getMessageText(growl.getNamespaceCode(), growl.getComponentCode(),
+                                growl.getTitleKey());
+                    }
+                    title = title.replace("'", "\\'");
+
+                    growlScript =
+                            growlScript + "showGrowl('" + message + "', '" + title + "', '" + growl.getTheme() + "');";
+                }
+            } else {
+                ErrorMessage infoMessage = new ErrorMessage(growl.getMessageKey(), growl.getMessageParameters());
+                infoMessage.setNamespaceCode(growl.getNamespaceCode());
+                infoMessage.setComponentCode(growl.getComponentCode());
+
+                messageMap.putInfoForSectionId(KRADConstants.GLOBAL_INFO, infoMessage);
+            }
+        }
+
+        return growlScript;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void populateDefaultValueForField(Object object, DataField dataField, String bindingPath) {
+        if (!ObjectPropertyUtils.isReadableProperty(object, bindingPath) || !ObjectPropertyUtils.isWritableProperty(
+                object, bindingPath)) {
+            return;
+        }
+
+        Object currentValue = ObjectPropertyUtils.getPropertyValue(object, bindingPath);
+
+        // Default value only applies when the value being set is null (has no value on the form)
+        if (currentValue != null) {
+            return;
+        }
+
+        Object defaultValue = getDefaultValueForField(object, dataField);
+
+        ObjectPropertyUtils.setPropertyValue(object, bindingPath, defaultValue);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Object getDefaultValueForField(Object object, DataField dataField) {
+        View view = ViewLifecycle.getView();
+        Object defaultValue = null;
+
+        // if dataField.defaultValue is not null and not empty empty string use it
+        if (dataField.getDefaultValue() != null && !(dataField.getDefaultValue() instanceof String && StringUtils
+                .isBlank((String) dataField.getDefaultValue()))) {
+            defaultValue = dataField.getDefaultValue();
+        } else if ((dataField.getExpressionGraph() != null) && dataField.getExpressionGraph().containsKey(
+                UifConstants.ComponentProperties.DEFAULT_VALUE)) {
+            defaultValue = dataField.getExpressionGraph().get(UifConstants.ComponentProperties.DEFAULT_VALUE);
+        } else if (dataField.getDefaultValueFinderClass() != null) {
+            ValueFinder defaultValueFinder = KRADUtils.createNewObjectFromClass(dataField.getDefaultValueFinderClass());
+
+            defaultValue = defaultValueFinder.getValue();
+        } else if ((dataField.getExpressionGraph() != null) && dataField.getExpressionGraph().containsKey(
+                UifConstants.ComponentProperties.DEFAULT_VALUES)) {
+            defaultValue = dataField.getExpressionGraph().get(UifConstants.ComponentProperties.DEFAULT_VALUES);
+        } else if (dataField.getDefaultValues() != null) {
+            defaultValue = dataField.getDefaultValues();
+        }
+
+        ExpressionEvaluator expressionEvaluator = ViewLifecycle.getExpressionEvaluator();
+
+        if ((defaultValue != null) && (defaultValue instanceof String) && expressionEvaluator.containsElPlaceholder(
+                (String) defaultValue)) {
+            Map<String, Object> context = new HashMap<String, Object>(view.getPreModelContext());
+            context.putAll(dataField.getContext());
+
+            defaultValue = expressionEvaluator.replaceBindingPrefixes(view, object, (String) defaultValue);
+            defaultValue = expressionEvaluator.evaluateExpressionTemplate(context, (String) defaultValue);
+        }
+
+        return defaultValue;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void refreshReference(Object parentObject, String referenceObjectName) {
+        if (!(parentObject instanceof PersistableBusinessObject)) {
+            LOG.warn("Could not refresh reference " + referenceObjectName + " off class " + parentObject.getClass()
+                    .getName() + ". Class not of type PersistableBusinessObject");
+            return;
+        }
+
+        LegacyDataAdapter legacyDataAdapter = KRADServiceLocatorWeb.getLegacyDataAdapter();
+        DataDictionaryService dataDictionaryService = KRADServiceLocatorWeb.getDataDictionaryService();
+
+        if (legacyDataAdapter.hasReference(parentObject.getClass(), referenceObjectName) || legacyDataAdapter
+                .hasCollection(parentObject.getClass(), referenceObjectName)) {
+            // refresh via database mapping
+            legacyDataAdapter.retrieveReferenceObject(parentObject, referenceObjectName);
+        } else if (dataDictionaryService.hasRelationship(parentObject.getClass().getName(), referenceObjectName)) {
+            // refresh via data dictionary mapping
+            Object referenceObject = KradDataServiceLocator.getDataObjectService().wrap(parentObject).getPropertyValue(
+                    referenceObjectName);
+            if (!(referenceObject instanceof PersistableBusinessObject)) {
+                LOG.warn("Could not refresh reference " + referenceObjectName + " off class " + parentObject.getClass()
+                        .getName() + ". Class not of type PersistableBusinessObject");
+                return;
+            }
+
+            referenceObject = legacyDataAdapter.retrieve((PersistableBusinessObject) referenceObject);
+            if (referenceObject == null) {
+                LOG.warn("Could not refresh reference " + referenceObjectName + " off class " + parentObject.getClass()
+                        .getName() + ".");
+                return;
+            }
+
+            try {
+                KRADUtils.setObjectProperty(parentObject, referenceObjectName, referenceObject);
+            } catch (Exception e) {
+                LOG.error("Unable to refresh persistable business object: " + referenceObjectName + "\n" + e
+                        .getMessage());
+                throw new RuntimeException(
+                        "Unable to refresh persistable business object: " + referenceObjectName + "\n" + e
+                                .getMessage());
+            }
+        } else {
+            LOG.warn("Could not refresh reference " + referenceObjectName + " off class " + parentObject.getClass()
+                    .getName() + ".");
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void refreshReferences(String referencesToRefresh) {
+        Object model = ViewLifecycle.getModel();
+        for (String reference : StringUtils.split(referencesToRefresh, KRADConstants.REFERENCES_TO_REFRESH_SEPARATOR)) {
+            if (StringUtils.isBlank(reference)) {
+                continue;
+            }
+
+            //ToDo: handle add line
+
+            if (PropertyAccessorUtils.isNestedOrIndexedProperty(reference)) {
+                String parentPath = KRADUtils.getNestedAttributePrefix(reference);
+                Object parentObject = ObjectPropertyUtils.getPropertyValue(model, parentPath);
+                String referenceObjectName = KRADUtils.getNestedAttributePrimitive(reference);
+
+                if (parentObject == null) {
+                    LOG.warn("Unable to refresh references for " + referencesToRefresh +
+                            ". Object not found in model. Nothing refreshed.");
+                    continue;
+                }
+
+                refreshReference(parentObject, referenceObjectName);
+            } else {
+                refreshReference(model, reference);
+            }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void retrieveEditModesAndActionFlags() {
+        View view = ViewLifecycle.getView();
+        UifFormBase model = (UifFormBase) ViewLifecycle.getModel();
+        ViewPresentationController presentationController = view.getPresentationController();
+        ViewAuthorizer authorizer = view.getAuthorizer();
+
+        Set<String> actionFlags = presentationController.getActionFlags(view, model);
+        Set<String> editModes = presentationController.getEditModes(view, model);
+
+        // if user session is not established cannot invoke authorizer
+        if (GlobalVariables.getUserSession() != null) {
+            Person user = GlobalVariables.getUserSession().getPerson();
+
+            actionFlags = authorizer.getActionFlags(view, model, user, actionFlags);
+            editModes = authorizer.getEditModes(view, model, user, editModes);
+        }
+
+        view.setActionFlags(new BooleanMap(actionFlags));
+        view.setEditModes(new BooleanMap(editModes));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setViewContext() {
+        View view = ViewLifecycle.getView();
+        view.pushAllToContext(view.getPreModelContext());
+
+        // evaluate view expressions for further context
+        for (Entry<String, String> variableExpression : view.getExpressionVariables().entrySet()) {
+            String variableName = variableExpression.getKey();
+            Object value = ViewLifecycle.getExpressionEvaluator().evaluateExpression(view.getContext(),
+                    variableExpression.getValue());
+            view.pushObjectToContext(variableName, value);
+        }
     }
 
     /**
      * Gets the configuration service
-     * 
+     *
      * @return configuration service
      */
     protected ConfigurationService getConfigurationService() {
@@ -725,8 +952,8 @@ public class ViewHelperServiceImpl implements ViewHelperService, Serializable {
 
     /**
      * Sets the configuration service
-     * 
-     * @param configurationService
+     *
+     * @param configurationService The configuration service.
      */
     public void setConfigurationService(ConfigurationService configurationService) {
         this.configurationService = configurationService;
@@ -734,7 +961,7 @@ public class ViewHelperServiceImpl implements ViewHelperService, Serializable {
 
     /**
      * Gets the data dictionary service
-     * 
+     *
      * @return data dictionary service
      */
     protected DataDictionaryService getDataDictionaryService() {
@@ -747,8 +974,8 @@ public class ViewHelperServiceImpl implements ViewHelperService, Serializable {
 
     /**
      * Sets the data dictionary service
-     * 
-     * @param dataDictionaryService
+     *
+     * @param dataDictionaryService The dictionary service.
      */
     public void setDataDictionaryService(DataDictionaryService dataDictionaryService) {
         this.dataDictionaryService = dataDictionaryService;
@@ -756,7 +983,7 @@ public class ViewHelperServiceImpl implements ViewHelperService, Serializable {
 
     /**
      * Gets the view dictionary service
-     * 
+     *
      * @return view dictionary service
      */
     protected ViewDictionaryService getViewDictionaryService() {
@@ -768,27 +995,69 @@ public class ViewHelperServiceImpl implements ViewHelperService, Serializable {
 
     /**
      * Sets the view dictionary service
-     * 
-     * @param viewDictionaryService
+     *
+     * @param viewDictionaryService The view dictionary service.
      */
     public void setViewDictionaryService(ViewDictionaryService viewDictionaryService) {
         this.viewDictionaryService = viewDictionaryService;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ExpressionEvaluatorFactory getExpressionEvaluatorFactory() {
+        if (expressionEvaluatorFactory == null) {
+            expressionEvaluatorFactory = KRADServiceLocatorWeb.getExpressionEvaluatorFactory();
+        }
+
+        return expressionEvaluatorFactory;
+    }
+
+    /**
+     * Setter for {@link #getExpressionEvaluatorFactory()}.
+     *
+     * @param expressionEvaluatorFactory expression evaluator factory
+     */
+    public void setExpressionEvaluatorFactory(ExpressionEvaluatorFactory expressionEvaluatorFactory) {
+        this.expressionEvaluatorFactory = expressionEvaluatorFactory;
+    }
+
+    /**
+     * Get the legacy data adapter.
+     *
+     * @return The legacy data adapter.
+     */
     protected LegacyDataAdapter getLegacyDataAdapter() {
         if (legacyDataAdapter == null) {
-            return KRADServiceLocatorWeb.getLegacyDataAdapter();
+            legacyDataAdapter = KRADServiceLocatorWeb.getLegacyDataAdapter();
         }
         return legacyDataAdapter;
     }
 
+    protected DataObjectService getDataObjectService() {
+        if (dataObjectService == null) {
+            dataObjectService = KRADServiceLocator.getDataObjectService();
+        }
+        return dataObjectService;
+    }
+
+    protected void setDataObjectService(DataObjectService dataObjectService) {
+        this.dataObjectService = dataObjectService;
+    }
+
+    /**
+     * Set the legacy data adapter.
+     *
+     * @param legacyDataAdapter The legacy data adapter.
+     */
     public void setLegacyDataAdapter(LegacyDataAdapter legacyDataAdapter) {
         this.legacyDataAdapter = legacyDataAdapter;
     }
 
     /**
      * Log an error message using log4j, then throw a runtime exception with the provided message.
-     * 
+     *
      * @param message The error message.
      */
     protected void logAndThrowRuntime(String message) {

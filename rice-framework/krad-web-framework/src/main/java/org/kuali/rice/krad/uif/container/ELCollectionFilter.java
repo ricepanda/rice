@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,20 @@
  */
 package org.kuali.rice.krad.uif.container;
 
-import org.kuali.rice.krad.datadictionary.Copyable;
-import org.kuali.rice.krad.datadictionary.DictionaryBeanBase;
-import org.kuali.rice.krad.datadictionary.parse.BeanTag;
-import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
-import org.kuali.rice.krad.uif.UifConstants;
-import org.kuali.rice.krad.uif.view.ExpressionEvaluator;
-import org.kuali.rice.krad.uif.util.CloneUtils;
-import org.kuali.rice.krad.uif.util.CopyUtils;
-import org.kuali.rice.krad.uif.util.ObjectPropertyUtils;
-import org.kuali.rice.krad.uif.view.View;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.kuali.rice.krad.datadictionary.Copyable;
+import org.kuali.rice.krad.datadictionary.parse.BeanTag;
+import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
+import org.kuali.rice.krad.uif.UifConstants;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.util.CopyUtils;
+import org.kuali.rice.krad.uif.util.ObjectPropertyUtils;
+import org.kuali.rice.krad.uif.view.ExpressionEvaluator;
+import org.kuali.rice.krad.uif.view.View;
 
 /**
  * Collection filter that evaluates a configured el expression against each line
@@ -55,8 +54,7 @@ public class ELCollectionFilter implements CollectionFilter, Copyable {
         List<Object> modelCollection = ObjectPropertyUtils.getPropertyValue(model,
                 collectionGroup.getBindingInfo().getBindingPath());
 
-        ExpressionEvaluator expressionEvaluator =
-                view.getViewHelperService().getExpressionEvaluator();
+        ExpressionEvaluator expressionEvaluator = ViewLifecycle.getExpressionEvaluator();
 
         // iterate through and add index that pass the expression
         List<Integer> showIndexes = new ArrayList<Integer>();
@@ -127,14 +125,11 @@ public class ELCollectionFilter implements CollectionFilter, Copyable {
     }
 
     /**
-     * Copies the properties over for the copy method.
-     *
-     * @param eLCollectionFilter ELCollectionFilter instance to copy properties to
+     * {@inheritDoc}
      */
-    protected <T> void copyProperties(T eLCollectionFilter) {
-        ELCollectionFilter eLCollectionFilterCopy = (ELCollectionFilter) eLCollectionFilter;
-
-        eLCollectionFilterCopy.setExpression(this.getExpression());
+    @Override
+    public Copyable unwrap() {
+        return this;
     }
 
 }

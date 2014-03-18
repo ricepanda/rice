@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,12 @@
 package org.kuali.rice.kim.bo.ui;
 
 import javax.persistence.Column;
+import javax.persistence.Convert;
+import javax.persistence.Embeddable;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.Transient;
+
+import org.kuali.rice.krad.data.jpa.converters.BooleanYNConverter;
 
 /**
  * This is a description of what this class does - shyu don't forget to fill this in. 
@@ -27,10 +31,11 @@ import javax.persistence.Transient;
  */
 @MappedSuperclass
 public class KimDocumentBoActivatableBase  extends KimDocumentBoBase {
+
     private static final long serialVersionUID = 9042706897191231670L;
 
-	//@Type(type="yes_no")
-	@Column(name="ACTV_IND")
+    @Column(name="ACTV_IND")
+	@Convert(converter = BooleanYNConverter.class)
     protected boolean active = true;
 	
 	@Transient

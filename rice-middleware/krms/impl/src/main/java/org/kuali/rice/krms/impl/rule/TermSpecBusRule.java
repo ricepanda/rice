@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,8 @@
 package org.kuali.rice.krms.impl.rule;
 
 import org.apache.commons.lang.StringUtils;
-import org.kuali.rice.kns.service.KNSServiceLocator;
 import org.kuali.rice.krad.maintenance.MaintenanceDocument;
 import org.kuali.rice.krad.rules.MaintenanceDocumentRuleBase;
-import org.kuali.rice.krad.service.BusinessObjectService;
 import org.kuali.rice.krms.api.repository.term.TermSpecificationDefinition;
 import org.kuali.rice.krms.impl.repository.CategoryBo;
 import org.kuali.rice.krms.impl.repository.ContextBo;
@@ -33,8 +31,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.kuali.rice.krms.impl.repository.BusinessObjectServiceMigrationUtils.findSingleMatching;
+
 public class TermSpecBusRule extends MaintenanceDocumentRuleBase {
-    private BusinessObjectService boService;
 
     @Override
     protected boolean processCustomSaveDocumentBusinessRules(MaintenanceDocument document) {
@@ -106,7 +105,8 @@ public class TermSpecBusRule extends MaintenanceDocumentRuleBase {
             criteria.put("name", termSpec.getName());
             criteria.put("namespace", termSpec.getNamespace());
 
-            TermSpecificationBo termSpecInDatabase = getBoService().findByPrimaryKey(TermSpecificationBo.class, criteria);
+            TermSpecificationBo termSpecInDatabase =
+                    findSingleMatching(getDataObjectService(), TermSpecificationBo.class, criteria);
 
             if((termSpecInDatabase != null) && (!StringUtils.equals(termSpecInDatabase.getId(), termSpec.getId()))) {
                 this.putFieldError(KRMSPropertyConstants.TermSpecification.NAME, "error.term.duplicateNameNamespace");
@@ -120,16 +120,4 @@ public class TermSpecBusRule extends MaintenanceDocumentRuleBase {
     public TermBoService getTermBoService() {
         return KrmsRepositoryServiceLocator.getTermBoService();
     }
-
-    public BusinessObjectService getBoService() {
-        if(boService == null){
-            return KNSServiceLocator.getBusinessObjectService();
-        }
-        return boService;
-    }
-
-    public void setBoService(BusinessObjectService boService) {
-        this.boService = boService;
-    }
-
 }

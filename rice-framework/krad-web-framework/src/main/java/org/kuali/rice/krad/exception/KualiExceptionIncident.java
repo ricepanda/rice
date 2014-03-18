@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,12 +107,12 @@ public interface KualiExceptionIncident {
     public Map<String, String> toProperties();
 
     /**
-     * This method checks the exception (set during construction) and return errror
+     * This method checks the exception (set during construction) and return error
      * message if it's Kuali type of exception (defined by the list of exception names).
      * Otherwise, it returns a generic message.
      *
-     * @param The caught exception
-     * @return
+     * @param exception The caught exception
+     * @return display message
      */
     public String getDisplayMessage(Exception exception);
 

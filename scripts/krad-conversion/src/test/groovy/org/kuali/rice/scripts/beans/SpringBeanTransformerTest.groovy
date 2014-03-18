@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,14 +41,14 @@ class SpringBeanTransformerTest extends BeanTransformerTestBase {
     // Utilities
 
     @Test
-    void testCopyProperties() {
+    void testCopyBeanProperties() {
         def rootBean = new XmlParser().parseText("<beans><bean parent='SampleAppBean'>" + "<property name='title' value='test' /><property name='title2' value='value2' />" + "<property name='title3'><list><value>1</value><value>2</value></list></property>" + "</bean></beans>");
         def copyNode = new XmlParser().parseText("<beans><bean parent='SampleAppBean'></bean></beans>");
         def beanNode = rootBean.bean[0];
 
         copyNode.bean[0].replaceNode {
             bean() {
-                springBeanTransformer.copyProperties(delegate, beanNode, ["title", "title3"]);
+                springBeanTransformer.copyBeanProperties(delegate, beanNode, ["title", "title3"]);
             }
         }
 
@@ -91,6 +91,20 @@ class SpringBeanTransformerTest extends BeanTransformerTestBase {
     }
 
    @Test
+    void testGatherProperties() {
+        def ddRootNode = getSimpleSpringXmlNode();
+
+       def searchProperties = ["simpleProperty":"simpleProperty"];
+       def properties = springBeanTransformer.gatherPropertyTags(ddRootNode.bean[0], searchProperties);
+       Assert.assertTrue("attribute list should contain property tags - " + properties, properties["simpleProperty"] != null);
+
+        def searchAttrs = ["name":"name"];
+        def attributes = springBeanTransformer.gatherPropertyAttrs(ddRootNode.bean[0], searchAttrs);
+        Assert.assertTrue("attribute list should contain property attribute name - " + attributes, attributes["name"] != null);
+
+    }
+
+    @Test
     void testGenericNodeTransform() {
         def ddRootNode = getSimpleSpringXmlNode();
         def searchAttrs = ["*name": "p:propertyName"];
@@ -115,8 +129,8 @@ class SpringBeanTransformerTest extends BeanTransformerTestBase {
      */
     @Test
     public void testRemoveChildrenBeans() {
-        String lookupDefFilePath = getDictionaryTestDir() + "LookupDefinitionSample.xml"
-        def lookupDefFile = new File(lookupDefFilePath)
+        String lookupDefFilePath = getDictionaryTestDir() + "LookupDefinitionSample.xml";
+        def lookupDefFile = getTestResourceFile(lookupDefFilePath);
         def ddRootNode = new XmlParser().parse(lookupDefFile);
         def beanNode = ddRootNode.bean.find { "BusinessObjectEntry".equals(it.@parent) };
         String parentName = beanNode.@parent;

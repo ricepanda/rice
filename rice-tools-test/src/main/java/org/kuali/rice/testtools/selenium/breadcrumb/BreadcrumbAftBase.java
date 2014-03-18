@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,16 @@
  */
 package org.kuali.rice.testtools.selenium.breadcrumb;
 
-import com.thoughtworks.selenium.SeleneseTestBase;
 import org.junit.Test;
-import org.kuali.rice.testtools.selenium.AutomatedFunctionalTestBase;
+import org.kuali.rice.testtools.selenium.WebDriverLegacyITBase;
 
 import java.util.Arrays;
 import java.util.Collections;
 
-public abstract class BreadcrumbAftBase extends AutomatedFunctionalTestBase {
+/**
+ * @author Kuali Rice Team (rice.collab@kuali.org)
+ */
+public abstract class BreadcrumbAftBase extends WebDriverLegacyITBase {
 
     /**
      * //div[@class='uif-breadcrumbSiblingContent']//div[@class='uif-inputField']//ul[@class='uif-optionList']
@@ -51,19 +53,19 @@ public abstract class BreadcrumbAftBase extends AutomatedFunctionalTestBase {
         //         Other Fields
         // </a></li>
         // etc.
-        SeleneseTestBase.assertFalse(isVisibleByXpath(SECOND_BREADCRUMB_NAV_XPATH));
+        assertFalse(isVisibleByXpath(SECOND_BREADCRUMB_NAV_XPATH));
         // The second ▼
         waitAndClickByXpath(getTriangleXpath());
         Thread.sleep(100);
-        SeleneseTestBase.assertTrue(isVisibleByXpath(SECOND_BREADCRUMB_NAV_XPATH));
+        assertTrue(isVisibleByXpath(SECOND_BREADCRUMB_NAV_XPATH));
         waitAndClickByXpath(getTriangleXpath());
-        SeleneseTestBase.assertFalse(isVisibleByXpath(SECOND_BREADCRUMB_NAV_XPATH));
+        assertFalse(isVisibleByXpath(SECOND_BREADCRUMB_NAV_XPATH));
         waitAndClickByXpath(getTriangleXpath());
 
         // The Second selection of the second ▼
         // you can't just click by link text as the same clickable text is on the left navigation.
         waitAndClickByXpath(SECOND_BREADCRUMB_NAV_XPATH +"/li[" + pageNumber + "]/a");
-        waitForElementPresentById("TopLink" + pageNumber, "Breadcrumb number " + pageNumber + " failure"); // bottom jump to top link
+        waitForElementPresentById("TopLink" + pageNumber, "Breadcrumb number " + pageNumber + " failure", 30); // bottom jump to top link
         driver.getCurrentUrl().contains("pageId=UifCompView-Page" + pageNumber);
     }
 

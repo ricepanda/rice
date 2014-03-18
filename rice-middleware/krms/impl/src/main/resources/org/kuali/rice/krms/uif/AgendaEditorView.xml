@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -81,7 +81,7 @@
     <property name="entryPageId" value="AgendaEditorView-Agenda-Page"/>
   </bean>
 
-  <bean id="AgendaEditorView-Agenda-Page-Parent" parent="Uif-Page">
+  <bean id="AgendaEditorView-Agenda-Page-Parent" parent="Uif-Disclosure-Page">
     <property name="items">
       <list>
         <bean parent="AgendaEditorView-AgendaSection" />
@@ -92,7 +92,7 @@
     </property>
   </bean>
 
-  <bean id="AgendaEditorView-AddRule-Page-Parent" parent="Uif-Page">
+  <bean id="AgendaEditorView-AddRule-Page-Parent" parent="Uif-Disclosure-Page">
     <property name="items">
       <list>
         <bean parent="ruleEditorBody">
@@ -118,7 +118,7 @@
    </property>
   </bean>
 
-  <bean id="AgendaEditorView-EditRule-Page-Parent" parent="Uif-Page">
+  <bean id="AgendaEditorView-EditRule-Page-Parent" parent="Uif-Disclosure-Page">
     <!-- property name="headerText" value="Agenda: @{#dp.agenda.name}" see KULRICE-6301 and KULRICE-6296 / -->
     <property name="items">
       <list>
@@ -140,7 +140,7 @@
    </property>
   </bean>
 
-  <bean id="AgendaEditorView-ViewRule-Page-Parent" parent="Uif-Page">
+  <bean id="AgendaEditorView-ViewRule-Page-Parent" parent="Uif-Disclosure-Page">
     <!-- property name="headerText" value="Agenda: @{#dp.agenda.name}" see KULRICE-6301 and KULRICE-6296 / -->
     <property name="items">
       <list>
@@ -350,7 +350,7 @@
 
   <!--
 
-   <bean id="Uif-FooterBase-parentBean" abstract="true" class="org.kuali.rice.krad.uif.container.Group" scope="prototype">
+   <bean id="Uif-FooterBase-parentBean" abstract="true" class="org.kuali.rice.krad.uif.container.GroupBase" scope="prototype">
       <property name="template" value="/krad/WEB-INF/jsp/templates/group/group.jsp"/>
       <property name="renderHeader" value="false"/>
       <property name="layoutManager">
@@ -376,13 +376,10 @@
   </bean>
 
   <!-- TODO: figure out how to style this without using kr-footer -->
-  <bean id="AgendaEditorView-TreeViewControls" parent="Uif-VerticalBoxSection"
+  <bean id="AgendaEditorView-TreeViewControls" parent="Uif-HorizontalBoxSection"
         p:cssClasses="krms-rulesButtonBar">
     <property name="renderHeader" value="true"/>
     <property name="headerText" value="Rules"/>
-    <property name="layoutManager">
-      <bean parent="Uif-HorizontalBoxLayout"/>
-    </property>
     <property name="onDocumentReadyScript" value="loadControlsInit();"/>
 
     <property name="items">
@@ -412,13 +409,10 @@
   </bean>
 
   <!-- TODO: figure out how to style this without using kr-footer -->
-  <bean id="AgendaEditorView-TreeEditControls" parent="Uif-VerticalBoxSection"
+  <bean id="AgendaEditorView-TreeEditControls" parent="Uif-HorizontalBoxSection"
         p:cssClasses="krms-rulesButtonBar">
     <property name="renderHeader" value="true"/>
     <property name="headerText" value="Rules"/>
-    <property name="layoutManager">
-      <bean parent="Uif-HorizontalBoxLayout" />
-    </property>
 
     <property name="items">
       <list>
@@ -637,7 +631,7 @@
               <bean parent="Uif-VerticalBoxGroup" p:hidden="true" p:style="float: right;">
                 <property name="items">
                   <list>
-                    <bean parent="Uif-DataField" p:propertyName="agendaItem.id" p:cssClasses="agendaItemId" p:additionalHiddenPropertyNames="agendaItem.id" />
+                    <bean parent="Uif-DataField" p:propertyName="agendaItemLine.id" p:cssClasses="agendaItemId" p:additionalHiddenPropertyNames="agendaItemLine.id" />
                   </list>
                 </property>
               </bean>

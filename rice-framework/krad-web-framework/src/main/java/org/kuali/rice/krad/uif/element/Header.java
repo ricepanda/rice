@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.kuali.rice.krad.uif.element;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
@@ -24,11 +25,15 @@ import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
 import org.kuali.rice.krad.datadictionary.parse.BeanTags;
 import org.kuali.rice.krad.datadictionary.validator.ValidationTrace;
 import org.kuali.rice.krad.datadictionary.validator.Validator;
+import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.container.Group;
-import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleRestriction;
 import org.kuali.rice.krad.uif.util.ComponentFactory;
 import org.kuali.rice.krad.uif.util.ComponentUtils;
+import org.kuali.rice.krad.uif.view.View;
+import org.kuali.rice.krad.uif.widget.Help;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.util.KRADConstants;
 
 /**
@@ -65,6 +70,7 @@ public class Header extends ContentElementBase {
 
     private String headerTagStyle;
     private List<String> headerTagCssClasses;
+    private boolean headerTagOnly;
 
     private Message richHeaderMessage;
     private List<Component> inlineComponents;
@@ -73,20 +79,42 @@ public class Header extends ContentElementBase {
     private Group rightGroup;
     private Group lowerGroup;
 
+    private boolean renderWrapper;
+
     public Header() {
         super();
 
         headerTagCssClasses = new ArrayList<String>();
+        renderWrapper = true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void performInitialization(Object model) {
+        super.performInitialization(model);
+        
+        if (isReadOnly()) {
+            if (upperGroup != null) {
+                upperGroup.setReadOnly(true);
+            }
+            if (lowerGroup != null) {
+                lowerGroup.setReadOnly(true);
+            }
+            if (rightGroup != null) {
+                rightGroup.setReadOnly(true);
+            }
+        }
     }
 
     /**
      * Sets up rich message content for the label, if any exists
      *
-     * @see Component#performApplyModel(org.kuali.rice.krad.uif.view.View, Object,
-     *      org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performApplyModel(Object model, Component parent) {
+    public void performApplyModel(Object model, LifecycleElement parent) {
         super.performApplyModel(model, parent);
 
         if (richHeaderMessage == null && headerText != null && headerText.contains(
@@ -95,10 +123,8 @@ public class Header extends ContentElementBase {
             Message message = ComponentFactory.getMessage();
             message.setMessageText(headerText);
             message.setInlineComponents(inlineComponents);
-            message.setGenerateSpan(false);
+            message.setRenderWrapperTag(false);
             
-            ViewLifecycle.spawnSubLifecyle(model, message, this);
-
             this.setRichHeaderMessage(message);
         }
     }
@@ -110,11 +136,10 @@ public class Header extends ContentElementBase {
      * <li>Set render on header group to false if no items are configured</li>
      * </ul>
      *
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#performFinalize(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performFinalize(Object model, Component parent) {
+    public void performFinalize(Object model, LifecycleElement parent) {
         super.performFinalize(model, parent);
 
         // don't render header groups if no items were configured
@@ -145,18 +170,30 @@ public class Header extends ContentElementBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#getComponentsForLifecycle()
+     * {@inheritDoc}
      */
     @Override
-    public List<Component> getComponentsForLifecycle() {
-        List<Component> components = super.getComponentsForLifecycle();
+    public List<String> getAdditionalTemplates() {
+        List<String> additionalTemplates = super.getAdditionalTemplates();
 
-        components.add(richHeaderMessage);
-        components.add(upperGroup);
-        components.add(rightGroup);
-        components.add(lowerGroup);
-
-        return components;
+        Object parent = getContext().get(UifConstants.ContextVariableNames.PARENT);
+        
+        Help help = null;
+        if (parent instanceof Group) {
+            help = ((Group) parent).getHelp();
+        } else if (parent instanceof View) {
+            help = ((View) parent).getHelp();
+        }
+        
+        if (help != null) {
+            String helpTemplate = help.getTemplate();
+            if (additionalTemplates.isEmpty()) {
+                additionalTemplates = new ArrayList<String>();
+            }
+            additionalTemplates.add(helpTemplate);
+        }
+        
+        return additionalTemplates;
     }
 
     /**
@@ -265,6 +302,14 @@ public class Header extends ContentElementBase {
         this.headerTagStyle = headerTagStyle;
     }
 
+    public boolean isHeaderTagOnly() {
+        return headerTagOnly;
+    }
+
+    public void setHeaderTagOnly(boolean headerTagOnly) {
+        this.headerTagOnly = headerTagOnly;
+    }
+
     /**
      * Nested group instance that can be used to render contents above the header text
      *
@@ -344,6 +389,7 @@ public class Header extends ContentElementBase {
      *
      * @return List<? extends Component> items
      */
+    @ViewLifecycleRestriction
     @BeanTagAttribute(name = "items", type = BeanTagAttribute.AttributeType.LISTBEAN)
     public List<? extends Component> getItems() {
         if (lowerGroup != null) {
@@ -415,47 +461,7 @@ public class Header extends ContentElementBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        Header headerCopy = (Header) component;
-
-        headerCopy.setHeaderLevel(this.headerLevel);
-
-        if (this.headerTagCssClasses != null) {
-            headerCopy.setHeaderTagCssClasses(new ArrayList<String>(this.headerTagCssClasses));
-        }
-
-        headerCopy.setHeaderTagStyle(this.headerTagStyle);
-        headerCopy.setHeaderText(this.headerText);
-
-        if(inlineComponents != null) {
-            List<Component> inlineComponentsCopy = ComponentUtils.copy(inlineComponents);
-            headerCopy.setInlineComponents(inlineComponentsCopy);
-        }
-
-        if (this.lowerGroup != null) {
-            headerCopy.setLowerGroup((Group)this.lowerGroup.copy());
-        }
-
-        if (this.rightGroup != null) {
-            headerCopy.setRightGroup((Group)this.rightGroup.copy());
-        }
-
-        if (this.upperGroup != null) {
-            headerCopy.setUpperGroup((Group)this.upperGroup.copy());
-        }
-
-        if (this.richHeaderMessage != null) {
-            headerCopy.setRichHeaderMessage((Message)this.richHeaderMessage.copy());
-        }
-    }
-
-    /**
-     * @see org.kuali.rice.krad.uif.component.Component#completeValidation
+     * {@inheritDoc}
      */
     @Override
     public void completeValidation(ValidationTrace tracer) {

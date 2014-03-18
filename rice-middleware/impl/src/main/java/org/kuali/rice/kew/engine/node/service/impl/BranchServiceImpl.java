@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,14 @@
  */
 package org.kuali.rice.kew.engine.node.service.impl;
 
-import java.util.List;
-
 import org.apache.log4j.Logger;
 import org.kuali.rice.kew.engine.node.Branch;
 import org.kuali.rice.kew.engine.node.BranchState;
-import org.kuali.rice.kew.engine.node.dao.BranchDAO;
 import org.kuali.rice.kew.engine.node.service.BranchService;
 import org.kuali.rice.krad.data.DataObjectService;
 import org.springframework.beans.factory.annotation.Required;
+
+import java.util.List;
 
 public class BranchServiceImpl implements BranchService {
     private static final Logger LOG = Logger.getLogger(BranchServiceImpl.class);

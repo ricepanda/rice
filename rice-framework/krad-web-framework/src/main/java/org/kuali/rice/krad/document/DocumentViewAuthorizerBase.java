@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import org.kuali.rice.kew.api.WorkflowDocument;
 import org.kuali.rice.kim.api.KimConstants;
 import org.kuali.rice.kim.api.identity.Person;
 import org.kuali.rice.krad.UserSessionUtils;
-import org.kuali.rice.krad.data.DataObjectUtils;
 import org.kuali.rice.krad.datadictionary.AttributeSecurity;
 import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
 import org.kuali.rice.krad.uif.field.DataField;
@@ -32,6 +31,7 @@ import org.kuali.rice.krad.uif.view.ViewAuthorizerBase;
 import org.kuali.rice.krad.uif.view.ViewModel;
 import org.kuali.rice.krad.util.GlobalVariables;
 import org.kuali.rice.krad.util.KRADConstants;
+import org.kuali.rice.krad.util.KRADUtils;
 import org.kuali.rice.krad.web.form.DocumentFormBase;
 
 import java.util.Map;
@@ -61,9 +61,7 @@ public class DocumentViewAuthorizerBase extends ViewAuthorizerBase implements Do
     private DocumentAuthorizer documentAuthorizer;
 
     /**
-     * @see org.kuali.rice.krad.uif.view.ViewAuthorizer#getActionFlags(org.kuali.rice.krad.uif.view.View,
-     *      org.kuali.rice.krad.uif.view.ViewModel, org.kuali.rice.kim.api.identity.Person,
-     *      java.util.Set<java.lang.String>)
+     * {@inheritDoc}
      */
     @Override
     public Set<String> getActionFlags(View view, ViewModel model, Person user, Set<String> actions) {
@@ -364,6 +362,6 @@ public class DocumentViewAuthorizerBase extends ViewAuthorizerBase implements Do
     }
 
     public void setDocumentAuthorizerClass(Class<? extends DocumentAuthorizer> documentAuthorizerClass) {
-        this.documentAuthorizer = DataObjectUtils.newInstance(documentAuthorizerClass);
+        this.documentAuthorizer = KRADUtils.createNewObjectFromClass(documentAuthorizerClass);
     }
 }

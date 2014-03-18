@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,12 @@
  */
 package org.kuali.rice.krad.datadictionary;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.kuali.rice.krad.datadictionary.uif.UifDictionaryIndex;
@@ -23,12 +29,6 @@ import org.kuali.rice.krad.service.ModuleService;
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.view.View;
 import org.springframework.beans.PropertyValues;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * A DataDictionaryMapper that simply consults the statically initialized
@@ -43,6 +43,7 @@ public class DataDictionaryIndexMapper implements DataDictionaryMapper {
      * @see org.kuali.rice.krad.datadictionary.DataDictionaryMapper#getAllInactivationBlockingMetadatas(org.kuali.rice.krad.datadictionary.DataDictionaryIndex,
      *      java.lang.Class)
      */
+    @Override
     public Set<InactivationBlockingMetadata> getAllInactivationBlockingMetadatas(DataDictionaryIndex index,
             Class<?> blockedClass) {
         return index.getInactivationBlockersForClass().get(blockedClass);
@@ -51,6 +52,7 @@ public class DataDictionaryIndexMapper implements DataDictionaryMapper {
     /**
      * @see org.kuali.rice.krad.datadictionary.DataDictionaryMapper#getBusinessObjectClassNames(org.kuali.rice.krad.datadictionary.DataDictionaryIndex)
      */
+    @Override
     public List<String> getBusinessObjectClassNames(DataDictionaryIndex index) {
         List classNames = new ArrayList();
         classNames.addAll(index.getBusinessObjectEntries().keySet());
@@ -61,8 +63,16 @@ public class DataDictionaryIndexMapper implements DataDictionaryMapper {
     /**
      * @see org.kuali.rice.krad.datadictionary.DataDictionaryMapper#getBusinessObjectEntries(org.kuali.rice.krad.datadictionary.DataDictionaryIndex)
      */
+    @Override
     public Map<String, BusinessObjectEntry> getBusinessObjectEntries(DataDictionaryIndex index) {
         return index.getBusinessObjectEntries();
+    }
+
+    /**
+     * @see org.kuali.rice.krad.datadictionary.DataDictionaryMapper#getBusinessObjectEntries(org.kuali.rice.krad.datadictionary.DataDictionaryIndex)
+     */
+    public Map<String, DataObjectEntry> getDataObjectEntries(DataDictionaryIndex index) {
+        return index.getDataObjectEntries();
     }
 
     /**
@@ -87,8 +97,9 @@ public class DataDictionaryIndexMapper implements DataDictionaryMapper {
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DataDictionaryMapper#getBusinessObjectEntryForConcreteClass(java.lang.String)
+     * {@inheritDoc}
      */
+    @Override
     public BusinessObjectEntry getBusinessObjectEntryForConcreteClass(DataDictionaryIndex ddIndex, String className) {
         if (StringUtils.isBlank(className)) {
             throw new IllegalArgumentException("invalid (blank) className");
@@ -104,9 +115,9 @@ public class DataDictionaryIndexMapper implements DataDictionaryMapper {
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DataDictionaryMapper#getDictionaryObjectEntry(org.kuali.rice.krad.datadictionary.DataDictionaryIndex,
-     *      java.lang.String)
+     * {@inheritDoc}
      */
+    @Override
     public DataDictionaryEntry getDictionaryObjectEntry(DataDictionaryIndex ddIndex, String className) {
         if (StringUtils.isBlank(className)) {
             throw new IllegalArgumentException("invalid (blank) className");
@@ -167,6 +178,7 @@ public class DataDictionaryIndexMapper implements DataDictionaryMapper {
         return entry;
     }
 
+    @Override
     public BusinessObjectEntry getBusinessObjectEntry(DataDictionaryIndex index, String className) {
         BusinessObjectEntry entry = getBusinessObjectEntryForConcreteClass(index, className);
         if (entry == null) {
@@ -189,6 +201,7 @@ public class DataDictionaryIndexMapper implements DataDictionaryMapper {
     /**
      * @see org.kuali.rice.krad.datadictionary.DataDictionaryMapper#getDocumentEntries(org.kuali.rice.krad.datadictionary.DataDictionaryIndex)
      */
+    @Override
     public Map<String, DocumentEntry> getDocumentEntries(DataDictionaryIndex index) {
         return Collections.unmodifiableMap(index.getDocumentEntries());
     }
@@ -197,6 +210,7 @@ public class DataDictionaryIndexMapper implements DataDictionaryMapper {
      * @see org.kuali.rice.krad.datadictionary.DataDictionaryMapper#getDocumentEntry(org.kuali.rice.krad.datadictionary.DataDictionaryIndex,
      *      java.lang.String)
      */
+    @Override
     public DocumentEntry getDocumentEntry(DataDictionaryIndex index, String documentTypeDDKey) {
 
         if (StringUtils.isBlank(documentTypeDDKey)) {
@@ -227,6 +241,7 @@ public class DataDictionaryIndexMapper implements DataDictionaryMapper {
      * @see org.kuali.rice.krad.datadictionary.DataDictionaryMapper#getDocumentTypeName(org.kuali.rice.krad.datadictionary.DataDictionaryIndex,
      *      java.lang.String)
      */
+    @Override
     public String getDocumentTypeName(DataDictionaryIndex index, String documentTypeName) {
         // TODO arh14 - THIS METHOD NEEDS JAVADOCS
         return null;
@@ -236,6 +251,7 @@ public class DataDictionaryIndexMapper implements DataDictionaryMapper {
      * @see org.kuali.rice.krad.datadictionary.DataDictionaryMapper#getMaintenanceDocumentEntryForBusinessObjectClass(org.kuali.rice.krad.datadictionary.DataDictionaryIndex,
      *      java.lang.Class)
      */
+    @Override
     public MaintenanceDocumentEntry getMaintenanceDocumentEntryForBusinessObjectClass(DataDictionaryIndex index,
             Class<?> businessObjectClass) {
         if (businessObjectClass == null) {
@@ -252,6 +268,7 @@ public class DataDictionaryIndexMapper implements DataDictionaryMapper {
      * @see org.kuali.rice.krad.datadictionary.DataDictionaryMapper#getViewById(org.kuali.rice.krad.datadictionary.uif.UifDictionaryIndex,
      *      java.lang.String)
      */
+    @Override
     public View getViewById(UifDictionaryIndex index, String viewId) {
         if (StringUtils.isBlank(viewId)) {
             throw new IllegalArgumentException("invalid (blank) view id");
@@ -264,9 +281,9 @@ public class DataDictionaryIndexMapper implements DataDictionaryMapper {
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DataDictionaryMapper#getImmutableViewById(org.kuali.rice.krad.datadictionary.uif.UifDictionaryIndex,
-     *      java.lang.String)
+     * {@inheritDoc}
      */
+    @Override
     public View getImmutableViewById(UifDictionaryIndex index, String viewId) {
         if (StringUtils.isBlank(viewId)) {
             throw new IllegalArgumentException("invalid (blank) view id");
@@ -276,9 +293,9 @@ public class DataDictionaryIndexMapper implements DataDictionaryMapper {
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DataDictionaryMapper#getViewByTypeIndex(UifDictionaryIndex,
-     *      java.lang.String, java.util.Map)
+     * {@inheritDoc}
      */
+    @Override
     public View getViewByTypeIndex(UifDictionaryIndex index, UifConstants.ViewType viewTypeName,
             Map<String, String> indexKey) {
         if (viewTypeName == null) {
@@ -292,9 +309,9 @@ public class DataDictionaryIndexMapper implements DataDictionaryMapper {
     }
 
     /**
-     * @see DataDictionaryMapper#getViewByTypeIndex(org.kuali.rice.krad.datadictionary.uif.UifDictionaryIndex,
-     * org.kuali.rice.krad.uif.UifConstants.ViewType, java.util.Map<java.lang.String,java.lang.String>)
+     * {@inheritDoc}
      */
+    @Override
     public String getViewIdByTypeIndex(UifDictionaryIndex index, UifConstants.ViewType viewTypeName,
             Map<String, String> indexKey) {
         if (viewTypeName == null) {
@@ -309,9 +326,9 @@ public class DataDictionaryIndexMapper implements DataDictionaryMapper {
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DataDictionaryIndexMapper#viewByTypeExist(UifDictionaryIndex,
-     *      java.lang.String, java.util.Map)
+     * {@inheritDoc}
      */
+    @Override
     public boolean viewByTypeExist(UifDictionaryIndex index, UifConstants.ViewType viewTypeName,
             Map<String, String> indexKey) {
         if (viewTypeName == null) {
@@ -325,9 +342,9 @@ public class DataDictionaryIndexMapper implements DataDictionaryMapper {
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DataDictionaryMapper#getViewPropertiesById(org.kuali.rice.krad.datadictionary.view.ViewDictionaryIndex,
-     *      java.lang.String)
+     * {@inheritDoc}
      */
+    @Override
     public PropertyValues getViewPropertiesById(UifDictionaryIndex index, String viewId) {
         if (StringUtils.isBlank(viewId)) {
             throw new IllegalArgumentException("invalid (blank) view id");
@@ -337,9 +354,9 @@ public class DataDictionaryIndexMapper implements DataDictionaryMapper {
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DataDictionaryIndexMapper#getViewPropertiesByType(UifDictionaryIndex,
-     *      java.lang.String, java.util.Map)
+     * {@inheritDoc}
      */
+    @Override
     public PropertyValues getViewPropertiesByType(UifDictionaryIndex index, UifConstants.ViewType viewTypeName,
             Map<String, String> indexKey) {
         if (viewTypeName == null) {
@@ -353,9 +370,9 @@ public class DataDictionaryIndexMapper implements DataDictionaryMapper {
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DataDictionaryMapper#getViewsForType(UifDictionaryIndex,
-     *      java.lang.String)
+     * {@inheritDoc}
      */
+    @Override
     public List<View> getViewsForType(UifDictionaryIndex index, UifConstants.ViewType viewTypeName) {
         if (viewTypeName == null) {
             throw new IllegalArgumentException("invalid (blank) view type name");

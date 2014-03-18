@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,7 +97,7 @@ public class DefaultMessageExceptionHandler implements MessageExceptionHandler {
     protected void placeInException(Throwable throwable, PersistedMessageBO message) throws Exception {
         message.setQueueStatus(KSBConstants.ROUTE_QUEUE_EXCEPTION);
         message.setQueueDate(new Timestamp(System.currentTimeMillis()));
-        KSBServiceLocator.getMessageQueueService().save(message);
+        message = KSBServiceLocator.getMessageQueueService().save(message);
     }
 
     protected void scheduleExecution(Throwable throwable, PersistedMessageBO message) throws Exception {

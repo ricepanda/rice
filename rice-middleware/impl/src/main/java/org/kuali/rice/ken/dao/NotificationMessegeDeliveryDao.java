@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.kuali.rice.ken.dao;
 
 import org.kuali.rice.core.framework.persistence.dao.GenericDao;
 import org.kuali.rice.ken.bo.NotificationMessageDelivery;
+import org.kuali.rice.krad.data.DataObjectService;
 
 import java.sql.Timestamp;
 import java.util.Collection;
@@ -29,9 +30,9 @@ import java.util.Collection;
  */
 public interface NotificationMessegeDeliveryDao {
 	
-	public Collection getUndeliveredMessageDelivers(GenericDao businessObjectDao);
+	public Collection getUndeliveredMessageDelivers(DataObjectService dataObjectService);
 	
-    public Collection<NotificationMessageDelivery> getMessageDeliveriesForAutoRemoval(Timestamp tm, GenericDao businessObjectDao);
+    public Collection<NotificationMessageDelivery> getMessageDeliveriesForAutoRemoval(Timestamp tm, DataObjectService dataObjectService);
 
-    public Collection <NotificationMessageDelivery> getLockedDeliveries(Class clazz, GenericDao dao);
+    public Collection <NotificationMessageDelivery> getLockedDeliveries(Class clazz, DataObjectService dataObjectService);
 }

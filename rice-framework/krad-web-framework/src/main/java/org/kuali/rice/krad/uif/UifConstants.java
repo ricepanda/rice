@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.kuali.rice.krad.uif;
 
+
 /**
  * General constants used within the User Interface Framework.
  *
@@ -26,6 +27,7 @@ public class UifConstants {
     public static final String COMPONENT_MODEL_NAME = "Component";
     public static final String DEFAULT_VIEW_NAME = "default";
     public static final String COMPONENT_ID_PREFIX = "u";
+    public static final String SUFFIX_SEPARATOR = "_";
 
     public static final String DEFAULT_THEMES_DIRECTORY = "/themes";
     public static final String DEFAULT_IMAGES_DIRECTORY = "images";
@@ -34,8 +36,9 @@ public class UifConstants {
     public static final String THEME_DERIVED_PROPERTY_FILE = "theme-derived.properties";
     public static final String THEME_CSS_FILES = "themeCssFiles";
     public static final String THEME_JS_FILES = "themeJsFiles";
+    public static final String THEME_DEV_JS_FILES = "devJsIncludes";
+    public static final String THEME_LESS_FILES = "themeLessFiles";
 
-    // uncomment for freemarker testing
     public static final String SPRING_VIEW_ID = "/krad/WEB-INF/ftl/uifRender";
     public static final String SPRING_REDIRECT_ID = "/krad/WEB-INF/ftl/redirect";
     public static final String REDIRECT_PREFIX = "redirect:";
@@ -63,11 +66,16 @@ public class UifConstants {
     public static final String LOGGED_OUT_VIEW_ID = "Uif-LoggedOutView";
     public static final String GROUP_VALIDATION_DEFAULTS_MAP_ID = "Uif-GroupValidationMessages-DataDefaults";
     public static final String FIELD_VALIDATION_DEFAULTS_MAP_ID = "Uif-FieldValidationMessages-DataDefaults";
+    public static final String ACTION_DEFAULTS_MAP_ID = "Uif-Action-DataDefaults";
+    public static final String REQUIRED_INDICATOR_ID = "Uif-RequiredIndicator";
+    public static final String REQUIRED_NEXT_STATE_INDICATOR_ID = "Uif-RequiredIndicator-ForNextState";
     public static final String REFERER = "Referer";
     public static final String NO_RETURN = "NO_RETURN";
 
     public static final String EXPORT_FILE_NAME = "export.xml";
     public static final String KUALI_FORM_ATTR = "KualiForm";
+
+    public static final String ICON_ONLY_PLACEMENT = "ICON_ONLY";
 
     public static enum ReadOnlyListTypes {
         DELIMITED, BREAK, OL, UL
@@ -124,10 +132,14 @@ public class UifConstants {
             this.key = key;
         }
     }
+
     public static enum WindowTargets {
         _blank, _self, _parent, _top
     }
 
+    public static class ControllerMappings {
+        public static final String EXPORT = "export";
+    }
 
     public static class MethodToCallNames {
         public static final String NAVIGATE = "navigate";
@@ -193,6 +205,7 @@ public class UifConstants {
         public static final String APPLY_MODEL = "APPLY_MODEL";
         public static final String FINALIZE = "FINALIZE";
         public static final String RENDER = "RENDER";
+        public static final String PRE_PROCESS = "PRE_PROCESS";
     }
 
     public static class ViewStatus {
@@ -202,6 +215,35 @@ public class UifConstants {
         public static final String MODEL_APPLIED = "M";
         public static final String FINAL = "F";
         public static final String RENDERED = "R";
+    }
+    
+    public static class PostMetadata {
+        public static final String INPUT_FIELD_ATTRIBUTE_QUERY = "attributeQuery";
+
+        public static final String INPUT_FIELD_IS_UPPERCASE = "isUppercase";
+        public static final String LABEL = "label";
+        public static final String PATH = "path";
+        public static final String SIMPLE_CONSTRAINT = "simpleConstraint";
+        public static final String VALID_CHARACTER_CONSTRAINT = "validCharacterConstraint";
+        public static final String CASE_CONSTRAINT = "caseConstraint";
+        public static final String MUST_OCCUR_CONSTRAINTS = "mustOccurConstraints";
+        public static final String PREREQ_CONSTSTRAINTS = "prerequisiteConstraints";
+        public static final String BINDING_PATH = "bindingPath";
+        public static final String BINDING_INFO = "bindingInfo";
+        public static final String ADD_LINE_BINDING_INFO = "addLineBindingInfo";
+        public static final String ADD_LINE_PLACEMENT = "addLinePlacement";
+        public static final String COLL_DISPLAY_START = "displayStart";
+        public static final String COLL_DISPLAY_LENGTH = "displayLength";
+        public static final String COLL_LABEL = "collectionLabel";
+        public static final String COLL_LOOKUP_FIELD_CONVERSIONS = "collectionLookup.fieldConversions";
+        public static final String COLL_OBJECT_CLASS = "collectionObjectClass";
+        public static final String DUPLICATE_LINE_PROPERTY_NAMES = "duplicateLinePropertyNames";
+        public static final String DUPLICATE_LINE_LABEL_STRING = "duplicateLineLabelString";
+        public static final String STATE_MAPPING = "stateMapping";
+        public static final String STATE_OBJECT_BINDING_PATH = "stateObjectBindingPath";
+        public static final String SUGGEST = "suggest";
+        public static final String QUICKFINDER_FOCUS_ID = "quickfinderFocusId";
+        public static final String QUICKFINDER_JUMP_TO_ID = "quickfinderJumpToId";
     }
 
     public static class ContextVariableNames {
@@ -250,6 +292,7 @@ public class UifConstants {
         public static final String AA_DATA = "aaData";
         public static final String DEFER_RENDER = "bDeferRender";
         public static final String SDOWNLOAD_SOURCE = "sDownloadSource";
+        public static final String SERVER_PARAMS = "fnServerParams";
     }
 
     public static class TableToolsValues {
@@ -271,7 +314,7 @@ public class UifConstants {
         public static final String TRUE = "true";
 
         public static final int ADD_ROW_DEFAULT_INDEX = 0;
-        public static final String JSON_TEMPLATE = "dataTablesJson.ftl";
+        public static final String JSON_TEMPLATE = "components/element/dataTablesJson.ftl";
     }
 
     public static class TableLayoutValues {
@@ -285,7 +328,6 @@ public class UifConstants {
         public static final String FIRST = "first";
         public static final String LAST = "last";
         public static final String PAGE_NUMBER = "pageNumber";
-        public static final String DISPLAY_START_PROP = "#displayStart";
     }
 
     public static class TabOptionKeys {
@@ -328,6 +370,7 @@ public class UifConstants {
 
     public static class ClientSideVariables {
         public static final String KRAD_IMAGE_LOCATION = "kradImageLocation";
+        public static final String KRAD_SCRIPT_CLEANUP = "scriptCleanup";
         public static final String KRAD_URL = "kradUrl";
         public static final String APPLICATION_URL = "applicationUrl";
     }
@@ -347,20 +390,30 @@ public class UifConstants {
     }
 
     public static final class RoleTypes {
+        public static final String ACTION = "Action";
         public static final String CONTROL = "Control";
+        public static final String DATA_SCRIPT = "dataScript";
         public static final String INPUT_FIELD = "InputField";
         public static final String GROUP = "Group";
+        public static final String GROUP_TOTAL = "groupTotal";
+        public static final String TOTAL = "total";
+        public static final String TOTALS_BLOCK = "totalsBlock";
+        public static final String PAGE = "Page";
+        public static final String PAGE_TOTAL = "pageTotal";
         public static final String ROW_GROUPING = "RowGrouping";
+        public static final String VIEW = "View";
     }
 
     public static final class DataAttributes {
         public static final String TYPE = "type";
         public static final String ROLE = "role";
-        public static final String ONCLICK = "onclick";
+        public static final String REQ_INDICATOR = "req_indicator";
+        public static final String ONCLICK = "onClick";
         public static final String SUBMIT_DATA = "submit_data";
         public static final String HAS_MESSAGES = "has_messages";
         public static final String SERVER_MESSAGES = "server_messages";
         public static final String VALIDATION_MESSAGES = "validation_messages";
+        public static final String ACTION_DEFAULTS = "action_defaults";
         public static final String GROUP_VALIDATION_DEFAULTS = "group_validation_defaults";
         public static final String FIELD_VALIDATION_DEFAULTS = "field_validation_defaults";
         public static final String MESSAGES_FOR = "messages_for";
@@ -390,10 +443,31 @@ public class UifConstants {
         public static final String CONTROL_FOR = "control_for";
         public static final String ADD_CONTROLS = "add_controls";
         public static final String HEADER_FOR = "header_for";
+        public static final String STICKY = "sticky";
         public static final String STICKY_FOOTER = "sticky_footer";
         public static final String DETAILS_DEFAULT_OPEN = "details_default_open";
         public static final String TAB_FOR = "tabfor";
         public static final String CHECKED = "checked";
+    }
+
+    public static final String JS_REGEX_SPECIAL_CHARS = new String("$[\\^.|?*+()");
+
+    public static final class ActionDataAttributes {
+        public static final String AJAX_SUBMIT = "ajaxSubmit";
+        public static final String SUCCESS_CALLBACK = "successCallback";
+        public static final String ERROR_CALLBACK = "errorCallback";
+        public static final String PRE_SUBMIT_CALL = "preSubmitCall";
+        public static final String LOADING_MESSAGE = "loadingMessage";
+        public static final String DISABLE_BLOCKING = "disableBlocking";
+        public static final String AJAX_RETURN_TYPE = "ajaxReturnType";
+        public static final String REFRESH_ID = "refreshId";
+        public static final String VALIDATE = "validate";
+        public static final String DIRTY_ON_ACTION = "dirtyOnAction";
+        public static final String CLEAR_DIRTY = "clearDirtyOnAction";
+        public static final String PERFORM_DIRTY_VALIDATION = "performDirtyValidation";
+        public static final String FOCUS_ID = "focusId";
+        public static final String JUMP_TO_ID = "jumpToId";
+        public static final String JUMP_TO_NAME = "jumpToName";
     }
 
     public static final class CaseConstraintOperators {
@@ -408,12 +482,14 @@ public class UifConstants {
     }
 
     public static final class JsFunctions {
+        public static final String COLLECTION_LINE_CHANGED = "collectionLineChanged";
         public static final String CREATE_LIGHTBOX_POST = "createLightBoxPost";
         public static final String INITIALIZE_VIEW_STATE = "initializeViewState";
         public static final String INITIALIZE_SESSION_TIMERS = "initializeSessionTimers";
         public static final String REDIRECT = "redirect";
         public static final String SET_CONFIG_PARM = "setConfigParam";
         public static final String SET_VALUE = "setValue";
+        public static final String SHOW_GROWL = "showGrowl";
     }
 
     public static final String EVENT_NAMESPACE = "uif";
@@ -435,10 +511,17 @@ public class UifConstants {
         public static final String CSS = ".css";
         public static final String JS = ".js";
         public static final String MIN = ".min";
+        public static final String LESS = ".less";
     }
 
-    public static final class PostContextKeys {
-        public static final String QUICKFINDER_FOCUS_ID = "quickfinderFocusId";
-        public static final String QUICKFINDER_JUMP_TO_ID = "quickfinderJumpToId";
+    public static final class WrapperTags {
+        public static final String DIV = "div";
+        public static final String SPAN = "span";
+        public static final String P = "p";
+        public static final String MAIN = "main";
+        public static final String SECTION = "section";
+        public static final String HEADER = "header";
+        public static final String FOOTER = "footer";
+        public static final String NAV = "nav";
     }
 }

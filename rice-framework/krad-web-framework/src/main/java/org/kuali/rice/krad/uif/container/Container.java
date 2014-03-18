@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -194,5 +194,22 @@ public interface Container extends Component, Helpable {
 	 * @param validationMessages
 	 */
 	void setValidationMessages(ValidationMessages validationMessages);
+
+    /**
+     * Performs sorting of the container items based on the order property.
+     * 
+     * <p>
+     * Note that the items may be modified by this method to assign order priority where it has not
+     * been previously assigned.
+     * </p>
+     */
+    void sortItems();
+
+    /**
+     * Determine if remote field holders should be processed for this container.
+     * 
+     * @return True if remote field holders should be processed for this container.
+     */
+    boolean isProcessRemoteFieldHolders();
 
 }

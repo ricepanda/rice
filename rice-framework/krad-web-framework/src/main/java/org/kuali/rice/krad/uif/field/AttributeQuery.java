@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.kuali.rice.krad.datadictionary.validator.ErrorReport;
 import org.kuali.rice.krad.datadictionary.validator.ValidationTrace;
 import org.kuali.rice.krad.uif.component.BindingInfo;
 import org.kuali.rice.krad.uif.component.MethodInvokerConfig;
+import org.kuali.rice.krad.uif.service.ViewHelperService;
 import org.kuali.rice.krad.uif.util.CloneUtils;
 
 import java.io.Serializable;
@@ -76,6 +77,19 @@ public class AttributeQuery extends UifDictionaryBeanBase implements Serializabl
 
         queryMethodArgumentFieldList = new ArrayList<String>();
         queryMethodInvokerConfig = new MethodInvokerConfig();
+    }
+
+    /**
+     * If the query is configured with a method and the target of that method is undefined, sets the target
+     * class to the class of the given view helper service.
+     *
+     * @param viewHelperService instance of view helper to use as default for query methods
+     */
+    public void defaultQueryTarget(ViewHelperService viewHelperService) {
+        if ((queryMethodInvokerConfig.getTargetClass() == null) && (queryMethodInvokerConfig.getTargetObject()
+                == null)) {
+            queryMethodInvokerConfig.setTargetClass(viewHelperService.getClass());
+        }
     }
 
     /**
@@ -469,50 +483,6 @@ public class AttributeQuery extends UifDictionaryBeanBase implements Serializabl
      */
     public void setQueryMethodInvokerConfig(MethodInvokerConfig queryMethodInvokerConfig) {
         this.queryMethodInvokerConfig = queryMethodInvokerConfig;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T attributeQuery) {
-        super.copyProperties(attributeQuery);
-
-        AttributeQuery attributeQueryCopy = (AttributeQuery) attributeQuery;
-
-        if (this.additionalCriteria != null) {
-            attributeQueryCopy.setAdditionalCriteria(new HashMap<String, String>(this.additionalCriteria));
-        }
-
-        attributeQueryCopy.setDataObjectClassName(this.dataObjectClassName);
-
-        if (this.queryFieldMapping != null) {
-            attributeQueryCopy.setQueryFieldMapping(new HashMap<String, String>(this.queryFieldMapping));
-        }
-
-        if (this.queryMethodArgumentFieldList != null) {
-            attributeQueryCopy.setQueryMethodArgumentFieldList(new ArrayList<String>(
-                    this.queryMethodArgumentFieldList));
-        }
-
-        attributeQueryCopy.setQueryMethodToCall(this.queryMethodToCall);
-        attributeQueryCopy.setRenderNotFoundMessage(this.renderNotFoundMessage);
-
-        if (this.returnFieldMapping != null) {
-            attributeQueryCopy.setReturnFieldMapping(new HashMap<String, String>(this.returnFieldMapping));
-        }
-
-        attributeQueryCopy.setReturnMessageStyleClasses(this.returnMessageStyleClasses);
-        attributeQueryCopy.setReturnMessageText(this.returnMessageText);
-
-        if (this.sortPropertyNames != null) {
-            attributeQueryCopy.setSortPropertyNames(new ArrayList<String>(this.sortPropertyNames));
-        }
-
-        if (this.queryMethodInvokerConfig != null) {
-            ((AttributeQuery) attributeQuery).setQueryMethodInvokerConfig(CloneUtils.deepClone(
-                    this.queryMethodInvokerConfig));
-        }
     }
 
     /**

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,30 +15,29 @@
  */
 package org.kuali.rice.krms.impl.ui;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.commons.collections.CollectionUtils;
+import org.kuali.rice.core.api.criteria.QueryByCriteria;
+import org.kuali.rice.core.api.criteria.QueryResults;
 import org.kuali.rice.core.api.data.DataType;
 import org.kuali.rice.core.api.uif.RemotableAttributeField;
 import org.kuali.rice.core.api.uif.RemotableTextInput;
-import org.kuali.rice.kns.service.KNSServiceLocator;
 import org.kuali.rice.krad.maintenance.MaintainableImpl;
 import org.kuali.rice.krad.maintenance.MaintenanceDocument;
-import org.kuali.rice.krad.service.BusinessObjectService;
-import org.kuali.rice.krad.service.KRADServiceLocator;
 import org.kuali.rice.krad.uif.container.CollectionGroup;
 import org.kuali.rice.krad.uif.container.Container;
 import org.kuali.rice.krad.uif.view.View;
+import org.kuali.rice.krad.uif.view.ViewModel;
 import org.kuali.rice.krad.util.KRADConstants;
 import org.kuali.rice.krad.web.form.MaintenanceDocumentForm;
 import org.kuali.rice.krms.impl.repository.TermBo;
 import org.kuali.rice.krms.impl.repository.TermResolverBo;
 import org.kuali.rice.krms.impl.repository.TermResolverParameterSpecificationBo;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * {@link org.kuali.rice.krad.maintenance.Maintainable} for the {@link org.kuali.rice.krms.impl.ui.AgendaEditor}
@@ -47,34 +46,25 @@ import org.kuali.rice.krms.impl.repository.TermResolverParameterSpecificationBo;
  *
  */
 public class TermMaintainable extends MaintainableImpl {
-	
-	private static final long serialVersionUID = 1L;
+
+    private static final long serialVersionUID = 1L;
 
     private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(TermMaintainable.class);
-
-	/**
-	 * @return the boService
-	 */
-	public BusinessObjectService getBoService() {
-		return KNSServiceLocator.getBusinessObjectService();
-	}
-
 
 
     public List<RemotableAttributeField> retrieveCustomAttributes(View view, Object model, Container container) {
 
         List<RemotableAttributeField> results = new ArrayList<RemotableAttributeField>();
-
         String termSpecId = ((TermBo)((MaintenanceDocumentForm)model).getDocument().getNewMaintainableObject().getDataObject()).getSpecificationId();
 
-        Collection<TermResolverBo> termResolvers = getBoService().findMatching(TermResolverBo.class,
-                Collections.singletonMap("outputId", termSpecId)
+        QueryResults<TermResolverBo> termResolvers = getDataObjectService().findMatching(TermResolverBo.class,
+                QueryByCriteria.Builder.forAttribute("outputId", termSpecId).build()
         );
 
         TermResolverBo termResolver = null;
 
-        if (termResolvers != null && termResolvers.size() == 1) {
-            termResolver = termResolvers.iterator().next();
+        if (termResolvers.getResults() != null && termResolvers.getResults().size() == 1) {
+            termResolver = termResolvers.getResults().get(0);
         }
 
         if (termResolver != null && !CollectionUtils.isEmpty(termResolver.getParameterSpecifications())) {
@@ -141,16 +131,16 @@ public class TermMaintainable extends MaintainableImpl {
     }
 
     /**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void processAfterNew(MaintenanceDocument document,
-		Map<String, String[]> requestParameters) {
+     * {@inheritDoc}
+     */
+    @Override
+    public void processAfterNew(MaintenanceDocument document,
+            Map<String, String[]> requestParameters) {
 
-		super.processAfterNew(document, requestParameters);
+        super.processAfterNew(document, requestParameters);
         document.getDocumentHeader().setDocumentDescription("New Term Document");
 
-	}
+    }
 
     /**
      * {@inheritDoc}
@@ -179,8 +169,8 @@ public class TermMaintainable extends MaintainableImpl {
     }
 
     @Override
-    public void processBeforeAddLine(View view, CollectionGroup collectionGroup, Object model, Object addLine) {
-        super.processBeforeAddLine(view, collectionGroup, model, addLine);
+    public void processBeforeAddLine(ViewModel model, Object addLine, String collectionId, String collectionPath) {
+        super.processBeforeAddLine(model, addLine, collectionId, collectionPath);
     }
 
 

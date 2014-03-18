@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package org.kuali.rice.krad.uif.widget;
 
 import java.text.MessageFormat;
-import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.core.api.CoreApiServiceLocator;
@@ -26,10 +25,10 @@ import org.kuali.rice.krad.datadictionary.HelpDefinition;
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
 import org.kuali.rice.krad.uif.UifConstants;
-import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.element.Action;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.util.ComponentFactory;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 
 /**
  * Widget that renders help on a component
@@ -58,8 +57,7 @@ public class Help extends WidgetBase {
      * help action component</li>
      * </ul>
      *
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#performInitialization(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object)
+     * {@inheritDoc}
      */
     @Override
     public void performInitialization(Object model) {
@@ -89,11 +87,10 @@ public class Help extends WidgetBase {
      * <li>Set render to false if help not configured</li>
      * </p>
      *
-     * @see org.kuali.rice.krad.uif.widget.WidgetBase#performFinalize(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performFinalize(Object model, Component parent) {
+    public void performFinalize(Object model, LifecycleElement parent) {
         super.performFinalize(model, parent);
 
         buildExternalHelp(parent);
@@ -122,10 +119,9 @@ public class Help extends WidgetBase {
      * Set the html title attribute of the help icon.
      * </p>
      *
-     * @param view used to get the default namespace
      * @param parent used to get the help title text used in the html title attribute of the help icon
      */
-    protected void buildExternalHelp(Component parent) {
+    protected void buildExternalHelp(LifecycleElement parent) {
         if (StringUtils.isBlank(externalHelpUrl) && (helpDefinition != null)) {
             if (StringUtils.isBlank(helpDefinition.getParameterNamespace())) {
                 helpDefinition.setParameterNamespace(ViewLifecycle.getView().getNamespaceCode());
@@ -171,26 +167,15 @@ public class Help extends WidgetBase {
      *
      * @param parent used for checking misconfigurations
      */
-    protected void buildTooltipHelp(Component parent) {
+    protected void buildTooltipHelp(LifecycleElement parent) {
         if (StringUtils.isNotBlank(tooltipHelpContent) && this.isRender()) {
             // make sure that we are the component's native help and not a misconfigured standalone help bean.
-            if ((parent instanceof Helpable) && (((Helpable) parent).getHelp() == this)) {
+            if (this.getToolTip() != null && (parent instanceof Helpable) 
+                    && (((Helpable) parent).getHelp() == this)) {
                 this.getToolTip().setTooltipContent(tooltipHelpContent);
                 ((Helpable) parent).setTooltipOfComponent(this.getToolTip());
             }
         }
-    }
-
-    /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#getComponentsForLifecycle()
-     */
-    @Override
-    public List<Component> getComponentsForLifecycle() {
-        List<Component> components = super.getComponentsForLifecycle();
-
-        components.add(helpAction);
-
-        return components;
     }
 
     /**
@@ -282,24 +267,5 @@ public class Help extends WidgetBase {
      */
     protected ParameterService getParameterService() {
         return CoreFrameworkServiceLocator.getParameterService();
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        Help helpCopy = (Help) component;
-
-        helpCopy.setExternalHelpUrl(this.externalHelpUrl);
-
-        if (this.helpAction != null) {
-            helpCopy.setHelpAction((Action)this.helpAction.copy());
-        }
-
-        helpCopy.setHelpDefinition(this.helpDefinition);
-        helpCopy.setTooltipHelpContent(this.tooltipHelpContent);
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,34 +15,38 @@
  */
 package org.kuali.rice.krad.uif.lifecycle.initialize;
 
-import org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase;
-import org.kuali.rice.krad.uif.util.ExpressionUtils;
+import org.kuali.rice.krad.datadictionary.uif.UifDictionaryBean;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleTaskBase;
 
 /**
  * Populate property values on the component from the expression graph.
- * 
+ *
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-public class PopulateComponentFromExpressionGraphTask extends AbstractViewLifecycleTask {
+public class PopulateComponentFromExpressionGraphTask extends ViewLifecycleTaskBase<UifDictionaryBean> {
 
     /**
      * Constructor.
-     * 
+     *
      * @param phase The initialize phase for the component.
      */
     public PopulateComponentFromExpressionGraphTask(ViewLifecyclePhase phase) {
-        super(phase);
+        super(phase, UifDictionaryBean.class);
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask#performLifecycleTask()
+     * {@inheritDoc}
      */
     @Override
     protected void performLifecycleTask() {
         // the component can have an expression graph for which the expressions need pulled to
         // the list the expression service will evaluate
-        ExpressionUtils.populatePropertyExpressionsFromGraph(getPhase().getComponent(), true);
+        if (!getElementState().getElement().getId().startsWith("null")) {
+            ViewLifecycle.getExpressionEvaluator()
+                .populatePropertyExpressionsFromGraph((UifDictionaryBean) getElementState().getElement(), true);
+        }
     }
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -424,9 +424,8 @@ public abstract class KualiAction extends DispatchAction {
         }
         
         if (value != null && boClass != null && getBusinessObjectAuthorizationService().attributeValueNeedsToBeEncryptedOnFormsAndLinks(boClass, parameterName)) {
-            if(CoreApiServiceLocator.getEncryptionService().isEnabled()) {
-                value = getEncryptionService().encrypt(value) + EncryptionService.ENCRYPTION_POST_PREFIX;
-            }
+            LOG.warn("field name " + parameterName + " is a secure value and not returned in parameter result value");
+            value = null;
         }
         return value;
     }

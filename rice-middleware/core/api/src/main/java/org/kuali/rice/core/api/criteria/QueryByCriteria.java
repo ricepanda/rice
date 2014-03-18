@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -225,6 +225,16 @@ public final class QueryByCriteria extends AbstractDataTransferObject {
 		public static Builder create() {
             return new Builder();
 		}
+
+        public static Builder create(QueryByCriteria queryByCriteria) {
+            Builder builder = new Builder();
+            builder.setPredicates(queryByCriteria.getPredicate());
+            builder.setStartAtIndex(queryByCriteria.getStartAtIndex());
+            builder.setMaxResults(queryByCriteria.getMaxResults());
+            builder.setCountFlag(queryByCriteria.getCountFlag());
+            builder.setOrderByFields(queryByCriteria.getOrderByFields());
+            return builder;
+        }
 
 		public Integer getStartAtIndex() {
             return this.startAtIndex;

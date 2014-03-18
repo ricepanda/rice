@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.kuali.rice.kim.document.rule;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.log4j.Logger;
 import org.kuali.rice.kim.bo.ui.KimDocumentRoleMember;
 import org.kuali.rice.kim.bo.ui.RoleDocumentDelegationMember;
 
@@ -29,7 +28,6 @@ import org.kuali.rice.kim.bo.ui.RoleDocumentDelegationMember;
  *
  */
 public class ActiveRoleMemberHelper {
-	private static final Logger LOG = Logger.getLogger(ActiveRoleMemberHelper.class);
 
 	public List<KimDocumentRoleMember> getActiveRoleMembers (List<KimDocumentRoleMember> roleMembers){
 		List<KimDocumentRoleMember> activeRoleMembers = new ArrayList<KimDocumentRoleMember>();

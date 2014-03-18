@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,34 +15,54 @@
  */
 package org.kuali.rice.kim.impl.permission;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import org.apache.commons.lang.StringUtils;
-import org.kuali.rice.krad.bo.PersistableBusinessObjectBase;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import javax.persistence.Transient;
+import javax.persistence.Convert;
+
+import org.apache.commons.lang.StringUtils;
+import org.kuali.rice.krad.bo.PersistableBusinessObjectBase;
+import org.kuali.rice.krad.data.jpa.converters.BooleanYNConverter;
+
 @Entity
 @Table(name = "KRIM_PERM_T")
 public class GenericPermissionBo extends PersistableBusinessObjectBase {
+
     private static final long serialVersionUID = 1L;
 
     @Id
-    @Column(name="PERM_ID")
+    @Column(name = "PERM_ID")
     protected String id;
+
+    @Column(name = "NMSPC_CD")
     protected String namespaceCode;
+
+    @Column(name = "NM")
     protected String name;
+
+    @Column(name = "DESC_TXT")
     protected String description;
+
+    @Column(name = "ACTV_IND")
+    @Convert(converter = BooleanYNConverter.class)
     protected boolean active;
+
+    @Column(name = "PERM_TMPL_ID")
     protected String templateId;
+
     protected String detailValues;
-    protected Map<String,String> details;
+
+    protected Map<String, String> details;
+
     protected PermissionTemplateBo template = new PermissionTemplateBo();
+
     protected List<PermissionAttributeBo> attributeDetails;
 
     /**
@@ -52,28 +72,24 @@ public class GenericPermissionBo extends PersistableBusinessObjectBase {
     public GenericPermissionBo() {
     }
 
-    public GenericPermissionBo( PermissionBo perm ) {
-        loadFromPermission( perm );
-
+    public GenericPermissionBo(PermissionBo perm) {
+        loadFromPermission(perm);
     }
 
-    public void loadFromPermission( PermissionBo perm ) {
-        setId( perm.getId() );
-        setNamespaceCode( perm.getNamespaceCode() );
+    public void loadFromPermission(PermissionBo perm) {
+        setId(perm.getId());
+        setNamespaceCode(perm.getNamespaceCode());
         setTemplate(perm.getTemplate());
         setAttributeDetails(perm.getAttributeDetails());
         setDetailValues(perm.getDetailObjectsValues());
-        setName( perm.getName() );
-        setTemplateId( perm.getTemplateId() );
-        setDescription( perm.getDescription() );
-        setActive( perm.isActive() );
-        setDetails( perm.getAttributes() );
+        setName(perm.getName());
+        setTemplateId(perm.getTemplateId());
+        setDescription(perm.getDescription());
+        setActive(perm.isActive());
+        setDetails(perm.getAttributes());
         setVersionNumber(perm.getVersionNumber());
         setObjectId(perm.getObjectId());
-        setExtension(perm.getExtension());
-
     }
-
 
     public String getDetailValues() {
         /*StringBuffer sb = new StringBuffer();
@@ -91,19 +107,19 @@ public class GenericPermissionBo extends PersistableBusinessObjectBase {
         return detailValues;
     }
 
-    public void setDetailValues( String detailValues ) {
+    public void setDetailValues(String detailValues) {
         this.detailValues = detailValues;
     }
 
-    public void setDetailValues( Map<String, String> detailsAttribs ) {
+    public void setDetailValues(Map<String, String> detailsAttribs) {
         StringBuffer sb = new StringBuffer();
-        if ( detailsAttribs != null ) {
+        if (detailsAttribs != null) {
             Iterator<String> keyIter = detailsAttribs.keySet().iterator();
-            while ( keyIter.hasNext() ) {
+            while (keyIter.hasNext()) {
                 String key = keyIter.next();
-                sb.append( key ).append( '=' ).append( detailsAttribs.get( key ) );
-                if ( keyIter.hasNext() ) {
-                    sb.append( '\n' );
+                sb.append(key).append('=').append(detailsAttribs.get(key));
+                if (keyIter.hasNext()) {
+                    sb.append('\n');
                 }
             }
         }
@@ -142,7 +158,7 @@ public class GenericPermissionBo extends PersistableBusinessObjectBase {
         this.name = permissionName;
     }
 
-    public void setDetails( Map<String,String> details ) {
+    public void setDetails(Map<String, String> details) {
         this.details = details;
         setDetailValues(details);
     }
@@ -202,26 +218,25 @@ public class GenericPermissionBo extends PersistableBusinessObjectBase {
 
     @Override
     public void refreshNonUpdateableReferences() {
-        // do nothing - not a persistable object
     }
+
     @Override
     public void refreshReferenceObject(String referenceObjectName) {
-        // do nothing - not a persistable object
     }
 
     @Override
     protected void prePersist() {
-        throw new UnsupportedOperationException( "This object should never be persisted.");
+        throw new UnsupportedOperationException("This object should never be persisted.");
     }
 
     @Override
     protected void preUpdate() {
-        throw new UnsupportedOperationException( "This object should never be persisted.");
+        throw new UnsupportedOperationException("This object should never be persisted.");
     }
 
     @Override
     protected void preRemove() {
-        throw new UnsupportedOperationException( "This object should never be persisted.");
+        throw new UnsupportedOperationException("This object should never be persisted.");
     }
 
     public static PermissionBo toPermissionBo(GenericPermissionBo bo) {
@@ -237,7 +252,6 @@ public class GenericPermissionBo extends PersistableBusinessObjectBase {
         permission.setAttributes(bo.getDetails());
         permission.setVersionNumber(bo.versionNumber);
         permission.setObjectId(bo.getObjectId());
-        permission.setExtension(bo.getExtension());
         return permission;
     }
 }

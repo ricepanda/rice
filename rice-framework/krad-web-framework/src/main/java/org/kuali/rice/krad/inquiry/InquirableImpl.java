@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import org.kuali.rice.krad.bo.BusinessObject;
 import org.kuali.rice.krad.bo.DocumentHeader;
 import org.kuali.rice.krad.bo.ExternalizableBusinessObject;
 import org.kuali.rice.krad.data.CompoundKey;
-import org.kuali.rice.krad.data.DataObjectUtils;
 import org.kuali.rice.krad.data.KradDataServiceLocator;
 import org.kuali.rice.krad.datadictionary.exception.UnknownBusinessClassAttributeException;
 import org.kuali.rice.krad.service.DataDictionaryService;
@@ -36,6 +35,7 @@ import org.kuali.rice.krad.uif.widget.Inquiry;
 import org.kuali.rice.krad.util.ExternalizableBusinessObjectUtils;
 import org.kuali.rice.krad.util.KRADConstants;
 import org.kuali.rice.krad.util.KRADUtils;
+import org.springframework.beans.PropertyAccessorUtils;
 
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
@@ -79,7 +79,7 @@ public class InquirableImpl extends ViewHelperServiceImpl implements Inquirable 
      * Note at this point on business objects are supported by the default implementation
      * </p>
      *
-     * @see Inquirable#retrieveDataObject(java.util.Map<java.lang.String,java.lang.String>)
+     * {@inheritDoc}
      */
     @Override
     public Object retrieveDataObject(Map<String, String> parameters) {
@@ -105,7 +105,7 @@ public class InquirableImpl extends ViewHelperServiceImpl implements Inquirable 
         }
 
         // found key set, now build map of key values pairs we can use to retrieve the object
-        Map<String, Object> keyPropertyValues = new HashMap<String, Object>();
+        Map<String, String> keyPropertyValues = new HashMap<String, String>();
         for (String keyPropertyName : dataObjectKeySet) {
             String keyPropertyValue = parameters.get(keyPropertyName);
 
@@ -155,16 +155,19 @@ public class InquirableImpl extends ViewHelperServiceImpl implements Inquirable 
         // now retrieve the object based on the key set
         Object dataObject = null;
 
+        Map<String, Object> translatedValues  = KRADUtils.coerceRequestParameterTypes(
+                (Class<? extends ExternalizableBusinessObject>) getDataObjectClass(), keyPropertyValues);
+
         ModuleService moduleService = KRADServiceLocatorWeb.getKualiModuleService().getResponsibleModuleService(
                 getDataObjectClass());
         if (moduleService != null && moduleService.isExternalizable(getDataObjectClass())) {
             dataObject = moduleService.getExternalizableBusinessObject(getDataObjectClass().asSubclass(
-                    ExternalizableBusinessObject.class), keyPropertyValues);
+                    ExternalizableBusinessObject.class), translatedValues);
         } else if ( KradDataServiceLocator.getDataObjectService().supports(getDataObjectClass())) {
-            dataObject = KradDataServiceLocator.getDataObjectService().find(getDataObjectClass(), new CompoundKey(keyPropertyValues));
+            dataObject = KradDataServiceLocator.getDataObjectService().find(getDataObjectClass(), new CompoundKey(translatedValues));
         } else if (BusinessObject.class.isAssignableFrom(getDataObjectClass())) {
             dataObject = getLegacyDataAdapter().findByPrimaryKey(getDataObjectClass().asSubclass(
-                    BusinessObject.class), keyPropertyValues);
+                    BusinessObject.class), translatedValues);
         } else {
             throw new IllegalArgumentException( "ERROR: Unsupported object type passed to inquiry: " + getDataObjectClass() + " / keys=" + keyPropertyValues );
         }
@@ -231,12 +234,12 @@ public class InquirableImpl extends ViewHelperServiceImpl implements Inquirable 
         Class<?> objectClass = KRADUtils.materializeClassForProxiedObject(dataObject);
         if (propertyName.equals(KRADServiceLocatorWeb.getLegacyDataAdapter().getTitleAttribute(objectClass))) {
             inquiryObjectClass = objectClass;
-        } else if (DataObjectUtils.isNestedAttribute(propertyName)) {
-            String nestedPropertyName = DataObjectUtils.getNestedAttributePrefix(propertyName);
+        } else if (PropertyAccessorUtils.isNestedOrIndexedProperty(propertyName)) {
+            String nestedPropertyName = KRADUtils.getNestedAttributePrefix(propertyName);
             Object nestedPropertyObject = KRADUtils.getNestedValue(dataObject, nestedPropertyName);
 
             if (KRADUtils.isNotNull(nestedPropertyObject)) {
-                String nestedPropertyPrimitive = DataObjectUtils.getNestedAttributePrimitive(propertyName);
+                String nestedPropertyPrimitive = KRADUtils.getNestedAttributePrimitive(propertyName);
                 Class<?> nestedPropertyObjectClass = KRADUtils.materializeClassForProxiedObject(nestedPropertyObject);
 
                 if (nestedPropertyPrimitive.equals(KRADServiceLocatorWeb.getLegacyDataAdapter().getTitleAttribute(
@@ -259,7 +262,7 @@ public class InquirableImpl extends ViewHelperServiceImpl implements Inquirable 
         }
 
         if (DocumentHeader.class.isAssignableFrom(inquiryObjectClass)) {
-            String documentNumber = (String) DataObjectUtils.getPropertyValue(dataObject, propertyName);
+            String documentNumber = (String) KradDataServiceLocator.getDataObjectService().wrap(dataObject).getPropertyValueNullSafe(propertyName);
             if (StringUtils.isNotBlank(documentNumber)) {
                 inquiry.getInquiryLink().setHref(getConfigurationService().getPropertyValueAsString(
                         KRADConstants.WORKFLOW_URL_KEY)
@@ -303,20 +306,19 @@ public class InquirableImpl extends ViewHelperServiceImpl implements Inquirable 
     }
 
     /**
-     * @see Inquirable#setDataObjectClass(java.lang.Class)
+     * {@inheritDoc}
+     */
+    @Override
+    public Class<?> getDataObjectClass() {
+        return this.dataObjectClass;
+    }
+
+    /**
+     * {@inheritDoc}
      */
     @Override
     public void setDataObjectClass(Class<?> dataObjectClass) {
         this.dataObjectClass = dataObjectClass;
-    }
-
-    /**
-     * Retrieves the data object class configured for this inquirable
-     *
-     * @return Class<?> of configured data object, or null if data object class not configured
-     */
-    protected Class<?> getDataObjectClass() {
-        return this.dataObjectClass;
     }
 
     protected LegacyDataAdapter getLegacyDataAdapter() {
@@ -340,4 +342,42 @@ public class InquirableImpl extends ViewHelperServiceImpl implements Inquirable 
         return CoreApiServiceLocator.getEncryptionService();
     }
 
+    /**
+     * Creates a copy of this {@code InquirableImpl}.
+     *
+     * @return a copy of this {@code InquirableImpl}
+     */
+    public InquirableImpl copy() {
+        InquirableImpl inquirableImplCopy = KRADUtils.createNewObjectFromClass(getClass());
+
+        if (this.getDataObjectClass() != null) {
+            inquirableImplCopy.setDataObjectClass(this.getDataObjectClass());
+        }
+
+        if (this.getConfigurationService() != null) {
+            inquirableImplCopy.setConfigurationService(this.getConfigurationService());
+        }
+
+        if (this.getDataDictionaryService() != null) {
+            inquirableImplCopy.setDataDictionaryService(this.getDataDictionaryService());
+        }
+
+        if (this.getLegacyDataAdapter() != null) {
+            inquirableImplCopy.setLegacyDataAdapter(this.getLegacyDataAdapter());
+        }
+
+        if (this.getDataObjectService() != null) {
+            inquirableImplCopy.setDataObjectService(this.getDataObjectService());
+        }
+
+        if (this.getViewDictionaryService() != null) {
+            inquirableImplCopy.setViewDictionaryService(this.getViewDictionaryService());
+        }
+
+        if (this.getExpressionEvaluatorFactory() != null) {
+            inquirableImplCopy.setExpressionEvaluatorFactory(this.getExpressionEvaluatorFactory());
+        }
+
+        return inquirableImplCopy;
+    }
 }

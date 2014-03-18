@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
 import org.kuali.rice.krad.service.KualiRuleService;
 import org.kuali.rice.krad.uif.container.CollectionGroup;
 import org.kuali.rice.krad.uif.view.View;
+import org.kuali.rice.krad.uif.view.ViewModel;
 import org.kuali.rice.krad.web.form.DocumentFormBase;
 
 /**
@@ -30,7 +31,7 @@ import org.kuali.rice.krad.web.form.DocumentFormBase;
  */
 public class DocumentViewHelperServiceImpl extends ViewHelperServiceImpl {
 
-    private KualiRuleService kualiRuleService;
+    private transient KualiRuleService kualiRuleService;
 
     /**
      * Performs validation on the new collection line before it is added to the
@@ -45,17 +46,17 @@ public class DocumentViewHelperServiceImpl extends ViewHelperServiceImpl {
      *         the collection
      */
     @Override
-    protected boolean performAddLineValidation(View view, CollectionGroup collectionGroup, Object model,
-            Object addLine) {
-        boolean isValidLine = true;
+    protected boolean performAddLineValidation(ViewModel model, Object addLine, String collectionId,
+                String collectionPath) {
+        boolean isValidLine = super.performAddLineValidation(model, addLine, collectionId, collectionPath);
 
         if (model instanceof DocumentFormBase && addLine instanceof AdHocRoutePerson) {
             DocumentFormBase form = (DocumentFormBase) model;
-            isValidLine = getKualiRuleService()
+            isValidLine &= getKualiRuleService()
                     .applyRules(new AddAdHocRoutePersonEvent(form.getDocument(), (AdHocRoutePerson) addLine));
         } else if (model instanceof DocumentFormBase && addLine instanceof AdHocRouteWorkgroup) {
             DocumentFormBase form = (DocumentFormBase) model;
-            isValidLine = getKualiRuleService()
+            isValidLine &= getKualiRuleService()
                     .applyRules(new AddAdHocRouteWorkgroupEvent(form.getDocument(), (AdHocRouteWorkgroup) addLine));
         }
 
@@ -71,6 +72,7 @@ public class DocumentViewHelperServiceImpl extends ViewHelperServiceImpl {
         if (kualiRuleService == null) {
             kualiRuleService = KRADServiceLocatorWeb.getKualiRuleService();
         }
+
         return this.kualiRuleService;
     }
 }

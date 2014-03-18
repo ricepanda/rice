@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -294,6 +294,15 @@ public class IncidentReportForm extends UifFormBase {
      */
     public String getController() {
         return controller;
+    }
+
+    /**
+     * @param copiedSessionId
+     *            the session id to associate with the form
+     */
+
+    public void setSessionId(String copiedSessionId) {
+        sessionId = copiedSessionId;
     }
 
 }

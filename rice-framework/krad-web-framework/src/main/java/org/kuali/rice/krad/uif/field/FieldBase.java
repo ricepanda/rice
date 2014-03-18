@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.core.api.exception.RiceRuntimeException;
-import org.kuali.rice.krad.data.DataObjectUtils;
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
 import org.kuali.rice.krad.datadictionary.parse.BeanTags;
@@ -29,8 +28,13 @@ import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.component.ComponentBase;
 import org.kuali.rice.krad.uif.component.ComponentSecurity;
 import org.kuali.rice.krad.uif.element.Label;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleRestriction;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.util.ComponentFactory;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.util.MessageStructureUtils;
+import org.kuali.rice.krad.uif.view.View;
+import org.kuali.rice.krad.util.KRADUtils;
 
 /**
  * Base class for <code>Field</code> implementations
@@ -54,16 +58,13 @@ public class FieldBase extends ComponentBase implements Field {
 
     private String shortLabel;
     private Label fieldLabel;
-
-    private Position labelPlacement;
-
+    
     private boolean labelRendered;
 
     public FieldBase() {
         super();
 
         labelRendered = false;
-        labelPlacement = Position.LEFT;
     }
 
     /**
@@ -78,36 +79,29 @@ public class FieldBase extends ComponentBase implements Field {
      * <li>If label placement is right, set render colon to false</li>
      * </ul>
      *
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#performFinalize(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performFinalize(Object model, Component parent) {
+    public void performFinalize(Object model, LifecycleElement parent) {
         super.performFinalize(model, parent);
 
         if (fieldLabel != null) {
             fieldLabel.setLabelForComponentId(this.getId());
 
             if ((getRequired() != null) && getRequired().booleanValue()) {
-                fieldLabel.getRequiredMessage().setRender(!isReadOnly());
-            } else {
-                setRequired(new Boolean(false));
-                fieldLabel.getRequiredMessage().setRender(true);
-
-                String prefixStyle = "";
-                if (StringUtils.isNotBlank(fieldLabel.getRequiredMessage().getStyle())) {
-                    prefixStyle = fieldLabel.getRequiredMessage().getStyle();
+                View view = ViewLifecycle.getView();
+                if (view.getViewTypeName() != null && view.getViewTypeName().equals(UifConstants.ViewType.MAINTENANCE)) {
+                    fieldLabel.setRenderRequiredIndicator(!view.isReadOnly());
+                } else {
+                    fieldLabel.setRenderRequiredIndicator(!isReadOnly());
                 }
-                fieldLabel.getRequiredMessage().setStyle(prefixStyle + ";" + "display: none;");
+            } else {
+                setRequired(false);
+                fieldLabel.setRenderRequiredIndicator(false);
             }
 
-            if (labelPlacement.equals(Position.RIGHT)) {
-                fieldLabel.setRenderColon(false);
-            }
+            fieldLabel.addStyleClass("uif-labelBlock");
 
-            if (labelPlacement.equals(Position.TOP) || labelPlacement.equals(Position.BOTTOM)){
-                fieldLabel.addStyleClass("uif-labelBlock");
-            }
 
             fieldLabel.addDataAttribute(UifConstants.DataAttributes.LABEL_FOR, this.getId());
             if(StringUtils.isNotBlank(this.getFieldLabel().getLabelText())){
@@ -133,25 +127,11 @@ public class FieldBase extends ComponentBase implements Field {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getComponentTypeName()
+     * {@inheritDoc}
      */
     @Override
     public final String getComponentTypeName() {
         return "field";
-    }
-
-    /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#getComponentsForLifecycle()
-     */
-    @Override
-    public List<Component> getComponentsForLifecycle() {
-        List<Component> components = super.getComponentsForLifecycle();
-
-        if (!isLabelRendered()) {
-            components.add(fieldLabel);
-        }
-
-        return components;
     }
 
     /**
@@ -163,7 +143,7 @@ public class FieldBase extends ComponentBase implements Field {
             return fieldLabel.getLabelText();
         }
 
-        return null;
+        return "";
     }
 
     /**
@@ -264,9 +244,17 @@ public class FieldBase extends ComponentBase implements Field {
     /**
      * @see org.kuali.rice.krad.uif.field.Field#getLabel
      */
+    @ViewLifecycleRestriction
     @BeanTagAttribute(name="fieldLabel",type= BeanTagAttribute.AttributeType.SINGLEBEAN)
     public Label getFieldLabel() {
         return this.fieldLabel;
+    }
+
+    /**
+     * @see org.kuali.rice.krad.uif.field.Field#getLabel
+     */
+    public Label getFieldLabelIfNotRendered() {
+        return isLabelRendered() ? null : this.fieldLabel;
     }
 
     /**
@@ -276,25 +264,6 @@ public class FieldBase extends ComponentBase implements Field {
         this.fieldLabel = fieldLabel;
     }
 
-    /**
-     * Indicates where the label is placed in relation to the field (valid options are
-     * LEFT, RIGHT, BOTTOM, and TOP
-     *
-     * @return position of label
-     */
-    @BeanTagAttribute(name="labelPlacement",type= BeanTagAttribute.AttributeType.SINGLEBEAN)
-    public Position getLabelPlacement() {
-        return this.labelPlacement;
-    }
-
-    /**
-     * Setter for the label's position in relation to the field (control if editable)
-     *
-     * @param labelPlacement
-     */
-    public void setLabelPlacement(Position labelPlacement) {
-        this.labelPlacement = labelPlacement;
-    }
 
     /**
      * @see org.kuali.rice.krad.uif.field.Field#isLabelRendered()
@@ -333,12 +302,12 @@ public class FieldBase extends ComponentBase implements Field {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#initializeComponentSecurity()
+     * {@inheritDoc}
      */
     @Override
     protected void initializeComponentSecurity() {
         if (getComponentSecurity() == null) {
-            setComponentSecurity(DataObjectUtils.newInstance(FieldSecurity.class));
+            setComponentSecurity(KRADUtils.createNewObjectFromClass(FieldSecurity.class));
         }
     }
 
@@ -378,22 +347,4 @@ public class FieldBase extends ComponentBase implements Field {
         getFieldSecurity().setViewInLineAuthz(viewInLineAuthz);
     }
 
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        FieldBase fieldBaseCopy = (FieldBase) component;
-
-        fieldBaseCopy.setShortLabel(this.shortLabel);
-        fieldBaseCopy.setLabelRendered(this.labelRendered);
-
-        if (this.fieldLabel != null) {
-            fieldBaseCopy.setFieldLabel((Label)this.fieldLabel.copy());
-        }
-
-        fieldBaseCopy.setLabelPlacement(this.labelPlacement);
-    }
 }

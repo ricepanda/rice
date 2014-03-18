@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,24 +15,21 @@
  */
 package org.kuali.rice.kim.impl.identity.phone;
 
-import org.kuali.rice.kim.api.identity.CodedAttribute;
-import org.kuali.rice.kim.framework.identity.phone.EntityPhoneTypeEbo;
-import org.kuali.rice.kim.impl.identity.CodedAttributeBo;
-import org.kuali.rice.kim.impl.identity.name.EntityNameTypeBo;
-
 import javax.persistence.AttributeOverride;
 import javax.persistence.AttributeOverrides;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 
+import org.kuali.rice.kim.api.identity.CodedAttribute;
+import org.kuali.rice.kim.framework.identity.phone.EntityPhoneTypeEbo;
+import org.kuali.rice.kim.impl.identity.CodedAttributeBo;
+
+@AttributeOverrides({ @AttributeOverride(name = "code", column = @Column(name = "PHONE_TYP_CD")), @AttributeOverride(name = "name", column = @Column(name = "PHONE_TYP_NM")) })
 @Entity
-@AttributeOverrides({
-        @AttributeOverride(name="code",column=@Column(name="PHONE_TYP_CD")),
-        @AttributeOverride(name="name",column=@Column(name="PHONE_TYP_NM"))
-})
 @Table(name = "KRIM_PHONE_TYP_T")
 public class EntityPhoneTypeBo extends CodedAttributeBo implements EntityPhoneTypeEbo {
+
     private static final long serialVersionUID = -7999904356580992741L;
 
     public static EntityPhoneTypeBo from(CodedAttribute immutable) {

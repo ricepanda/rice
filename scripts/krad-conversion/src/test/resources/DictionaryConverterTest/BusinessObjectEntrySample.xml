@@ -1,6 +1,6 @@
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -238,9 +238,12 @@
     <property name="required" value="false"/>
     <property name="summary" value="Zip Code"/>
     <property name="description" value="Zip Code"/>
-    <!--<property name="validationPattern">-->
-    <!--<bean parent="AnyCharacterValidation" p:allowWhitespace="true" />-->
-    <!--</property>-->
+    <property name="validationPattern">
+      <bean parent="RegexValidationPattern">
+        <property name="pattern" value="((\+|-)?([0-9]{1,6}(\.[0-9]{1,2})?))()"></property>
+        <property name="validationErrorMessageKey" value="error.bigDecimal"></property>
+      </bean>
+    </property>
     <property name="control">
       <bean parent="TextControlDefinition" p:size="50"/>
     </property>

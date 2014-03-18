@@ -1,5 +1,5 @@
 --
--- Copyright 2005-2013 The Kuali Foundation
+-- Copyright 2005-2014 The Kuali Foundation
 --
 -- Licensed under the Educational Community License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -14,6 +14,6 @@
 -- limitations under the License.
 --
 
-insert into trv_acct_type (acct_type, acct_type_name, obj_id, ver_nbr) values ('CAT', 'Clearing Account Type', '', 0);
-insert into trv_acct_type (acct_type, acct_type_name, obj_id, ver_nbr) values ('EAT', 'Expense Account Type', '', 0);
-insert into trv_acct_type (acct_type, acct_type_name, obj_id, ver_nbr) values ('IAT', 'Income Account Type', '', 0);
+insert into trv_acct_type (acct_type, acct_type_name, obj_id) values ('CAT', 'Clearing Account Type', 'ZZZ');
+insert into trv_acct_type (acct_type, acct_type_name, obj_id) values ('EAT', 'Expense Account Type', 'YYY');
+insert into trv_acct_type (acct_type, acct_type_name, obj_id) values ('IAT', 'Income Account Type', 'XXX');

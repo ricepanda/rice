@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,19 +30,18 @@ import org.kuali.rice.kew.test.KEWTestCase;
 import org.kuali.rice.krad.data.DataObjectService;
 import org.kuali.rice.krad.data.KradDataServiceLocator;
 import org.kuali.rice.krad.data.PersistenceOption;
-
-import javax.persistence.PersistenceException;
+import org.springframework.orm.jpa.JpaSystemException;
 
 import static org.kuali.rice.core.api.criteria.PredicateFactory.*;
 
 import static org.junit.Assert.*;
 
 /**
- * Test the basic persistence of business objects related to PeopleFlows
+ * Test the basic persistence of business objects related to PeopleFlows.
+ *
+ * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 public class PeopleFlowBoTest extends KEWTestCase {
-
-//    private BusinessObjectService boService;
 
     private DataObjectService dataObjectService;
     private ResponsibilityIdService responsibilityIdService;
@@ -53,11 +52,7 @@ public class PeopleFlowBoTest extends KEWTestCase {
         responsibilityIdService = KEWServiceLocator.getResponsibilityIdService();
     }
 
-    // TODO - hopefully this test will eventually start failing because we actually want the save method to throw a
-    // {@link DataAccessException}, but that's not going to happen until the following jira is resolved:
-    //
-    // https://jira.kuali.org/browse/KULRICE-9798
-    @Test(expected = PersistenceException.class)
+    @Test(expected = JpaSystemException.class)
     public void testKewTypeBoBasicPersist() {
         KewTypeBoBuilder builder = new KewTypeBoBuilder("testType", "testNamespace");
 

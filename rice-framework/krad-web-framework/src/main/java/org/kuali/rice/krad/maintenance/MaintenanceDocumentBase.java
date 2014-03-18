@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,28 +14,6 @@
  * limitations under the License.
  */
 package org.kuali.rice.krad.maintenance;
-
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.Lob;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.persistence.Transient;
-import javax.persistence.UniqueConstraint;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
@@ -63,6 +41,7 @@ import org.kuali.rice.krad.exception.PessimisticLockingException;
 import org.kuali.rice.krad.exception.ValidationException;
 import org.kuali.rice.krad.rules.rule.event.KualiDocumentEvent;
 import org.kuali.rice.krad.rules.rule.event.SaveDocumentEvent;
+import org.kuali.rice.krad.service.BusinessObjectSerializerService;
 import org.kuali.rice.krad.service.DocumentDictionaryService;
 import org.kuali.rice.krad.service.DocumentService;
 import org.kuali.rice.krad.service.KRADServiceLocator;
@@ -78,6 +57,27 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.Lob;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
+import javax.persistence.Transient;
+import javax.persistence.UniqueConstraint;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Document class for all maintenance documents which wraps the maintenance object in
@@ -114,6 +114,7 @@ public class MaintenanceDocumentBase extends DocumentBase implements Maintenance
 
     @Transient
     protected Maintainable oldMaintainableObject;
+
     @Transient
     protected Maintainable newMaintainableObject;
 
@@ -197,7 +198,11 @@ public class MaintenanceDocumentBase extends DocumentBase implements Maintenance
         String className = newMaintainableObject.getDataObject().getClass().getName();
         String truncatedClassName = className.substring(className.lastIndexOf('.') + 1);
         if (isOldDataObjectInDocument()) {
-            documentTitle = "Edit ";
+            if (KRADConstants.MAINTENANCE_COPY_ACTION.equals(oldMaintainableObject.getMaintenanceAction())) {
+                documentTitle = "Copy ";
+            } else {
+                documentTitle = "Edit ";
+            }
         } else {
             documentTitle = "New ";
         }
@@ -486,8 +491,7 @@ public class MaintenanceDocumentBase extends DocumentBase implements Maintenance
             // hack to resolve XStream not dealing well with Proxies
             KRADServiceLocatorWeb.getLegacyDataAdapter().materializeAllSubObjects(oldBo);
 
-            docContentBuffer.append(
-                    KRADServiceLocator.getBusinessObjectSerializerService().serializeBusinessObjectToXml(oldBo));
+            docContentBuffer.append(getBusinessObjectSerializerService().serializeBusinessObjectToXml(oldBo));
 
             // add the maintainable's maintenanceAction
             docContentBuffer.append("<" + MAINTENANCE_ACTION_TAG_NAME + ">");
@@ -502,8 +506,7 @@ public class MaintenanceDocumentBase extends DocumentBase implements Maintenance
 
         KRADServiceLocatorWeb.getLegacyDataAdapter().materializeAllSubObjects(newBo);
 
-        docContentBuffer.append(KRADServiceLocator.getBusinessObjectSerializerService().serializeBusinessObjectToXml(
-                newBo));
+        docContentBuffer.append(getBusinessObjectSerializerService().serializeBusinessObjectToXml(newBo));
 
         // add the maintainable's maintenanceAction
         docContentBuffer.append("<" + MAINTENANCE_ACTION_TAG_NAME + ">");
@@ -837,7 +840,9 @@ public class MaintenanceDocumentBase extends DocumentBase implements Maintenance
 
     public void deleteDocumentAttachmentList() {
         if (CollectionUtils.isNotEmpty(attachments)) {
-            KRADServiceLocatorWeb.getLegacyDataAdapter().delete(attachments);
+            for (MultiDocumentAttachment attachment : attachments) {
+                KRADServiceLocatorWeb.getLegacyDataAdapter().delete(attachment);
+            }
             attachments = null;
         }
     }
@@ -959,7 +964,7 @@ public class MaintenanceDocumentBase extends DocumentBase implements Maintenance
     /**
      * The {@link NoteType} for maintenance documents is determined by whether or not the underlying {@link
      * Maintainable} supports business object notes or not.  This is determined via a call to {@link
-     * Maintainable#   isBoNotesEnabled()}.  The {@link NoteType} is then derived as follows: <p/> <ul> <li>If the
+     * Maintainable#isNotesEnabled()}.  The {@link NoteType} is then derived as follows: <p/> <ul> <li>If the
      * {@link
      * Maintainable} supports business object notes, return {@link NoteType#BUSINESS_OBJECT}. <li>Otherwise, delegate
      * to
@@ -1050,7 +1055,7 @@ public class MaintenanceDocumentBase extends DocumentBase implements Maintenance
      *
      * TODO: move to KNS maintenance document base
      *
-     * @return
+     * @return true if the document is a session document
      */
     public boolean isSessionDocument() {
         return SessionDocument.class.isAssignableFrom(this.getClass());
@@ -1105,6 +1110,12 @@ public class MaintenanceDocumentBase extends DocumentBase implements Maintenance
         return documentService;
     }
 
+    /**
+     * @return the service used for serializing maintained business / data objects
+     */
+    protected BusinessObjectSerializerService getBusinessObjectSerializerService() {
+        return KRADServiceLocator.getDataObjectSerializerService();
+    }
 
     //for issue KULRice3070
     protected boolean checkAllowsRecordDeletion() {

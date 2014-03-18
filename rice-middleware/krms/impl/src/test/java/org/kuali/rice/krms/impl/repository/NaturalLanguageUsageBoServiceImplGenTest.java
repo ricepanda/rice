@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package org.kuali.rice.krms.impl.repository;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.kuali.rice.krad.service.BusinessObjectService;
+import org.kuali.rice.krad.data.DataObjectService;
 import org.kuali.rice.krms.api.repository.NaturalLanguageUsageGenTest;
 import org.kuali.rice.krms.api.repository.language.NaturalLanguageUsage;
 
@@ -49,7 +49,7 @@ public final class NaturalLanguageUsageBoServiceImplGenTest {
     @Before
     public void setUp() {
         naturalLanguageUsageBoServiceImpl = new NaturalLanguageUsageBoServiceImpl();
-        naturalLanguageUsageBoServiceImpl.setBusinessObjectService(mock(BusinessObjectService.class));
+        naturalLanguageUsageBoServiceImpl.setDataObjectService(mock(DataObjectService.class));
     }
 
     @Test(expected = java.lang.IllegalArgumentException.class)
@@ -98,6 +98,12 @@ public final class NaturalLanguageUsageBoServiceImplGenTest {
         if (naturalLanguageUsage == null) {
             naturalLanguageUsage = naturalLanguageUsageBoServiceImpl.createNaturalLanguageUsage(def);
         }
+    }
+
+    @Test
+    public void test_createNaturalLanguageUsageGeneratedId() {
+        NaturalLanguageUsage def = NaturalLanguageUsageGenTest.buildFullNaturalLanguageUsageNoId();
+        naturalLanguageUsage = naturalLanguageUsageBoServiceImpl.createNaturalLanguageUsage(def);
     }
 
     @Test(expected = java.lang.IllegalArgumentException.class)

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,38 +15,40 @@
  */
 package org.kuali.rice.kim.impl.identity.name;
 
-import org.kuali.rice.kim.api.identity.name.EntityName;
-import org.kuali.rice.krad.data.jpa.eclipselink.PortableSequenceGenerator;
-
+import javax.persistence.Cacheable;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-import java.sql.Timestamp;
+
+import org.kuali.rice.kim.api.identity.name.EntityName;
+import org.kuali.rice.krad.data.jpa.PortableSequenceGenerator;
 
 @Entity
+@Cacheable(false)
 @Table(name = "KRIM_ENTITY_NM_T")
 public class EntityNameBo extends EntityNameBase {
+
     private static final long serialVersionUID = -1449221117942310530L;
-    @Id
-    @GeneratedValue(generator = "KRIM_ENTITY_NM_ID_S")
+
     @PortableSequenceGenerator(name = "KRIM_ENTITY_NM_ID_S")
+    @GeneratedValue(generator = "KRIM_ENTITY_NM_ID_S")
+    @Id
     @Column(name = "ENTITY_NM_ID")
     private String id;
-    @ManyToOne(targetEntity = EntityNameTypeBo.class, fetch = FetchType.EAGER, cascade = {})
-    @JoinColumn(
-            name = "NM_TYP_CD", insertable = false, updatable = false)
+
+    @ManyToOne(targetEntity = EntityNameTypeBo.class, cascade = { CascadeType.REFRESH })
+    @JoinColumn(name = "NM_TYP_CD", referencedColumnName = "ENT_NM_TYP_CD", insertable = false, updatable = false)
     private EntityNameTypeBo nameType;
 
     public static EntityName to(EntityNameBo bo) {
         if (bo == null) {
             return null;
         }
-
         return EntityName.Builder.create(bo).build();
     }
 
@@ -60,17 +62,14 @@ public class EntityNameBo extends EntityNameBase {
         if (immutable == null) {
             return null;
         }
-
         EntityNameBo bo = new EntityNameBo();
         bo.setId(immutable.getId());
         bo.setActive(immutable.isActive());
-
         bo.setEntityId(immutable.getEntityId());
         bo.setNameType(EntityNameTypeBo.from(immutable.getNameType()));
         if (immutable.getNameType() != null) {
             bo.setNameCode(immutable.getNameType().getCode());
         }
-
         bo.setFirstName(immutable.getFirstNameUnmasked());
         bo.setLastName(immutable.getLastNameUnmasked());
         bo.setMiddleName(immutable.getMiddleNameUnmasked());
@@ -78,14 +77,10 @@ public class EntityNameBo extends EntityNameBase {
         bo.setNameTitle(immutable.getNameTitleUnmasked());
         bo.setNameSuffix(immutable.getNameSuffixUnmasked());
         bo.setNoteMessage(immutable.getNoteMessage());
-        if (immutable.getNameChangedDate() != null) {
-            bo.setNameChangedDate(new Timestamp(immutable.getNameChangedDate().getMillis()));
-        }
-
+        bo.setNameChangedDate(immutable.getNameChangedDate());
         bo.setDefaultValue(immutable.isDefaultValue());
         bo.setVersionNumber(immutable.getVersionNumber());
         bo.setObjectId(immutable.getObjectId());
-
         return bo;
     }
 
@@ -98,7 +93,6 @@ public class EntityNameBo extends EntityNameBase {
         this.nameType = nameType;
     }
 
-
     @Override
     public String getId() {
         return id;
@@ -107,6 +101,4 @@ public class EntityNameBo extends EntityNameBase {
     public void setId(String id) {
         this.id = id;
     }
-
-
 }

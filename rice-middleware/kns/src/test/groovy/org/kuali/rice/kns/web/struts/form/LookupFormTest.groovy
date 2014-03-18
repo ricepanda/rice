@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package org.kuali.rice.kns.web.struts.form
 
 import org.junit.Test
 import org.apache.struts.mock.MockHttpServletRequest
+import org.kuali.rice.kns.service.BusinessObjectAuthorizationService
+
 import static org.junit.Assert.assertTrue
 import static org.junit.Assert.assertFalse
 import org.junit.Before
@@ -62,6 +64,8 @@ class LookupFormTest {
                     [ getParameterValueAsString: { s0,s1,s2 -> null },
                       getParameterValueAsBoolean: { s0,s1,s2,s3 -> false }
                     ] as ParameterService,
+                  businessObjectAuthorizationService:
+                    [ attributeValueNeedsToBeEncryptedOnFormsAndLinks: {s0,s1 -> false } ] as BusinessObjectAuthorizationService,
                   businessObjectDictionaryService:
                     [ getLookupableID: { s0 -> null } ] as BusinessObjectDictionaryService,
                   kualiLookupable: {

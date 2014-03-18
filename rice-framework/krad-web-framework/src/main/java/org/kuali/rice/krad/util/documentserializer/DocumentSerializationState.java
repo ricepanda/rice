@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import java.util.List;
 /**
  * This object keeps track of most of the open tags while a document is serialized.  Note that instances of this class
  * may not necessarily hold all open tags of a document while it is being serialized.  For example, tags enclosing list elements
- * and map entries are not contained within here.  See {@link DocumentSerializerServiceImpl} to determine when this object's state
- * is modified.
+ * and map entries are not contained within here.  See DocumentSerializerServiceImpl, in krad-service-impl, to determine when
+ * this object's state is modified.
  *
  * This class's manipulators behave much like a stack, but it has random access characteristics like an array.
  */

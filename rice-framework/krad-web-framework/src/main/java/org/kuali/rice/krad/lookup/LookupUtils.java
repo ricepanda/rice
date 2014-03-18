@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,19 +22,26 @@ import org.kuali.rice.core.api.encryption.EncryptionService;
 import org.kuali.rice.core.api.search.SearchOperator;
 import org.kuali.rice.coreservice.framework.CoreFrameworkServiceLocator;
 import org.kuali.rice.krad.bo.ExternalizableBusinessObject;
-import org.kuali.rice.krad.data.DataObjectUtils;
+import org.kuali.rice.krad.data.KradDataServiceLocator;
 import org.kuali.rice.krad.datadictionary.RelationshipDefinition;
 import org.kuali.rice.krad.datadictionary.exception.UnknownBusinessClassAttributeException;
 import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
 import org.kuali.rice.krad.service.ModuleService;
+import org.kuali.rice.krad.uif.UifConstants;
+import org.kuali.rice.krad.uif.UifPropertyPaths;
+import org.kuali.rice.krad.uif.container.CollectionGroup;
+import org.kuali.rice.krad.uif.lifecycle.ComponentPostMetadata;
+import org.kuali.rice.krad.uif.lifecycle.ViewPostMetadata;
 import org.kuali.rice.krad.uif.util.ObjectPropertyUtils;
 import org.kuali.rice.krad.util.ExternalizableBusinessObjectUtils;
 import org.kuali.rice.krad.util.KRADConstants;
 import org.kuali.rice.krad.util.KRADPropertyConstants;
 import org.kuali.rice.krad.util.KRADUtils;
 import org.kuali.rice.krad.web.form.UifFormBase;
+import org.springframework.beans.PropertyAccessorUtils;
 
 import javax.servlet.http.HttpServletRequest;
+
 import java.security.GeneralSecurityException;
 import java.sql.Date;
 import java.sql.Timestamp;
@@ -524,10 +531,10 @@ public class LookupUtils {
             // get the parent property type
             Class<?> eboParentClass;
             String eboParentPropertyName;
-            if (DataObjectUtils.isNestedAttribute(eboPropertyName)) {
+            if (PropertyAccessorUtils.isNestedOrIndexedProperty(eboPropertyName)) {
                 eboParentPropertyName = StringUtils.substringBeforeLast(eboPropertyName, ".");
                 try {
-                    eboParentClass = DataObjectUtils.getPropertyType(dataObjectClass.newInstance(),
+                    eboParentClass = KradDataServiceLocator.getDataObjectService().wrap(dataObjectClass.newInstance()).getPropertyType(
                             eboParentPropertyName);
                 } catch (Exception ex) {
                     throw new RuntimeException(
@@ -602,6 +609,90 @@ public class LookupUtils {
      */
     public static String scrubQueryCharacters(String criteriaValue) {
         return StringUtils.replaceEach(criteriaValue, searchList, replacementList);
+    }
+
+    /**
+     * Generates a key string in case of multivalue return. The values are extracted
+     * from the list of properties on the lineDataObject.
+     *
+     * If fieldConversionKeys is empty return the identifier string for the lineDataObject
+     *
+     * @param lineDataObject   Object from which to extract values
+     * @param fieldConversionKeys List of keys whose values have to be concatenated
+     * @return string representing the multivalue key 
+     */
+    public static String generateMultiValueKey(Object lineDataObject, List<String> fieldConversionKeys) {
+        String lineIdentifier = "";
+
+        if(fieldConversionKeys == null || fieldConversionKeys.isEmpty()) {
+            lineIdentifier =
+                    KRADServiceLocatorWeb.getLegacyDataAdapter().getDataObjectIdentifierString(lineDataObject);
+        } else {
+            Collections.sort(fieldConversionKeys);
+            for (String fromFieldName : fieldConversionKeys) {
+                Object fromFieldValue = ObjectPropertyUtils.getPropertyValue(lineDataObject, fromFieldName);
+
+                if (fromFieldValue != null) {
+                    lineIdentifier += fromFieldValue;
+                }
+
+                lineIdentifier += ":";
+            }
+            lineIdentifier = StringUtils.removeEnd(lineIdentifier, ":");
+        }
+
+        return lineIdentifier;
+    }
+
+    /**
+     * Merges the lookup result selections that are part of the request with the selectedLookupResultsCache maintained in
+     * the session.
+     *
+     * @param form lookup form instance containing the selected results and lookup configuration
+     */
+    public static void refreshLookupResultSelections(LookupForm form) {
+
+        int displayStart = 0;
+        int displayLength = 0;
+
+        // avoid blowing the stack if the session expired
+        ViewPostMetadata viewPostMetadata = form.getViewPostMetadata();
+        if (viewPostMetadata != null) {
+
+            // only one concurrent request per view please
+            synchronized (viewPostMetadata) {
+                ComponentPostMetadata oldCollectionGroup = viewPostMetadata.getComponentPostMetadata("uLookupResults");
+                displayStart = (Integer) oldCollectionGroup.getData(UifConstants.PostMetadata.COLL_DISPLAY_START);
+                displayLength = (Integer) oldCollectionGroup.getData(UifConstants.PostMetadata.COLL_DISPLAY_LENGTH);
+            }
+        }
+
+        List<? extends Object> lookupResults = (List<? extends Object>) form.getLookupResults();
+        Map<String, String> fieldConversions = form.getFieldConversions();
+        List<String> fromFieldNames = new ArrayList<String>(fieldConversions.keySet());
+
+        Set<String> selectedLines = form.getSelectedCollectionLines().get(UifPropertyPaths.LOOKUP_RESULTS);
+        Set<String> selectedLookupResultsCache = form.getSelectedLookupResultsCache();
+
+        selectedLines = (selectedLines == null) ? new HashSet<String>() : selectedLines;
+
+
+        for(int i = displayStart; i < displayStart + displayLength; i++ ) {
+            if(i >= form.getLookupResults().size()) break;
+
+            Object lineItem = lookupResults.get(i);
+            String lineIdentifier = LookupUtils.generateMultiValueKey(lineItem, fromFieldNames);
+
+            if(!selectedLines.contains(lineIdentifier)) {
+                 selectedLookupResultsCache.remove(lineIdentifier);
+            } else {
+                selectedLookupResultsCache.add(lineIdentifier);
+            }
+        }
+
+        selectedLines.addAll( selectedLookupResultsCache );
+
+        form.getSelectedCollectionLines().put(UifPropertyPaths.LOOKUP_RESULTS, selectedLines);
     }
 
 }

@@ -1,6 +1,6 @@
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@
   <import resource="classpath:org/kuali/rice/core/CommonSpringBeans.xml"/>
   <import resource="classpath:org/kuali/rice/krad/config/KRADDependentModuleCommonImports.xml" />
   <import resource="classpath:org/kuali/rice/kew/config/KewEmbeddedSpringBeans.xml"/>
-  <import resource="classpath:org/kuali/rice/kew/config/_KewLocalOjbSpringBeans.xml"/>
   <import resource="classpath:org/kuali/rice/kew/config/_KewLocalServiceBusSpringBeans.xml"/>
   <import resource="classpath:org/kuali/rice/kew/config/_KewJpaSpringBeans.xml"/>
 
@@ -241,5 +240,12 @@
       </list>
     </property>
   </bean>
+
+  <!-- Still using OJB for some of the KNS-based UI's in KEW -->
+  <import resource="classpath:org/kuali/rice/core/CommonOJBSpringBeans.xml"/>
+  <bean id="kewOjbConfigurer"
+        class="org.kuali.rice.core.framework.persistence.ojb.BaseOjbConfigurer"
+        p:metadataLocation="classpath:org/kuali/rice/kew/impl/config/OJB-repository-kew.xml"
+        p:jcdAliases="kewDataSource"/>
 
 </beans>

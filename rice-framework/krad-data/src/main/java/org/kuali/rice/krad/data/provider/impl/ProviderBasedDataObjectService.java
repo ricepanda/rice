@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package org.kuali.rice.krad.data.provider.impl;
 
-import org.kuali.rice.core.api.criteria.LookupCustomizer;
+import com.google.common.collect.Sets;
 import org.kuali.rice.core.api.criteria.QueryByCriteria;
 import org.kuali.rice.core.api.criteria.QueryResults;
 import org.kuali.rice.krad.data.CompoundKey;
@@ -26,7 +26,11 @@ import org.kuali.rice.krad.data.metadata.DataObjectMetadata;
 import org.kuali.rice.krad.data.metadata.MetadataRepository;
 import org.kuali.rice.krad.data.provider.PersistenceProvider;
 import org.kuali.rice.krad.data.provider.ProviderRegistry;
+import org.kuali.rice.krad.data.util.ReferenceLinker;
 import org.springframework.beans.factory.annotation.Required;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
+
+import java.util.Set;
 
 /**
  * DataObjectService implementation backed by the {@link ProviderRegistry}.
@@ -34,9 +38,12 @@ import org.springframework.beans.factory.annotation.Required;
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 public class ProviderBasedDataObjectService implements DataObjectService {
+	private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger
+			.getLogger(ProviderBasedDataObjectService.class);
 
 	protected ProviderRegistry providerRegistry;
 	protected MetadataRepository metadataRepository;
+    protected ReferenceLinker referenceLinker;
 
     @Override
     public <T> T find(Class<T> type, Object id) {
@@ -67,8 +74,16 @@ public class ProviderBasedDataObjectService implements DataObjectService {
     }
 
     @Override
-    public <T> QueryResults<T> findMatching(Class<T> type, QueryByCriteria queryByCriteria, LookupCustomizer<T> lookupCustomizer) {
-        return persistenceProviderForType(type).findMatching(type, queryByCriteria, lookupCustomizer);
+    public <T> T findUnique(Class<T> type, QueryByCriteria queryByCriteria) {
+        QueryResults<T> results = findMatching(type, queryByCriteria);
+        if (results.getResults().isEmpty()) {
+            return null;
+        } else if (results.getResults().size() > 1) {
+            throw new IncorrectResultSizeDataAccessException("Attempted to find single result but found more than "
+                    + "one for class " + type + " and criteria " + queryByCriteria, 1, results.getResults().size());
+        } else {
+            return results.getResults().get(0);
+        }
     }
 
     @Override
@@ -86,7 +101,13 @@ public class ProviderBasedDataObjectService implements DataObjectService {
 
     @Override
 	public <T> T save(T dataObject, PersistenceOption... options) {
-        return persistenceProviderForObject(dataObject).save(dataObject, options);
+        Set<PersistenceOption> optionSet = Sets.newHashSet(options);
+        T saved = persistenceProviderForObject(dataObject).save(dataObject, options);
+        if (optionSet.contains(PersistenceOption.LINK_KEYS)) {
+            DataObjectWrapper<T> wrapper = wrap(saved);
+            wrapper.linkForeignKeys(true);
+        }
+        return saved;
     }
 
     @Override
@@ -95,12 +116,24 @@ public class ProviderBasedDataObjectService implements DataObjectService {
     }
 
     @Override
+    public <T> T copyInstance(T dataObject) {
+        return persistenceProviderForObject(dataObject).copyInstance(dataObject);
+    }
+
+    @Override
     public <T> DataObjectWrapper<T> wrap(T dataObject) {
         if (dataObject == null) {
             throw new IllegalArgumentException("data object was null");
         }
 		DataObjectMetadata metadata = getMetadataRepository().getMetadata(dataObject.getClass());
-        return new DataObjectWrapperImpl<T>(dataObject, metadata, this);
+		// Checking for metadata and failing here. Otherwise a null gets stored in the wrapper
+		// and most later operations on the object will fail with an NPE.
+		if (metadata == null) {
+			LOG.warn("Non KRAD Data object passed - no metadata found for: " + dataObject.getClass());
+			// throw new IllegalArgumentException("Non KRAD Data object passed - no metadata found for: " +
+			// dataObject.getClass());
+		}
+        return new DataObjectWrapperImpl<T>(dataObject, metadata, this, referenceLinker);
     }
 
     @Override
@@ -153,9 +186,19 @@ public class ProviderBasedDataObjectService implements DataObjectService {
         this.metadataRepository = metadataRepository;
     }
 
+    public ReferenceLinker getReferenceLinker() {
+        return referenceLinker;
+    }
+
+    @Required
+    public void setReferenceLinker(ReferenceLinker referenceLinker) {
+        this.referenceLinker = referenceLinker;
+    }
+
     private static final class DataObjectWrapperImpl<T> extends DataObjectWrapperBase<T> {
-        private DataObjectWrapperImpl(T dataObject, DataObjectMetadata metadata, DataObjectService dataObjectService) {
-            super(dataObject, metadata, dataObjectService);
+        private DataObjectWrapperImpl(T dataObject, DataObjectMetadata metadata, DataObjectService dataObjectService,
+                ReferenceLinker referenceLinker) {
+            super(dataObject, metadata, dataObjectService, referenceLinker);
         }
     }
 

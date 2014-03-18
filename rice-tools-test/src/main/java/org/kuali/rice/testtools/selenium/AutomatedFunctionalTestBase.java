@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,61 +15,84 @@
  */
 package org.kuali.rice.testtools.selenium;
 
-import org.junit.Assert;
 import org.junit.runner.RunWith;
 
 /**
- * Automated Functional Tests should extend this Base class or have it in their class hierarchy.
- *
+ * <p>
+ * Automated Functional Tests should extend this Base class or have it in their class hierarchy, enables
+ * bookmark mode for test methods ending in Bookmark and navigation mode for test methods ending in Nav.
+ * </p><p>
  * The abstract method getBookmarkUrl should be implemented to return the Bookmark URL
  * of the page under test.  The abstract method navigate should be implemented to Navigate
- * through the UI to the page under test.
+ * through the UI to the page under test.  {@see #navigateInternal} should be called from a setUp.
+ * </p><p>
+ * Runs With {@see AutomatedFunctionalTestRunner}.
+ * </p>
+ * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 @RunWith(AutomatedFunctionalTestRunner.class)
-public abstract class AutomatedFunctionalTestBase extends WebDriverLegacyITBase {
+public abstract class AutomatedFunctionalTestBase {
 
-    protected String testUrl = ITUtil.KRAD_PORTAL;
+    /**
+     * testUrl set by {@see #enableBookmarkMode} and {@see #enableNavigationMode}, if there are test methods that
+     * do not end with Bookmark or Nav then testUrl must be defined in the test.
+     */
+    protected String testUrl;
 
+    /**
+     * Set to true by {@see #enableNavigationMode} and false by {@see #enableBookmarkMode}.
+     */
     protected boolean shouldNavigate = false;
 
+    /**
+     * Called by {see #enableBookmarkMode}.
+     *
+     * @return Bookmark url where test will start.
+     */
     protected abstract String getBookmarkUrl();
 
+    /**
+     * Called by {see #enableBookmarkMode}.
+     *
+     * @return Navigation url where test will start navigating from.
+     */
+    protected abstract String getNavigationUrl();
+
+    /**
+     * Called by {@see #navigateInternal}, should navigate from the testUrl.
+     *
+     * @throws Exception
+     */
     protected abstract void navigate() throws Exception;
 
-    @Override
-    public String getTestUrl() {
-//        if (this.getClass().toString().contains("krad.demo") ||
-//            this.getClass().toString().contains("krad.labs")) {
-            return testUrl;
-//        } else {
-//            return ITUtil.PORTAL;
-//        }
-    }
-
+    /**
+     * Called by {@see AutomatedFunctionalTestRunner#methodInvoker} if test method ends with Bookmark.
+     */
     protected void enableBookmarkMode() {
+        this.shouldNavigate = false;
         this.testUrl = getBookmarkUrl();
     }
 
+    /**
+     * Called by {@see AutomatedFunctionalTestRunner#methodInvoker} if test method ends with Nav.
+     */
     protected void enableNavigationMode() {
         this.shouldNavigate = true;
-        String classString = this.getClass().toString();
-        if (classString.contains("krad.demo") || classString.contains("krad.library")) {
-            this.testUrl = ITUtil.KRAD_PORTAL;
-        } else if (classString.contains("krad.labs")) {
-            this.testUrl = ITUtil.LABS;
-        } else {
-            this.testUrl = ITUtil.PORTAL;
-        }
+        this.testUrl = getNavigationUrl();
     }
 
-    @Override
-    public void fail(String message) {
-        passed = false;
-        jGrowlSticky(message);
-        Assert.fail(message);
+    /**
+     * @return testUrl
+     */
+    protected final String getTestUrl() {
+        return testUrl;
     }
 
-    @Override
+    /**
+     * Calls {@see #navigate} if {@see #shouldNavigate} is true.
+     *
+     * @throws Exception
+     */
     protected void navigateInternal() throws Exception {
         if (this.shouldNavigate) {
             navigate();

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,7 @@ package org.kuali.rice.krad.uif.widget;
 
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
-import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.element.Header;
-import org.kuali.rice.krad.uif.view.View;
-
-import java.io.Serializable;
-import java.util.List;
 
 /**
  * Widget that renders text syntax highlighted
@@ -47,16 +42,6 @@ public class SyntaxHighlighter extends WidgetBase {
         super();
         allowCopy = true;
         showCopyConfirmation = false;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#getComponentsForLifecycle()
-     */
-    @Override
-    public List<Component> getComponentsForLifecycle() {
-        List<Component> rv = super.getComponentsForLifecycle();
-        rv.add(header);
-        return rv;
     }
 
     @BeanTagAttribute(name="header")
@@ -149,24 +134,5 @@ public class SyntaxHighlighter extends WidgetBase {
      */
     public void setShowCopyConfirmation(boolean showCopyConfirmation) {
         this.showCopyConfirmation = showCopyConfirmation;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        SyntaxHighlighter syntaxHighlighterCopy = (SyntaxHighlighter) component;
-
-        if (this.header != null) {
-            syntaxHighlighterCopy.setHeader((Header) this.header.copy());
-        }
-
-        syntaxHighlighterCopy.setSourceCode(this.sourceCode);
-        syntaxHighlighterCopy.setPluginCssClass(this.pluginCssClass);
-        syntaxHighlighterCopy.setAllowCopy(this.allowCopy);
-        syntaxHighlighterCopy.setShowCopyConfirmation(this.showCopyConfirmation);
     }
 }

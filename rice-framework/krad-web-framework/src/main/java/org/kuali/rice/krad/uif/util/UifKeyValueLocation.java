@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ public class UifKeyValueLocation extends UifKeyValue {
      */
     public void setHref(String href) {
         if (this.location == null) {
-            ComponentFactory.getUrlInfo();
+            this.location = ComponentFactory.getUrlInfo();
         }
 
         this.location.setHref(href);

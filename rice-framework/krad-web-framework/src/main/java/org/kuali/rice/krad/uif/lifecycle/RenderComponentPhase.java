@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,73 +15,61 @@
  */
 package org.kuali.rice.krad.uif.lifecycle;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.freemarker.RenderComponentTask;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle.LifecycleEvent;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
+import org.kuali.rice.krad.uif.util.RecycleUtils;
 
 /**
- * Lifecycle phase processing task for applying the model to a component.
- * 
+ * Lifecycle phase processing task for rendering a component.
+ *
  * @author Kuali Rice Team (rice.collab@kuali.org)
+ * @see ViewLifecycle#isRenderInLifecycle()
  */
 public class RenderComponentPhase extends ViewLifecyclePhaseBase {
 
-    private RenderComponentPhase parent;
-    private List<RenderComponentPhase> siblings;
-    private List<ViewLifecyclePhase> predecessors;
-    
+    private RenderComponentPhase renderParent;
+    private Set<String> pendingChildren;
+
     /**
-     * Assert that all siblings have the same parent object.
-     * 
-     * <p>
-     * This method will only execute when assertions are enabled for this class.
-     * </p>
-     * 
-     * @return True if all siblings have the same parent.
-     */
-    private boolean testSameParent() {
-        for (RenderComponentPhase sibling : siblings) {
-            assert parent == sibling.parent;
-        }
-        return true;
-    }
-    
-    /**
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhaseBase#recycle()
+     * {@inheritDoc}
      */
     @Override
     protected void recycle() {
         super.recycle();
-        parent = null;
-        siblings = null;
-        predecessors = null;
+        renderParent = null;
+        pendingChildren = null;
     }
 
     /**
      * Create a new lifecycle phase processing task for finalizing a component.
-     * 
-     * @param component the component instance that should be updated
+     *
+     * @param element the component instance that should be updated
      * @param model top level object containing the data
+     * @param path Path to the component relative to its parent component
+     * @param refreshPaths list of paths to run lifecycle on when executing a refresh lifecycle
+     * @param renderParent The parent component
+     * @param pendingChildren The number of child rendering phases to expect to be queued for
+     * processing before this phase
      */
-    protected void prepare(Component component, Object model, int index,
-            FinalizeComponentPhase finalizer, RenderComponentPhase parent,
-            List<RenderComponentPhase> siblings) {
-        super.prepare(component, model, index, finalizer == null
-                ? Collections.<ViewLifecyclePhase> emptyList()
-                : Collections.<ViewLifecyclePhase> singletonList(finalizer));
-        this.parent = parent;
-        this.siblings = siblings;
-        assert testSameParent();
+    protected void prepare(LifecycleElement element, Object model, String path, List<String> refreshPaths,
+            Component parentComponent, RenderComponentPhase renderParent, Set<String> pendingChildren) {
+        super.prepare(element, model, path, refreshPaths, parentComponent, null);
+
+        this.renderParent = renderParent;
+        this.pendingChildren = pendingChildren;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase#getViewPhase()
+     * {@inheritDoc}
+     *
+     * @return UifConstants.ViewPhases.RENDER
      */
     @Override
     public String getViewPhase() {
@@ -89,7 +77,9 @@ public class RenderComponentPhase extends ViewLifecyclePhaseBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase#getStartViewStatus()
+     * {@inheritDoc}
+     *
+     * @return UifConstants.ViewStatus.FINAL
      */
     @Override
     public String getStartViewStatus() {
@@ -97,7 +87,9 @@ public class RenderComponentPhase extends ViewLifecyclePhaseBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase#getEndViewStatus()
+     * {@inheritDoc}
+     *
+     * @return UifConstants.ViewStatus.RENDERED
      */
     @Override
     public String getEndViewStatus() {
@@ -105,64 +97,83 @@ public class RenderComponentPhase extends ViewLifecyclePhaseBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase#getEventToNotify()
+     * {@inheritDoc}
      */
     @Override
     public LifecycleEvent getEventToNotify() {
         return null;
     }
-    
+
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhaseBase#getPredecessors()
+     * Verify that the all pending children have completed.
      */
     @Override
-    public List<? extends ViewLifecyclePhase> getPredecessors() {
-        if (predecessors == null) {
-            return super.getPredecessors();
-        } else {
-            return predecessors;
+    protected void verifyCompleted() {
+        if (pendingChildren != null) {
+            ViewLifecycle.reportIllegalState("Render phase is not complete, children are still pending "
+                    + pendingChildren + "\n" + this);
         }
     }
 
     /**
      * Perform rendering on the given component.
-     * 
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhaseBase#initializePendingTasks(java.util.Queue)
+     *
+     * {@inheritDoc}
      */
     @Override
-    protected void initializePendingTasks(Queue<ViewLifecycleTask> tasks) {
-        Component component = getComponent();
-        if (component == null || !component.isRender() || component.getTemplate() == null) {
+    protected void initializePendingTasks(Queue<ViewLifecycleTask<?>> tasks) {
+        if (!(getElement() instanceof Component)) {
             return;
         }
-        
-        tasks.add(LifecycleTaskFactory.getTask(RenderComponentTask.class,this));
+
+        Component component = (Component) getElement();
+        if (!component.isRender() || component.getTemplate() == null) {
+            return;
+        }
+
+        tasks.add(LifecycleTaskFactory.getTask(RenderComponentTask.class, this));
     }
 
     /**
-     * Define all nested lifecycle components, and component prototypes, as successors.
-     * 
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhaseBase#initializeSuccessors(java.util.List)
+     * {@inheritDoc}
      */
     @Override
     protected void initializeSuccessors(Queue<ViewLifecyclePhase> successors) {
-        if (parent == null) {
+        if (renderParent == null || renderParent.pendingChildren == null) {
+            trace(renderParent == null ? "no-parent" : "no-children");
             return;
         }
 
-        siblings.remove(this);
-        for (RenderComponentPhase sibling : siblings) {
-            if (!sibling.isProcessed()) {
-                return;
+        synchronized (renderParent) {
+            // InitializeSuccessors is invoked right after processing.
+            // Once the last sibling is processed, then queue the parent phase as a successor.
+            if (!renderParent.pendingChildren.remove(getParentPath())) {
+                ViewLifecycle.reportIllegalState("Render phase isn't a pending child\n"
+                        + this + "\nRender Parent: " + renderParent);
+            }
+
+            trace("remove-child " + renderParent.getElement().getId() + " " +
+                    renderParent.getViewPath() + " " + getParentPath() + " "
+                    + renderParent.pendingChildren);
+
+            if (renderParent.pendingChildren.isEmpty()) {
+                successors.add(renderParent);
+                renderParent.trace("pend-rend");
+                
+                Set<String> toRecycle = renderParent.pendingChildren;
+                renderParent.pendingChildren = null;
+                RecycleUtils.recycle(toRecycle);
             }
         }
-        assert siblings.isEmpty() : siblings;
+    }
 
-        List<ViewLifecyclePhase> parentPredecessors = new ArrayList<ViewLifecyclePhase>(parent.getPredecessors());
-        parentPredecessors.add(this);
-        parent.predecessors = Collections.unmodifiableList(parentPredecessors);
-        
-        successors.add(parent);
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected ViewLifecyclePhase initializeSuccessor(LifecycleElement nestedElement, String nestedPath,
+            Component parent) {
+        return null;
     }
 
 }

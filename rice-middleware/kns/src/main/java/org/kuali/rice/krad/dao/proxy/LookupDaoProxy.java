@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,26 +56,19 @@ public class LookupDaoProxy implements LookupDao {
             if (StringUtils.isNotEmpty(dataSourceName)) {
                 if (lookupDaoValues.get(dataSourceName) != null) {
                     return lookupDaoValues.get(dataSourceName);
-                } else {         
-                    if (!LegacyUtils.useLegacy(clazz)) {
-                        throw new IllegalStateException(this.getClass() + " called with non-legacy class: " + clazz);
-					} else {
-						LookupDaoOjb classSpecificLookupDaoOjb = new LookupDaoOjb();
-                        classSpecificLookupDaoOjb.setJcdAlias(dataSourceName);
-                        classSpecificLookupDaoOjb.setPersistenceStructureService(
-                                KNSServiceLocator.getPersistenceStructureService());
-                        classSpecificLookupDaoOjb.setDateTimeService(CoreApiServiceLocator.getDateTimeService());
-                        classSpecificLookupDaoOjb.setDataDictionaryService(
-                                KRADServiceLocatorWeb.getDataDictionaryService());
-                        lookupDaoValues.put(dataSourceName, classSpecificLookupDaoOjb);
-                        return classSpecificLookupDaoOjb;
-                    }
+                } else {
+                    LookupDaoOjb classSpecificLookupDaoOjb = new LookupDaoOjb();
+                    classSpecificLookupDaoOjb.setJcdAlias(dataSourceName);
+                    classSpecificLookupDaoOjb.setPersistenceStructureService(
+                            KNSServiceLocator.getPersistenceStructureService());
+                    classSpecificLookupDaoOjb.setDateTimeService(CoreApiServiceLocator.getDateTimeService());
+                    classSpecificLookupDaoOjb.setDataDictionaryService(
+                            KRADServiceLocatorWeb.getDataDictionaryService());
+                    lookupDaoValues.put(dataSourceName, classSpecificLookupDaoOjb);
+                    return classSpecificLookupDaoOjb;
                 }
 
             }
-        }
-        if (!LegacyUtils.useLegacy(clazz)) {
-            throw new IllegalStateException(this.getClass() + " called with non-legacy class: " + clazz);
         }
         return lookupDaoOjb;
     }

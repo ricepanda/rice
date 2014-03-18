@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ public final class RiceKeyConstants {
     public static final String ERROR_REQUIRED = "error.required";
     public static final String ERROR_REQUIRED_FOR_US = "error.requiredForUs";
     public static final String ERROR_DATE = "error.invalidDate";
+    public static final String ERROR_TIME = "error.invalidTime";
     public static final String ERROR_DATE_TIME = "error.invalidDateTime";
     public static final String ERROR_NUMBER = "error.invalidNumber";
     public static final String ERROR_BOOLEAN = "error.invalidBoolean";
@@ -168,6 +169,7 @@ public final class RiceKeyConstants {
     public static final String MESSAGE_REVERT_UNNECESSARY = "message.revert.unnecessary";
     public static final String MESSAGE_DISAPPROVAL_NOTE_TEXT_INTRO = "message.disapprove.noteTextIntro";
     public static final String MESSAGE_RECALL_NOTE_TEXT_INTRO = "message.recall.noteTextIntro";
+    public static final String MESSAGE_RECALL_NOT_SUPPORTED= "message.recall.not.supported";
 
     public static final String INFO_LOOKUP_RESULTS_DISPLAY_ALL = "lookup.results.found.display.all";
     public static final String INFO_LOOKUP_RESULTS_DISPLAY_ONE = "lookup.results.found.display.one";
@@ -178,6 +180,7 @@ public final class RiceKeyConstants {
 
     public static final String MESSAGE_DELETE = "message.delete";
     public static final String MESSAGE_DELETED = "mesage.deleted";
+    public static final String MESSAGE_DELETE_ACTION_NOT_SUPPORTED = "delete.action.not.supported";
 
     public static final String QUESTION_DISAPPROVE_DOCUMENT = "document.question.disapprove.text";
     public static final String QUESTION_RECALL_DOCUMENT = "document.question.recall.text";
@@ -215,7 +218,7 @@ public final class RiceKeyConstants {
     public static final String ERROR_POPULATE_GROUP = "error.populate.group";
     public static final String ERROR_ACTIVE_TO_DATE_BEFORE_FROM_DATE = "error.active.todate.before.fromdate";
     public static final String ERROR_NOT_EMPLOYMENT_AFFILIATION_TYPE = "error.not.employment.affilationType";
-    public static final String ERROR_NOT_UNIQUE_AFFILIATION_TYPE_PER_CAMPUE =
+    public static final String ERROR_NOT_UNIQUE_AFFILIATION_TYPE_PER_CAMPUS =
             "error.not.unique.affilationType.per.campus";
     public static final String ERROR_ROLE_QUALIFIER_REQUIRED = "error.role.qualifier.required";
     public static final String MESSAGE_SEND_AD_HOC_REQUESTS_SUCCESSFUL = "message.sendAdHocRequests.successful";
@@ -245,6 +248,8 @@ public final class RiceKeyConstants {
             "info.wildcards.and.operators.treated.literally";
     public static final String ERROR_DOCUMENT_IDENTITY_MANAGEMENT_PERSON_QUALIFIER_VALUE_NOT_UNIQUE =
             "error.document.identityManagementPerson.qualifier.valueNotUnique";
+    public static final String ERROR_NEGATIVES_NOT_ALLOWED_ON_FIELD =
+            "error.negatives.not.allowed.on.field";
 
     // PeopleFlow
     public static final String PEOPLEFLOW_DUPLICATE = "peopleFlow.duplicate";

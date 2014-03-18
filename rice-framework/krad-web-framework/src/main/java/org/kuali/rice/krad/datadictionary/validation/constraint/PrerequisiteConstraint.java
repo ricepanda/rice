@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,7 @@ import java.util.List;
 /**
  * Prerequisite constraints require that some other attribute be non-empty in order for the constraint to be valid.
  * So, a 7-digit US phone number might have a prerequisite of an area code, or an address street2 might have a
- * prerequisite
- * that street1 is non-empty.
+ * prerequisite that street1 is non-empty.
  *
  * @author Kuali Rice Team (rice.collab@kuali.org)
  * @since 1.1

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -51,9 +51,9 @@
         </bean>
 				<bean parent="GenericTextField" p:progressiveRenderAndRefresh="true" p:maxLength="1" p:propertyName="field47" />
 				<bean parent="GenericTextField" p:progressiveRenderAndRefresh="true"
-          p:progressiveRender="field47 matches '^[aA]$'" p:propertyName="field48" />
+          p:progressiveRender="field47 ne null and field47 matches '^[aA]$'" p:propertyName="field48" />
 				<bean parent="GenericTextField" p:progressiveRenderAndRefresh="true"
-          p:progressiveRender="field47 matches '^[bB]$'" p:propertyName="field49" />
+          p:progressiveRender="field47 ne null and field47 matches '^[bB]$'" p:propertyName="field49" />
 			</list>
 		</property>
 	</bean>

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ public class CountyServiceImpl implements CountyService {
         map.put("stateCode", stateCode);
         map.put("code", code);
 
-        return CountyBo.to(dataObjectService.find(CountyBo.class, new CompoundKey(map)));
+        return CountyBo.to(getDataObjectService().find(CountyBo.class, new CompoundKey(map)));
     }
 
     @Override
@@ -72,7 +72,7 @@ public class CountyServiceImpl implements CountyService {
         map.put("stateCode", stateCode);
         map.put("active", Boolean.TRUE);
 
-        QueryResults<CountyBo> countyBos = dataObjectService.findMatching(CountyBo.class,
+        QueryResults<CountyBo> countyBos = getDataObjectService().findMatching(CountyBo.class,
                 QueryByCriteria.Builder.andAttributes(map).build());
 
         if (countyBos == null) {
@@ -103,7 +103,7 @@ public class CountyServiceImpl implements CountyService {
     public CountyQueryResults findCounties(QueryByCriteria queryByCriteria) throws RiceIllegalArgumentException {
         incomingParamCheck(queryByCriteria, "queryByCriteria");
 
-        QueryResults<CountyBo> results = dataObjectService.findMatching(CountyBo.class, queryByCriteria);
+        QueryResults<CountyBo> results = getDataObjectService().findMatching(CountyBo.class, queryByCriteria);
 
         CountyQueryResults.Builder builder = CountyQueryResults.Builder.create();
         builder.setMoreResultsAvailable(results.isMoreResultsAvailable());

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,12 +27,11 @@ import org.kuali.rice.kim.api.services.KimApiServiceLocator;
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
 import org.kuali.rice.krad.uif.UifConstants;
-import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.component.MethodInvokerConfig;
 import org.kuali.rice.krad.uif.field.AttributeQuery;
 import org.kuali.rice.krad.uif.field.InputField;
-import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.util.ComponentFactory;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.util.ScriptUtils;
 import org.kuali.rice.krad.uif.widget.QuickFinder;
 
@@ -42,7 +41,7 @@ import org.kuali.rice.krad.uif.widget.QuickFinder;
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 @BeanTag(name = "kimPersonControl-bean", parent = "Uif-KimPersonControl")
-public class UserControl extends TextControl implements FilterableLookupCriteriaControl {
+public class UserControl extends TextControlBase implements FilterableLookupCriteriaControl {
     private static final long serialVersionUID = 7468340793076585869L;
 
     private String principalIdPropertyName;
@@ -54,11 +53,10 @@ public class UserControl extends TextControl implements FilterableLookupCriteria
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#performApplyModel(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performApplyModel(Object model, Component parent) {
+    public void performApplyModel(Object model, LifecycleElement parent) {
         super.performApplyModel(model, parent);
 
         if (!(parent instanceof InputField)) {
@@ -124,7 +122,7 @@ public class UserControl extends TextControl implements FilterableLookupCriteria
     }
 
     /**
-     * @see FilterableLookupCriteriaControl#filterSearchCriteria(String, java.util.Map)
+     * {@inheritDoc}
      */
     @Override
     public Map<String, String> filterSearchCriteria(String propertyName, Map<String, String> searchCriteria) {
@@ -153,7 +151,6 @@ public class UserControl extends TextControl implements FilterableLookupCriteria
     /**
      * Configures the field's quickfinder for a user lookup
      *
-     * @param view view instance that contains the field
      * @param model object containing the view's data
      * @param field field instance the quickfinder should be associated with
      */
@@ -168,7 +165,6 @@ public class UserControl extends TextControl implements FilterableLookupCriteria
         if (quickFinder == null) {
             quickFinder = ComponentFactory.getQuickFinder();
             field.setQuickfinder(quickFinder);
-            ViewLifecycle.spawnSubLifecyle(model, quickFinder, field);
         }
 
         if (StringUtils.isBlank(quickFinder.getDataObjectClassName())) {
@@ -246,19 +242,5 @@ public class UserControl extends TextControl implements FilterableLookupCriteria
      */
     public void setPersonObjectPropertyName(String personObjectPropertyName) {
         this.personObjectPropertyName = personObjectPropertyName;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        UserControl userControlCopy = (UserControl) component;
-
-        userControlCopy.setPrincipalIdPropertyName(this.principalIdPropertyName);
-        userControlCopy.setPersonNamePropertyName(this.personNamePropertyName);
-        userControlCopy.setPersonObjectPropertyName(this.personObjectPropertyName);
     }
 }

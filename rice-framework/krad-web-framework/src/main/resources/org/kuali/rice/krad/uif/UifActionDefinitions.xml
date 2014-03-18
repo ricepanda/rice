@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -121,7 +121,7 @@
         p:actionLabel="Expand All">
     <property name="cssClasses">
       <list>
-        <value>uif-expandDisclosuresButton</value>
+        <value>btn btn-default btn-xs</value>
       </list>
     </property>
   </bean>
@@ -131,7 +131,7 @@
         p:actionLabel="Collapse All">
     <property name="cssClasses">
       <list>
-        <value>uif-collapseDisclosuresButton</value>
+        <value>btn btn-default btn-xs</value>
       </list>
     </property>
   </bean>

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,9 @@ import org.kuali.rice.krad.uif.field.Field;
 import org.kuali.rice.krad.uif.field.FieldGroup;
 import org.kuali.rice.krad.uif.field.InputField;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleUtils;
 import org.kuali.rice.krad.uif.util.ComponentUtils;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.util.ObjectPropertyUtils;
 import org.kuali.rice.krad.uif.view.ExpressionEvaluator;
 import org.kuali.rice.krad.uif.view.View;
@@ -82,7 +84,7 @@ import org.kuali.rice.krad.web.form.UifFormBase;
 @BeanTags({@BeanTag(name = "lightTableGroup-bean", parent = "Uif-LightTableGroup"),
         @BeanTag(name = "lightTableSection-bean", parent = "Uif-LightTableSection"),
         @BeanTag(name = "lightTableSubSection-bean", parent = "Uif-LightTableSubSection")})
-public class LightTable extends Group implements DataBinding {
+public class LightTable extends GroupBase implements DataBinding {
     private static final long serialVersionUID = -8930885219866835711L;
 
     private static final String VALUE_TOKEN = "@v@";
@@ -176,7 +178,7 @@ public class LightTable extends Group implements DataBinding {
             ((Group) item).getLayoutManager().setId(ID_TOKEN + ((Group) item).getLayoutManager().getId() + ID_TOKEN);
         }
 
-        expressionMap = addChildExpressions(item.getComponentsForLifecycle(), expressionMap);
+        expressionMap = addChildExpressions(ViewLifecycleUtils.getElementsForLifecycle(item).values(), expressionMap);
 
         for (String name : toRemove) {
             item.getExpressionGraph().remove(name);
@@ -243,9 +245,9 @@ public class LightTable extends Group implements DataBinding {
      * @param expressionMap the map to add expressions to
      * @return the map with child component expressions added
      */
-    protected Map<String, String> addChildExpressions(List<? extends Component> components,
+    protected Map<String, String> addChildExpressions(Collection<? extends LifecycleElement> components,
             Map<String, String> expressionMap) {
-        for (Component comp : components) {
+        for (LifecycleElement comp : components) {
             if (comp != null && (comp instanceof Action
                     || comp instanceof Image
                     || comp instanceof Message
@@ -257,7 +259,7 @@ public class LightTable extends Group implements DataBinding {
                     || comp instanceof CheckboxControl
                     || comp instanceof TextControl
                     || comp instanceof SelectControl)) {
-                expressionMap = buildExpressionMap(comp, expressionMap);
+                expressionMap = buildExpressionMap((Component) comp, expressionMap);
             }
         }
 
@@ -268,7 +270,7 @@ public class LightTable extends Group implements DataBinding {
      * performFinalize override corrects the binding path for the DataFields and turns off rendering on some components
      */
     @Override
-    public void performFinalize(Object model, Component parent) {
+    public void performFinalize(Object model, LifecycleElement parent) {
         super.performFinalize(model, parent);
 
         headerLabels = new ArrayList<Label>();
@@ -301,24 +303,12 @@ public class LightTable extends Group implements DataBinding {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getComponentsForLifecycle()
-     */
-    @Override
-    public List<Component> getComponentsForLifecycle() {
-        List<Component> components = super.getComponentsForLifecycle();
-
-        components.add(richTable);
-        return components;
-    }
-
-    /**
      * Build the rows from the rowTemplate passed in.  This method uses regex to locate pieces of the row that need
      * to be replaced with row specific content per row.
      *
      * @param view the view instance the table is being built within
      * @param rowTemplate the first row of the collection in html generated from the ftl
      * @param model the model
-     * @return the full set of rows for the table in html(String) to be used by the calling ftl
      */
     public void buildRows(View view, String rowTemplate, UifFormBase model) {
         if (StringUtils.isBlank(rowTemplate)) {
@@ -339,7 +329,7 @@ public class LightTable extends Group implements DataBinding {
         Pattern idPattern = Pattern.compile(ID_TOKEN + "(.*?)" + ID_TOKEN);
         Pattern expressionPattern = Pattern.compile(EXPRESSION_TOKEN + "(.*?)" + EXPRESSION_TOKEN);
 
-        ExpressionEvaluator expressionEvaluator = view.getViewHelperService().getExpressionEvaluator();
+        ExpressionEvaluator expressionEvaluator = ViewLifecycle.getExpressionEvaluator();
         expressionEvaluator.initializeEvaluationContext(model);
 
         int lineIndex = 0;
@@ -524,21 +514,20 @@ public class LightTable extends Group implements DataBinding {
         }
 
         //for readOnly DataFields replace the value marked with the value on the current object
+        // TODO: this needs to go through registered property editors
         row = row.replaceAll(VALUE_TOKEN + originalId + VALUE_TOKEN, currentValue.toString());
         currentColumnValue = currentValue.toString();
 
-        if (((DataField) item).getInquiry() != null
-                && ((DataField) item).getInquiry().getInquiryParameters() != null
-                && ((DataField) item).getInquiry().getInquiryLink() != null) {
+        Inquiry dataFieldInquiry = ((DataField) item).getInquiry();
+        if (dataFieldInquiry != null && dataFieldInquiry.getInquiryParameters() != null
+                && dataFieldInquiry.getInquiryLink() != null) {
 
-            String inquiryLinkId = ((DataField) item).getInquiry().getInquiryLink().getBaseId().replace(ID_TOKEN, "")
-                    + UifConstants.IdSuffixes.LINE
-                    + index;
+            String inquiryLinkId = dataFieldInquiry.getInquiryLink().getId().replace(ID_TOKEN, "")
+                    + UifConstants.IdSuffixes.LINE + index;
 
-            //process each Inquiry link parameter by replacing each in the inquiry url with their
-            //current value
-            for (String key : ((DataField) item).getInquiry().getInquiryParameters().keySet()) {
-                String name = ((DataField) item).getInquiry().getInquiryParameters().get(key);
+            // process each Inquiry link parameter by replacing each in the inquiry url with their current value
+            for (String key : dataFieldInquiry.getInquiryParameters().keySet()) {
+                String name = dataFieldInquiry.getInquiryParameters().get(key);
 
                 //omit the binding prefix fromt he key to get the path relative to the current object
                 key = key.replace(((DataField) item).getBindingInfo().getBindByNamePrefix() + ".", "");
@@ -548,7 +537,6 @@ public class LightTable extends Group implements DataBinding {
                     row = row.replaceFirst("(" + inquiryLinkId + "(.|\\s)*?" + name + ")=.*?([&|\"])",
                             "$1=" + value + "$3");
                 }
-
             }
         }
 
@@ -773,49 +761,5 @@ public class LightTable extends Group implements DataBinding {
      */
     protected void setCurrentColumnValue(String currentColumnValue) {
         this.currentColumnValue = currentColumnValue;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        LightTable lightTableCopy = (LightTable) component;
-
-        lightTableCopy.setPropertyName(this.propertyName);
-
-        if (this.bindingInfo != null) {
-            lightTableCopy.setBindingInfo((BindingInfo) this.bindingInfo.copy());
-        }
-
-        if (headerLabels != null) {
-            List<Label> headerLabelsCopy = ComponentUtils.copy(headerLabels);
-            lightTableCopy.setHeaderLabels(headerLabelsCopy);
-        }
-
-        if (this.richTable != null) {
-            lightTableCopy.setRichTable((RichTable) this.richTable.copy());
-        }
-
-        if (expressionConversionMap != null) {
-            lightTableCopy.setExpressionConversionMap(new HashMap<String, String>(expressionConversionMap));
-        }
-
-        if (renderIdExpressionMap != null) {
-            lightTableCopy.setRenderIdExpressionMap(new HashMap<String, String>(renderIdExpressionMap));
-        }
-
-        if (initialComponentIds != null) {
-            lightTableCopy.setInitialComponentIds(new ArrayList<String>(initialComponentIds));
-        }
-
-        if (this.conditionalRowCssClasses != null) {
-            lightTableCopy.setConditionalRowCssClasses(new HashMap<String, String>(this.conditionalRowCssClasses));
-        }
-
-        lightTableCopy.setEmptyTable(this.emptyTable);
-        lightTableCopy.setCurrentColumnValue(this.currentColumnValue);
     }
 }

@@ -1,6 +1,6 @@
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -136,7 +136,7 @@
   </bean>
 
   <bean id="notificationPeopleFlowActionTypeService"
-        class="org.kuali.rice.krms.impl.peopleflow.PeopleFlowActionTypeService" factory-method="getInstance">
+        class="org.kuali.rice.krms.impl.peopleflow.PeopleFlowActionTypeService">
     <constructor-arg>
       <value>NOTIFICATION</value>
     </constructor-arg>
@@ -144,7 +144,7 @@
   </bean>
 
   <bean id="approvalPeopleFlowActionTypeService"
-        class="org.kuali.rice.krms.impl.peopleflow.PeopleFlowActionTypeService" factory-method="getInstance">
+        class="org.kuali.rice.krms.impl.peopleflow.PeopleFlowActionTypeService">
     <constructor-arg>
       <value>APPROVAL</value>
     </constructor-arg>

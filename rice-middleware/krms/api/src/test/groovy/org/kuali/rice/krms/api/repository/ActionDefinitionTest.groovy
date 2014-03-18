@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,13 @@
  */
 package org.kuali.rice.krms.api.repository
 
-import java.util.List
+import org.junit.Assert
+import org.junit.Test
+import org.kuali.rice.krms.api.repository.action.ActionDefinition
 
 import javax.xml.bind.JAXBContext
 import javax.xml.bind.Marshaller
 import javax.xml.bind.Unmarshaller
-
-import org.junit.Assert
-import org.junit.Test
-import org.kuali.rice.krms.api.repository.action.ActionDefinition;
-
 
 /**
  * This test is for the Action Definition!
@@ -125,8 +122,8 @@ class ActionDefinitionTest {
 		ActionDefinition.Builder.create(ACTION_ID_1, ACTION_NAME_1, NAMESPACE, "  	", RULE_ID_1, SEQUENCE_1)
 	}
 
-	@Test(expected=IllegalArgumentException.class)
-	void test_ActionDefinition_Builder_create_fail_null_rule_id() {
+	@Test
+	void test_ActionDefinition_Builder_create_null_rule_id() {
 		ActionDefinition.Builder.create(ACTION_ID_1, ACTION_NAME_1, NAMESPACE, TYPE_ID, null,  SEQUENCE_1)
 	}
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
 import org.kuali.rice.krad.uif.component.ClientSideState;
 import org.kuali.rice.krad.uif.component.Component;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 
 /**
  * Decorates a group with collapse/expand functionality
@@ -29,8 +30,10 @@ import org.kuali.rice.krad.uif.component.Component;
 public class Disclosure extends WidgetBase {
     private static final long serialVersionUID = 1238789480161901850L;
 
-    private String collapseImageSrc;
-    private String expandImageSrc;
+    private String collapsedIconClass;
+    private String expandedIconClass;
+
+    private boolean renderIcon;
 
     private int animationSpeed;
 
@@ -38,66 +41,84 @@ public class Disclosure extends WidgetBase {
     private boolean defaultOpen;
     private boolean ajaxRetrievalWhenOpened;
 
-    private boolean renderImage;
-
     public Disclosure() {
         super();
 
         defaultOpen = true;
-        renderImage = true;
-
+        renderIcon = true;
     }
 
     /**
      * Sets forceSessionPersistence when using the ajax retrieval option
      *
-     * @see Component#performApplyModel(org.kuali.rice.krad.uif.view.View, Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performApplyModel(Object model, Component parent) {
-        super.performFinalize(model, parent);
+    public void performApplyModel(Object model, LifecycleElement parent) {
+        super.performApplyModel(model, parent);
 
-        if(ajaxRetrievalWhenOpened){
-            parent.setForceSessionPersistence(true);
+        if (parent instanceof Component && ajaxRetrievalWhenOpened) {
+            ((Component) parent).setForceSessionPersistence(true);
         }
     }
 
     /**
-     * Path to the images that should be displayed to collapse the group
+     * Class for the icon that should be rendered when the disclosure group is disclosed.
      *
-     * @return image path
+     * <p>Note this is only applicable when {@link #isRenderIcon()} is true</p>
+     *
+     * @return class for collapsed icon
      */
-    @BeanTagAttribute(name="CollapseImageSrc")
-    public String getCollapseImageSrc() {
-        return this.collapseImageSrc;
+    public String getCollapsedIconClass() {
+        return collapsedIconClass;
     }
 
     /**
-     * Setter for the collapse image path
-     *
-     * @param collapseImageSrc
+     * Setter for {@link Disclosure#getCollapsedIconClass()}.
+     * 
+     * @param collapsedIconClass property value
      */
-    public void setCollapseImageSrc(String collapseImageSrc) {
-        this.collapseImageSrc = collapseImageSrc;
+    public void setCollapsedIconClass(String collapsedIconClass) {
+        this.collapsedIconClass = collapsedIconClass;
     }
 
     /**
-     * Path to the images that should be displayed to expand the group
+     * Class for the icon that should be rendered when the disclosure group is expanded.
      *
-     * @return image path
+     * <p>Note this is only applicable when {@link #isRenderIcon()} is true</p>
+     *
+     * @return class for expanded icon
      */
-    @BeanTagAttribute(name="expandImageSrc")
-    public String getExpandImageSrc() {
-        return this.expandImageSrc;
+    public String getExpandedIconClass() {
+        return expandedIconClass;
     }
 
     /**
-     * Setter for the expand image path
-     *
-     * @param expandImageSrc
+     * Setter for {@link Disclosure#getExpandedIconClass()}.
+     * 
+     * @param expandedIconClass property value
      */
-    public void setExpandImageSrc(String expandImageSrc) {
-        this.expandImageSrc = expandImageSrc;
+    public void setExpandedIconClass(String expandedIconClass) {
+        this.expandedIconClass = expandedIconClass;
+    }
+
+    /**
+     * Indicates whether the expanded and collapsed icons should be rendered for the disclosure.
+     *
+     * @return boolean true if icons should be rendered, false if not
+     */
+    public boolean isRenderIcon() {
+        return renderIcon;
+    }
+
+    /**
+     * Setter for {@link #isRenderIcon()}.
+     * 
+     * @param renderIcon property value
+     */
+    public void setRenderIcon(boolean renderIcon) {
+        
+        this.renderIcon = renderIcon;
     }
 
     /**
@@ -106,7 +127,7 @@ public class Disclosure extends WidgetBase {
      *
      * @return animation speed
      */
-    @BeanTagAttribute(name="animationSpeed")
+    @BeanTagAttribute(name = "animationSpeed")
     public int getAnimationSpeed() {
         return this.animationSpeed;
     }
@@ -126,7 +147,7 @@ public class Disclosure extends WidgetBase {
      * @return true if group should be initially open, false if it
      *         should be closed
      */
-    @BeanTagAttribute(name="defaultOpen")
+    @BeanTagAttribute(name = "defaultOpen")
     public boolean isDefaultOpen() {
         return this.defaultOpen;
     }
@@ -158,42 +179,5 @@ public class Disclosure extends WidgetBase {
      */
     public void setAjaxRetrievalWhenOpened(boolean ajaxRetrievalWhenOpened) {
         this.ajaxRetrievalWhenOpened = ajaxRetrievalWhenOpened;
-    }
-
-    /**
-     * Indicates whether the expand/collapse image should be rendered for the closure, if set to false only
-     * the group title will be clickable
-     *
-     * @return true to render the expand/colapse image false to not
-     */
-    @BeanTagAttribute(name="renderImage")
-    public boolean isRenderImage() {
-        return renderImage;
-    }
-
-    /**
-     * Setter for the render expand/collapse image indicator
-     *
-     * @param renderImage
-     */
-    public void setRenderImage(boolean renderImage) {
-        this.renderImage = renderImage;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        Disclosure disclosureCopy = (Disclosure) component;
-
-        disclosureCopy.setAnimationSpeed(this.animationSpeed);
-        disclosureCopy.setCollapseImageSrc(this.collapseImageSrc);
-        disclosureCopy.setDefaultOpen(this.defaultOpen);
-        disclosureCopy.setAjaxRetrievalWhenOpened(this.ajaxRetrievalWhenOpened);
-        disclosureCopy.setExpandImageSrc(this.expandImageSrc);
-        disclosureCopy.setRenderImage(this.renderImage);
     }
 }

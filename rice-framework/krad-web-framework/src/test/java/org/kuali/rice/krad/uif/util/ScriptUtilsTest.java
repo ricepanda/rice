@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,7 +73,7 @@ public class ScriptUtilsTest extends ProcessLoggingUnitTest {
     public void testConvertToJSValue_numeric() {
         assertEquals("number was not converted to js value as expected", " -1 ", ScriptUtils.convertToJsValue(" -1 "));
         assertEquals("number was not converted to js value as expected", "1.01 ", ScriptUtils.convertToJsValue("1.01 "));
-        assertEquals("string was not converted to js value as expected", "'1.o1 '", ScriptUtils.convertToJsValue("1.o1 "));
+        assertEquals("string was not converted to js value as expected", "\"1.o1 \"", ScriptUtils.convertToJsValue("1.o1 "));
     }
 
     @Test

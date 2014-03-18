@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,30 +15,34 @@
  */
 package org.kuali.rice.kim.impl.permission;
 
-import org.kuali.rice.kim.api.common.attribute.KimAttributeData;
-import org.kuali.rice.kim.api.common.attribute.KimAttributeDataContract;
-import org.kuali.rice.kim.impl.common.attribute.KimAttributeBo;
-import org.kuali.rice.kim.impl.common.attribute.KimAttributeDataBo;
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import org.kuali.rice.kim.api.common.attribute.KimAttributeData;
+import org.kuali.rice.kim.api.common.attribute.KimAttributeDataContract;
+import org.kuali.rice.kim.impl.common.attribute.KimAttributeBo;
+import org.kuali.rice.kim.impl.common.attribute.KimAttributeDataBo;
+import org.kuali.rice.krad.bo.BusinessObject;
+import org.kuali.rice.krad.data.jpa.PortableSequenceGenerator;
+
 /**
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 @Entity
-@Table(name="KRIM_PERM_ATTR_DATA_T")
-public class PermissionAttributeBo extends KimAttributeDataBo implements KimAttributeDataContract {
+@Table(name = "KRIM_PERM_ATTR_DATA_T")
+public class PermissionAttributeBo extends KimAttributeDataBo implements KimAttributeDataContract, BusinessObject {
+    private static final long serialVersionUID = 1L;
 
-    @Id
+    @PortableSequenceGenerator(name = "KRIM_ATTR_DATA_ID_S")
     @GeneratedValue(generator = "KRIM_ATTR_DATA_ID_S")
-    @Column(name="ATTR_DATA_ID")
+    @Id
+    @Column(name = "ATTR_DATA_ID")
     private String id;
 
-    @Column(name="PERM_ID")
+    @Column(name = "PERM_ID")
     private String assignedToId;
 
     @Override
@@ -70,7 +74,6 @@ public class PermissionAttributeBo extends KimAttributeDataBo implements KimAttr
         if (bo == null) {
             return null;
         }
-
         return KimAttributeData.Builder.create(bo).build();
     }
 
@@ -83,7 +86,6 @@ public class PermissionAttributeBo extends KimAttributeDataBo implements KimAttr
         if (im == null) {
             return null;
         }
-
         PermissionAttributeBo bo = new PermissionAttributeBo();
         bo.setId(im.getId());
         bo.setAssignedToId(im.getAssignedToId());
@@ -93,8 +95,10 @@ public class PermissionAttributeBo extends KimAttributeDataBo implements KimAttr
         bo.setKimTypeId(im.getKimTypeId());
         bo.setVersionNumber(im.getVersionNumber());
         bo.setObjectId(im.getObjectId());
-
         return bo;
     }
 
+    @Override
+    public void refresh() {
+    }
 }

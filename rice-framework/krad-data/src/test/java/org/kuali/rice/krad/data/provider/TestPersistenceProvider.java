@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.kuali.rice.krad.data.provider;
 
-import org.kuali.rice.core.api.criteria.LookupCustomizer;
 import org.kuali.rice.core.api.criteria.QueryByCriteria;
 import org.kuali.rice.core.api.criteria.QueryResults;
 import org.kuali.rice.krad.data.PersistenceOption;
@@ -44,13 +43,13 @@ public class TestPersistenceProvider implements PersistenceProvider {
     }
 
     @Override
-    public <T> QueryResults<T> findMatching(Class<T> type, QueryByCriteria queryByCriteria, LookupCustomizer<T> lookupCustomizer) {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
+    public void delete(Object dataObject) {
+        //To change body of implemented methods use File | Settings | File Templates.
     }
 
     @Override
-    public void delete(Object dataObject) {
-        //To change body of implemented methods use File | Settings | File Templates.
+    public <T> T copyInstance(T dataObject) {
+        return null;
     }
 
     @Override

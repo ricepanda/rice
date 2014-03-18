@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,9 @@
  */
 package org.kuali.rice.krad.uif.field;
 
-import org.junit.Test;
-import org.kuali.rice.krad.uif.component.Component;
-import org.kuali.rice.krad.uif.element.Label;
-import org.kuali.rice.krad.uif.element.Message;
-import org.kuali.rice.krad.uif.view.View;
+import static junit.framework.Assert.assertEquals;
 
-import static junit.framework.Assert.*;
-import static org.mockito.Mockito.*;
+import org.junit.Test;
 
 public class DataFieldTest {
     @Test
@@ -34,7 +29,7 @@ public class DataFieldTest {
         // create mock objects for view, model, and component
         String defaultValue = "default";
 
-        DataField dataField = new DataField();
+        DataField dataField = new DataFieldBase();
         dataField.setDefaultValue(defaultValue);
         assertEquals(defaultValue, dataField.getDefaultValue());
     }
@@ -50,7 +45,7 @@ public class DataFieldTest {
         defaultValues[0] = new String("A");
         defaultValues[1] = new String("B");
 
-        DataField dataField = new DataField();
+        DataField dataField = new DataFieldBase();
         dataField.setDefaultValues(defaultValues);
         assertEquals(defaultValues, dataField.getDefaultValues());
     }

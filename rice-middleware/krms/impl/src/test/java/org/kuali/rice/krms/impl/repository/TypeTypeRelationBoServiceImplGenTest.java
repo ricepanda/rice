@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,12 @@ package org.kuali.rice.krms.impl.repository;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.kuali.rice.krad.service.BusinessObjectService;
+import org.kuali.rice.krad.data.DataObjectService;
 import org.kuali.rice.krms.api.repository.TypeTypeRelationGenTest;
 import org.kuali.rice.krms.api.repository.type.KrmsTypeDefinition;
 import org.kuali.rice.krms.api.repository.typerelation.TypeTypeRelation;
-import static org.mockito.Mockito.*;
+
+import static org.mockito.Mockito.mock;
 
 /**
  * @author Kuali Rice Team (rice.collab@kuali.org)
@@ -49,7 +50,7 @@ public final class TypeTypeRelationBoServiceImplGenTest {
     @Before
     public void setUp() {
         typeTypeRelationBoServiceImpl = new TypeTypeRelationBoServiceImpl();
-        typeTypeRelationBoServiceImpl.setBusinessObjectService(mock(BusinessObjectService.class));
+        typeTypeRelationBoServiceImpl.setDataObjectService(mock(DataObjectService.class));
     }
 
     @Test(expected = java.lang.IllegalArgumentException.class)
@@ -120,4 +121,8 @@ public final class TypeTypeRelationBoServiceImplGenTest {
         typeTypeRelation = typeTypeRelationBoServiceImpl.createTypeTypeRelation(def);
     }
 
+    void createTypeTypeRelationGeneratedId(KrmsTypeDefinition fromType, KrmsTypeDefinition toType) {
+        TypeTypeRelation def = TypeTypeRelationGenTest.buildFullFKTypeTypeRelationNoId(fromType, toType);
+        typeTypeRelation = typeTypeRelationBoServiceImpl.createTypeTypeRelation(def);
+    }
 }

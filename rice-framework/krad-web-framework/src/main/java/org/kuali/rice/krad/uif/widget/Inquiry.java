@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package org.kuali.rice.krad.uif.widget;
 
 import java.security.GeneralSecurityException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -26,7 +25,6 @@ import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.core.api.CoreApiServiceLocator;
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
-import org.kuali.rice.krad.lookup.LookupUtils;
 import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
 import org.kuali.rice.krad.service.ModuleService;
 import org.kuali.rice.krad.uif.UifConstants;
@@ -38,6 +36,7 @@ import org.kuali.rice.krad.uif.element.Link;
 import org.kuali.rice.krad.uif.field.DataField;
 import org.kuali.rice.krad.uif.field.InputField;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.util.ObjectPropertyUtils;
 import org.kuali.rice.krad.uif.util.ViewModelUtils;
 import org.kuali.rice.krad.uif.view.View;
@@ -63,7 +62,8 @@ public class Inquiry extends WidgetBase {
     private static final long serialVersionUID = -2154388007867302901L;
     private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(Inquiry.class);
 
-    public static final String INQUIRY_TITLE_PREFIX = "title.inquiry.url.value.prependtext";
+    public static final String INQUIRY_TITLE_PREFIX = "title.inquiry.url.actiontext";
+    public static final String INQUIRY_TITLE_POSTFIX = "title.inquiry.url.value.prependtext";
 
     private String baseInquiryUrl;
 
@@ -89,11 +89,10 @@ public class Inquiry extends WidgetBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.widget.WidgetBase#performFinalize(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performFinalize(Object model, Component parent) {
+    public void performFinalize(Object model, LifecycleElement parent) {
         super.performFinalize(model, parent);
 
         if (!isRender()) {
@@ -104,7 +103,9 @@ public class Inquiry extends WidgetBase {
         setRender(false);
 
         // used to determine whether a normal or direct inquiry should be enabled
-        setParentReadOnly(parent.isReadOnly());
+        if (parent instanceof Component) {
+            setParentReadOnly(((Component) parent).isReadOnly());
+        }
 
         // Do checks for inquiry when read only
         if (isParentReadOnly()) {
@@ -174,7 +175,6 @@ public class Inquiry extends WidgetBase {
      * by DirectInquiry.
      * </p>
      *
-     * @param view Container View
      * @param model model
      * @param field The parent Attribute field
      */
@@ -237,6 +237,7 @@ public class Inquiry extends WidgetBase {
             Map<String, String> inquiryParams) {
 
         Properties urlParameters = new Properties();
+        Map<String,String> inquiryKeyValues = new HashMap<String, String>();
 
         urlParameters.setProperty(UifParameters.DATA_OBJECT_CLASS_NAME, inquiryObjectClass.getName());
         urlParameters.setProperty(UifParameters.METHOD_TO_CALL, UifConstants.MethodToCallNames.START);
@@ -284,6 +285,8 @@ public class Inquiry extends WidgetBase {
 
                 // add inquiry parameter to URL
                 urlParameters.put(inquiryParameter.getValue(), parameterValue);
+
+                inquiryKeyValues.put(inquiryParameter.getValue(), parameterValue.toString());
             }
 
             /* build inquiry URL */
@@ -302,9 +305,7 @@ public class Inquiry extends WidgetBase {
             getInquiryLink().setHref(inquiryUrl);
 
             // set inquiry title
-            String linkTitle = createTitleText(inquiryObjectClass);
-            linkTitle = KRADUtils.buildAttributeTitleString(linkTitle, inquiryObjectClass, getInquiryParameters());
-            getInquiryLink().setTitle(linkTitle);
+            getInquiryLink().setTitle(createTitleText(inquiryObjectClass, inquiryKeyValues));
 
             setRender(true);
         }
@@ -360,15 +361,20 @@ public class Inquiry extends WidgetBase {
      * Gets text to prepend to the inquiry link title
      *
      * @param dataObjectClass data object class being inquired into
-     * @return title prepend text
+     * @return inquiry link title
      */
-    public String createTitleText(Class<?> dataObjectClass) {
+    public String createTitleText(Class<?> dataObjectClass, Map<String,String> inquiryKeyValues) {
+        // use manually configured title if exists
+        if (StringUtils.isNotBlank(getTitle())) {
+            return getTitle();
+        }
+
         String titleText = "";
 
-        String titlePrefixProp = CoreApiServiceLocator.getKualiConfigurationService().getPropertyValueAsString(
+        String titlePrefix = CoreApiServiceLocator.getKualiConfigurationService().getPropertyValueAsString(
                 INQUIRY_TITLE_PREFIX);
-        if (StringUtils.isNotBlank(titlePrefixProp)) {
-            titleText += titlePrefixProp + " ";
+        if (StringUtils.isNotBlank(titlePrefix)) {
+            titleText += titlePrefix + " ";
         }
 
         String objectLabel = KRADServiceLocatorWeb.getDataDictionaryService().getDataDictionary().getDataObjectEntry(
@@ -377,21 +383,16 @@ public class Inquiry extends WidgetBase {
             titleText += objectLabel + " ";
         }
 
-        return titleText;
-    }
+        if (StringUtils.isNotBlank(titleText)){
+            String titlePostfix = CoreApiServiceLocator.getKualiConfigurationService().getPropertyValueAsString(
+                    INQUIRY_TITLE_POSTFIX);
+            if (StringUtils.isNotBlank(titlePostfix)) {
+                titleText += titlePostfix + " ";
+            }
+        }
 
-    /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#getComponentsForLifecycle()
-     */
-    @Override
-    public List<Component> getComponentsForLifecycle() {
-        List<Component> components = super.getComponentsForLifecycle();
-
-        components.add(getInquiryLink());
-        components.add(getDirectInquiryAction());
-
-        return components;
-    }
+        return KRADUtils.buildAttributeTitleString(titleText, dataObjectClass, inquiryKeyValues);
+   }
 
     /**
      * Returns the URL for the inquiry for which parameters will be added
@@ -454,6 +455,7 @@ public class Inquiry extends WidgetBase {
      * be sent with the data object class for the request. Note the view id can be alternatively used to uniquely
      * identify the inquiry view
      * </p>
+     * @return view name
      */
     @BeanTagAttribute(name = "viewName")
     public String getViewName() {
@@ -608,39 +610,5 @@ public class Inquiry extends WidgetBase {
      */
     protected void setFieldBindingInfo(BindingInfo fieldBindingInfo) {
         this.fieldBindingInfo = fieldBindingInfo;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        Inquiry inquiryCopy = (Inquiry) component;
-
-        inquiryCopy.setBaseInquiryUrl(this.baseInquiryUrl);
-        inquiryCopy.setDataObjectClassName(this.dataObjectClassName);
-        inquiryCopy.setViewName(this.viewName);
-
-        if (this.inquiryLink != null) {
-            inquiryCopy.setInquiryLink((Link) this.inquiryLink.copy());
-        }
-
-        if (this.directInquiryAction != null) {
-            inquiryCopy.setDirectInquiryAction((Action) this.directInquiryAction.copy());
-        }
-
-        inquiryCopy.setEnableDirectInquiry(this.enableDirectInquiry);
-        inquiryCopy.setAdjustInquiryParameters(this.adjustInquiryParameters);
-        inquiryCopy.setParentReadOnly(this.parentReadOnly);
-
-        if (inquiryParameters != null) {
-            inquiryCopy.setInquiryParameters(new HashMap<String, String>(this.inquiryParameters));
-        }
-
-        if (fieldBindingInfo != null) {
-            inquiryCopy.setFieldBindingInfo((BindingInfo) fieldBindingInfo.copy());
-        }
     }
 }

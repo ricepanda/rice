@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -37,16 +37,18 @@
 		<property name="properties" ref="configProperties" />
 	</bean>
 
-	<bean id="kualiModuleService" class="org.kuali.rice.krad.uif.util.MockKualiModuleService" />
-
 	<bean id="legacyDataAdapter" class="org.kuali.rice.krad.uif.util.MockLegacyDataAdapter" />
 	
 	<bean id="messageService" class="org.kuali.rice.krad.uif.util.MockMessageService" />
 	
 	<bean id="viewDictionaryService" class="org.kuali.rice.krad.uif.util.TestViewDictionaryService" />
 
+	<bean id="parameterService" class="org.kuali.rice.krad.uif.util.MockParameterService" />
+	
+	<bean id="expressionEvaluatorFactory" class="org.kuali.rice.krad.uif.view.DefaultExpressionEvaluatorFactory" />
+
 	<util:list id="uifDictionaryBeans">
-		<value>classpath:/org/kuali/rice/kns_2_4_M2/bo/datadictionary/DataDictionaryBaseTypes.xml</value>
+		<value>classpath:/org/kuali/rice/kns/bo/datadictionary/DataDictionaryBaseTypes.xml</value>
 		<value>classpath:/org/kuali/rice/krad/datadictionary/AdHocRoutePerson.xml</value>
 		<value>classpath:/org/kuali/rice/krad/datadictionary/AdHocRouteWorkgroup.xml</value>
 		<value>classpath:/org/kuali/rice/krad/datadictionary/Attachment.xml</value>
@@ -71,10 +73,10 @@
 		<value>classpath:/org/kuali/rice/krad/uif/UifLayoutManagerDefinitions.xml</value>
 		<value>classpath:/org/kuali/rice/krad/uif/UifLookupDefinitions.xml</value>
 		<value>classpath:/org/kuali/rice/krad/uif/UifMaintenanceDefinitions.xml</value>
+		<value>classpath:/org/kuali/rice/krad/uif/UifMenuDefinitions.xml</value>
 		<value>classpath:/org/kuali/rice/krad/uif/UifRiceDefinitions.xml</value>
 		<value>classpath:/org/kuali/rice/krad/uif/UifViewPageDefinitions.xml</value>
 		<value>classpath:/org/kuali/rice/krad/uif/UifWidgetDefinitions.xml</value>
-		<value>classpath:/UifTestOverrides.xml</value>
 	</util:list>
 
 </beans>

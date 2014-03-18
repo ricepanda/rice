@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,17 @@
  */
 package org.kuali.rice.kim.impl.identity;
 
-import org.kuali.rice.kim.api.identity.CodedAttribute;
-import org.kuali.rice.kim.api.identity.CodedAttributeContract;
-import org.kuali.rice.krad.bo.PersistableBusinessObjectBase;
-import org.kuali.rice.krad.data.jpa.converters.BooleanYNConverter;
-
 import javax.persistence.Column;
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
 
+import org.kuali.rice.kim.api.identity.CodedAttribute;
+import org.kuali.rice.kim.api.identity.CodedAttributeContract;
+import org.kuali.rice.krad.bo.DataObjectBase;
+import org.kuali.rice.krad.data.jpa.converters.BooleanYNConverter;
+
 @MappedSuperclass
-public abstract class CodedAttributeBo extends PersistableBusinessObjectBase implements CodedAttributeContract {
+public abstract class CodedAttributeBo extends DataObjectBase implements CodedAttributeContract {
     private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(CodedAttributeBo.class);
     private static final long serialVersionUID = -5023039880648352464L;
     @Id
@@ -116,6 +116,9 @@ public abstract class CodedAttributeBo extends PersistableBusinessObjectBase imp
 
     public void setSortCode(String sortCode) {
         this.sortCode = sortCode;
+    }
+
+    public void refresh() {
     }
 
 }

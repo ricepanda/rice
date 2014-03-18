@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ public class MessageView extends FormView {
      * <li>Set the message text onto the message component and add to the page items</li>
      * </ul>
      *
-     * @see org.kuali.rice.krad.uif.container.ContainerBase#performInitialization(View, java.lang.Object)
+     * {@inheritDoc}
      */
     public void performInitialization(Object model) {
         super.performInitialization(model);
@@ -52,18 +52,6 @@ public class MessageView extends FormView {
         List<Component> newItems = (List<Component>) getPage().getItems();
         newItems.add(message);
         getPage().setItems(newItems);
-    }
-
-    /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#getComponentsForLifecycle()
-     */
-    @Override
-    public List<Component> getComponentsForLifecycle() {
-        List<Component> components = super.getComponentsForLifecycle();
-
-        components.add(message);
-
-        return components;
     }
 
     /**
@@ -95,19 +83,5 @@ public class MessageView extends FormView {
         }
 
         this.message.setMessageText(messageText);
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        MessageView messageViewCopy = (MessageView) component;
-
-        if(this.message != null) {
-            messageViewCopy.setMessage((Message)this.message.copy());
-        }
     }
 }

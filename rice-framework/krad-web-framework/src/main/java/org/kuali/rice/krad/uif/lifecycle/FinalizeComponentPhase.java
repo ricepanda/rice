@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,64 +15,76 @@
  */
 package org.kuali.rice.krad.uif.lifecycle;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle.LifecycleEvent;
 import org.kuali.rice.krad.uif.lifecycle.finalize.AddViewTemplatesTask;
 import org.kuali.rice.krad.uif.lifecycle.finalize.ComponentDefaultFinalizeTask;
+import org.kuali.rice.krad.uif.lifecycle.finalize.FinalizeViewTask;
 import org.kuali.rice.krad.uif.lifecycle.finalize.HelperCustomFinalizeTask;
 import org.kuali.rice.krad.uif.lifecycle.finalize.InvokeFinalizerTask;
-import org.kuali.rice.krad.uif.lifecycle.finalize.SetReadOnlyOnDataBindingTask;
+import org.kuali.rice.krad.uif.lifecycle.finalize.RegisterPropertyEditorTask;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
+import org.kuali.rice.krad.uif.util.RecycleUtils;
 
 /**
- * Lifecycle phase processing task for applying the model to a component.
- * 
+ * Lifecycle phase processing task for finalizing a component.
+ *
+ * <p>
+ * The finalize phase is the last phase before the view is rendered. Here final preparations can be
+ * made based on the updated view state.
+ * </p>
+ *
+ * <p>
+ * The finalize phase runs after the apply model phase and can be called multiple times for the
+ * view's lifecylce (however typically only once per request)
+ * </p>
+ *
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 public class FinalizeComponentPhase extends ViewLifecyclePhaseBase {
 
-    private Component parent;
+    /**
+     * Lifecycle phase to render this component after finalization, if in-lifecycle rendering is
+     * enabled.
+     *
+     * @see ViewLifecycle#isRenderInLifecycle()
+     */
     private RenderComponentPhase renderPhase;
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhaseBase#recycle()
+     * {@inheritDoc}
      */
     @Override
     protected void recycle() {
         super.recycle();
-        parent = null;
         renderPhase = null;
     }
 
     /**
-     * Create a new lifecycle phase processing task for finalizing a component.
-     * 
-     * @param component The component instance the model should be applied to
+     * Creates a new lifecycle phase processing task for finalizing a component.
+     *
+     * @param element The component instance the model should be applied to
      * @param model Top level object containing the data
-     * @param parentPhase The finalize phase processed on the parent component.
+     * @param path The path to the element relative to its parent
+     * @param refreshPaths list of paths to run lifecycle on when executing a refresh lifecycle
+     * @param parent The parent component
      */
-    protected void prepare(Component component, Object model, int index,
-            Component parent, FinalizeComponentPhase parentPhase) {
-        super.prepare(component, model, index, parentPhase == null ?
-                Collections.<ViewLifecyclePhase> emptyList() :
-                Collections.<ViewLifecyclePhase> singletonList(parentPhase));
-        this.parent = parent;
-
-        if (ViewLifecycle.isRenderInLifecycle()) {
-            ArrayList<RenderComponentPhase> topList = new ArrayList<RenderComponentPhase>(1);
-            this.renderPhase = LifecyclePhaseFactory.render(
-                    component, model, index, this, null, Collections.unmodifiableList(topList));
-            topList.add(this.renderPhase);
-        }
+    protected void prepare(LifecycleElement element, Object model, String path, List<String> refreshPaths,
+            Component parent) {
+        super.prepare(element, model, path, refreshPaths, parent, null);
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase#getViewPhase()
+     * {@inheritDoc}
+     *
+     * @return UifConstants.ViewPhases.FINALIZE
      */
     @Override
     public String getViewPhase() {
@@ -80,7 +92,9 @@ public class FinalizeComponentPhase extends ViewLifecyclePhaseBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase#getStartViewStatus()
+     * {@inheritDoc}
+     *
+     * @return UifConstants.ViewStatus.MODEL_APPLIED
      */
     @Override
     public String getStartViewStatus() {
@@ -88,7 +102,9 @@ public class FinalizeComponentPhase extends ViewLifecyclePhaseBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase#getEndViewStatus()
+     * {@inheritDoc}
+     *
+     * @return UifConstants.ViewStatus.FINAL
      */
     @Override
     public String getEndViewStatus() {
@@ -96,7 +112,9 @@ public class FinalizeComponentPhase extends ViewLifecyclePhaseBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase#getEventToNotify()
+     * {@inheritDoc}
+     *
+     * @return LifecycleEvent.LIFECYCLE_COMPLETE
      */
     @Override
     public LifecycleEvent getEventToNotify() {
@@ -104,89 +122,103 @@ public class FinalizeComponentPhase extends ViewLifecyclePhaseBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhaseBase#notifyCompleted()
+     * Verify that the render phase has no pending children.
      */
     @Override
-    protected void notifyCompleted() {
-        super.notifyCompleted();        
-        assert renderPhase == null || renderPhase.isComplete();
-        renderPhase = null;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhaseBase#isComplete()
-     */
-    @Override
-    public boolean isComplete() {
-        return super.isComplete() &&
-                (renderPhase == null || renderPhase.isComplete());
-    }
-
-    /**
-     * @return the parent
-     */
-    public Component getParent() {
-        return this.parent;
+    protected void verifyCompleted() {
+        super.verifyCompleted();
+        
+        if (renderPhase != null) {
+            renderPhase.verifyCompleted();
+        }
     }
 
     /**
      * Update state of the component and perform final preparation for rendering.
-     * 
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhaseBase#initializePendingTasks(java.util.Queue)
+     *
+     * {@inheritDoc}
      */
     @Override
-    protected void initializePendingTasks(Queue<ViewLifecycleTask> tasks) {
-        tasks.add(LifecycleTaskFactory.getTask(SetReadOnlyOnDataBindingTask.class, this));
+    protected void initializePendingTasks(Queue<ViewLifecycleTask<?>> tasks) {
         tasks.add(LifecycleTaskFactory.getTask(InvokeFinalizerTask.class, this));
         tasks.add(LifecycleTaskFactory.getTask(ComponentDefaultFinalizeTask.class, this));
-        tasks.add(LifecycleTaskFactory.getTask(HelperCustomFinalizeTask.class, this));
-        tasks.add(LifecycleTaskFactory.getTask(RunComponentModifiersTask.class, this));
         tasks.add(LifecycleTaskFactory.getTask(AddViewTemplatesTask.class, this));
-        
-        getComponent().initializePendingTasks(this, tasks);
+        tasks.offer(LifecycleTaskFactory.getTask(FinalizeViewTask.class, this));
+        getElement().initializePendingTasks(this, tasks);
+        tasks.offer(LifecycleTaskFactory.getTask(RunComponentModifiersTask.class, this));
+        tasks.add(LifecycleTaskFactory.getTask(HelperCustomFinalizeTask.class, this));
+        tasks.add(LifecycleTaskFactory.getTask(RegisterPropertyEditorTask.class, this));
     }
 
     /**
-     * Define all nested lifecycle components, and component prototypes, as successors.
-     * 
-     * @see org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhaseBase#initializeSuccessors(java.util.List)
+     * {@inheritDoc}
      */
     @Override
     protected void initializeSuccessors(Queue<ViewLifecyclePhase> successors) {
-        Component component = getComponent();
-        Object model = getModel();
-
-        List<Component> nestedComponents = component.getComponentsForLifecycle();
-        List<RenderComponentPhase> renderPhases = null;
+        super.initializeSuccessors(successors);
 
         if (ViewLifecycle.isRenderInLifecycle()) {
-            renderPhases = new ArrayList<RenderComponentPhase>(nestedComponents.size());
-        }
+            RenderComponentPhase parentRenderPhase = null;
 
-        // initialize nested components
-        int index = 0;
-        for (Component nestedComponent : nestedComponents) {
-            if (nestedComponent != null) {
-                FinalizeComponentPhase nestedFinalizePhase = LifecyclePhaseFactory.finalize(
-                        nestedComponent, model, index, component, this);
-
-                if (ViewLifecycle.isRenderInLifecycle()) {
-                    RenderComponentPhase nestedRenderPhase = LifecyclePhaseFactory.render(
-                            nestedComponent, model, index, nestedFinalizePhase, this.renderPhase,
-                            renderPhases);
-                    renderPhases.add(nestedRenderPhase);
-                    nestedFinalizePhase.renderPhase = nestedRenderPhase;
+            ViewLifecyclePhase predecessor = getPredecessor();
+            if (predecessor instanceof FinalizeComponentPhase) {
+                parentRenderPhase = ((FinalizeComponentPhase) predecessor).renderPhase;
+            }
+            
+            @SuppressWarnings("unchecked")
+            Set<String> pendingChildren = RecycleUtils.getInstance(LinkedHashSet.class);
+            for (ViewLifecyclePhase successor : successors) {
+                boolean skipSuccessor;
+                if (successor instanceof ViewLifecyclePhaseBase) {
+                    skipSuccessor = ((ViewLifecyclePhaseBase) successor).shouldSkipLifecycle(); 
+                } else {
+                    // TODO: consider moving shouldSkipLifecycle to public interface
+                    skipSuccessor = successor.getElement().skipLifecycle();
                 }
 
-                successors.add(nestedFinalizePhase);
+                // Don't queue successors that will be skipped.
+                // Doing so would cause notification issues for the render phase.
+                if (skipSuccessor) {
+                    continue;
+                }
                 
-                index++;
+                // Queue the successor, with strict validation that it hasn't already been queued
+                if (!pendingChildren.add(successor.getParentPath())) {
+                    ViewLifecycle.reportIllegalState("Successor is already pending " + pendingChildren + "\n"
+                            + successor + "\n" + this);
+                }
             }
+
+            renderPhase = LifecyclePhaseFactory.render(this, getRefreshPaths(), parentRenderPhase, pendingChildren);
+            trace("create-render " + getElement().getId() + " " + pendingChildren);
         }
 
         if (successors.isEmpty() && renderPhase != null) {
             successors.add(renderPhase);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected ViewLifecyclePhase initializeSuccessor(LifecycleElement nestedElement, String nestedPath,
+            Component parent) {
+        FinalizeComponentPhase finalizeComponentPhase = LifecyclePhaseFactory.finalize(nestedElement, getModel(),
+                nestedPath, getRefreshPaths(), parent);
+        if (nestedElement.isModelApplied()) {
+            return finalizeComponentPhase;
+        }
+
+        ApplyModelComponentPhase applyModelPhase = LifecyclePhaseFactory.applyModel(nestedElement, getModel(),
+                nestedPath, getRefreshPaths(), parent, finalizeComponentPhase, new HashSet<String>());
+
+        if (nestedElement.isInitialized()) {
+            return applyModelPhase;
+        }
+
+        return LifecyclePhaseFactory.initialize(nestedElement, getModel(), nestedPath, getRefreshPaths(), parent,
+                applyModelPhase);
     }
 
 }

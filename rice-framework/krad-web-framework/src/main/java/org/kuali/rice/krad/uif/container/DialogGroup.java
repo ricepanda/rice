@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.control.MultiValueControl;
 import org.kuali.rice.krad.uif.field.InputField;
 import org.kuali.rice.krad.uif.field.MessageField;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.util.ScriptUtils;
 
 /**
@@ -68,7 +69,7 @@ import org.kuali.rice.krad.uif.util.ScriptUtils;
         @BeanTag(name = "true-false-dialogGroup-bean", parent = "Uif-True-False-DialogGroup"),
         @BeanTag(name = "checkbox-dialogGroup-bean", parent = "Uif-Checkbox-DialogGroup"),
         @BeanTag(name = "radioButton-dialogGroup-bean", parent = "Uif-RadioButton-DialogGroup")})
-public class DialogGroup extends Group {
+public class DialogGroup extends GroupBase {
     private static final long serialVersionUID = 1L;
 
     private String promptText;
@@ -96,8 +97,7 @@ public class DialogGroup extends Group {
      * are not already present</li>
      * </ul>
      *
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#performInitialization(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object)
+     * {@inheritDoc}
      */
     @Override
     public void performInitialization(Object model) {
@@ -139,11 +139,10 @@ public class DialogGroup extends Group {
      * </ul>
      * </p>
      *
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#performApplyModel(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performApplyModel(Object model, Component parent) {
+    public void performApplyModel(Object model, LifecycleElement parent) {
         super.performApplyModel(model, parent);
 
         // set the messageTest to the promptText
@@ -177,12 +176,11 @@ public class DialogGroup extends Group {
      * </ul>
      * </p>
      *
-     * @param view view instance that should be finalized for rendering
      * @param model top level object containing the data
      * @param parent parent component
      */
     @Override
-    public void performFinalize(Object model, Component parent) {
+    public void performFinalize(Object model, LifecycleElement parent) {
         super.performFinalize(model, parent);
 
         if (responseInputField != null) {
@@ -205,7 +203,7 @@ public class DialogGroup extends Group {
     /**
      * Override to add the handler script for the dialog response and show dialog events
      *
-     * @see org.kuali.rice.krad.uif.component.Component#getEventHandlerScript()
+     * {@inheritDoc}
      */
     @Override
     public String getEventHandlerScript() {
@@ -431,38 +429,5 @@ public class DialogGroup extends Group {
      */
     public void setOnShowDialogScript(String onShowDialogScript) {
         this.onShowDialogScript = onShowDialogScript;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        DialogGroup dialogGroupCopy = (DialogGroup) component;
-
-        if (this.availableResponses != null) {
-            dialogGroupCopy.setAvailableResponses(new ArrayList<KeyValue>(this.availableResponses));
-        }
-
-        dialogGroupCopy.setDisplayExplanation(this.displayExplanation);
-        dialogGroupCopy.setOnDialogResponseScript(this.onDialogResponseScript);
-        dialogGroupCopy.setOnShowDialogScript(this.onShowDialogScript);
-
-        if (this.prompt != null) {
-            dialogGroupCopy.setPrompt((MessageField)this.prompt.copy());
-        }
-
-        dialogGroupCopy.setPromptText(this.promptText);
-        dialogGroupCopy.setReverseButtonOrder(this.reverseButtonOrder);
-
-        if (this.explanation != null) {
-            dialogGroupCopy.setExplanation((InputField) this.explanation.copy());
-        }
-
-        if (this.responseInputField != null) {
-            dialogGroupCopy.setResponseInputField((InputField) this.responseInputField.copy());
-        }
     }
 }

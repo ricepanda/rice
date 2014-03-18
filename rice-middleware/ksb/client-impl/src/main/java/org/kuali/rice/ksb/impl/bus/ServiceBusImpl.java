@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -175,7 +175,7 @@ public class ServiceBusImpl extends BaseLifecycle implements ServiceBus, Initial
 			Endpoint localEndpoint = getLocalEndpoint(serviceName);
 			if (localEndpoint != null) {
 				for (Iterator<Endpoint> iterator = endpoints.iterator(); iterator.hasNext();) {
-					Endpoint endpoint = (Endpoint) iterator.next();
+					Endpoint endpoint = iterator.next();
 					if (localEndpoint.getServiceConfiguration().equals(endpoint.getServiceConfiguration())) {
 						iterator.remove();
 						break;
@@ -542,7 +542,6 @@ public class ServiceBusImpl extends BaseLifecycle implements ServiceBus, Initial
 		ServiceEndpoint.Builder builder = ServiceEndpoint.Builder.create(originalEndpoint);
 		builder.getInfo().setServiceId(registryServiceInfo.getServiceId());
 		builder.getInfo().setServiceDescriptorId(registryServiceInfo.getServiceDescriptorId());
-		builder.getInfo().setVersionNumber(registryServiceInfo.getVersionNumber());
 		builder.getDescriptor().setId(registryServiceInfo.getServiceDescriptorId());
 		return builder.build();
 	}

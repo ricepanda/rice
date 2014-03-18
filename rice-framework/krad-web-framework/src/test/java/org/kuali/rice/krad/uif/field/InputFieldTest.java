@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,12 @@
  */
 package org.kuali.rice.krad.uif.field;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.kuali.rice.krad.keyvalues.KeyValuesFinder;
@@ -22,14 +28,10 @@ import org.kuali.rice.krad.keyvalues.KeyValuesFinderFactory;
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.component.BindingInfo;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.lifecycle.ViewPostMetadata;
 import org.kuali.rice.krad.uif.service.ViewHelperService;
 import org.kuali.rice.krad.uif.view.View;
 import org.mockito.Mockito;
-
-import static org.mockito.Mockito.*;
-
-import java.util.*;
-import java.util.concurrent.Callable;
 
 /**
  * tests InputField object and methods
@@ -69,12 +71,12 @@ public class InputFieldTest {
         when(bindingInfo.clone()).thenReturn(bindingInfo);
 
         // setup input field with binding info and readonly
-        final InputField testObj = new InputField();
+        final InputField testObj = new InputFieldBase();
         testObj.setBindingInfo(bindingInfo);
         testObj.setReadOnly(true);
         testObj.setOptionsFinder(optionsFinder);
         
-        ViewLifecycle.encapsulateLifecycle(view, null, null, null, new Runnable(){
+        ViewLifecycle.encapsulateLifecycle(view, model, new ViewPostMetadata(), null, null, null, new Runnable(){
             @Override
             public void run() {
                 testObj.performFinalize(model, testObj);

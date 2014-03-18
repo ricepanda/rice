@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ public class ActiveCollectionFilter implements CollectionFilter {
      * Iterates through the collection and if the collection line type implements <code>Inactivatable</code>,
      * active indexes are added to the show indexes list
      *
-     * @see CollectionFilter#filter(org.kuali.rice.krad.uif.view.View, Object, org.kuali.rice.krad.uif.container.CollectionGroup)
+     * {@inheritDoc}
      */
     @Override
     public List<Integer> filter(View view, Object model, CollectionGroup collectionGroup) {

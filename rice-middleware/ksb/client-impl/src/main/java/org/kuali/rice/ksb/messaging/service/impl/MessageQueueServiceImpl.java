@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,13 +42,14 @@ public class MessageQueueServiceImpl implements MessageQueueService {
         }
     }
 
-    public void save(PersistedMessageBO routeQueue) {
+    public PersistedMessageBO save(PersistedMessageBO routeQueue) {
         if (Boolean.valueOf(ConfigContext.getCurrentContextConfig().getProperty(KSBConstants.Config.MESSAGE_PERSISTENCE))) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Persisting Message " + routeQueue);
             }
-            this.getMessageQueueDao().save(routeQueue);
+            return getMessageQueueDao().save(routeQueue);
         }
+        return routeQueue;
     }
 
     public List<PersistedMessageBO> findAll() {

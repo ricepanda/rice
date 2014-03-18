@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,6 +86,7 @@ public class UifHandlerExceptionResolver implements org.springframework.web.serv
 
         UserSession userSession = (UserSession) request.getSession().getAttribute(KRADConstants.USER_SESSION_KEY);
         IncidentReportForm incidentReportForm = new IncidentReportForm();
+        incidentReportForm.setSessionId(request.getSession().getId());
 
         // Set the post url map to the incident report controller and not 
         // the one the exception occurred on

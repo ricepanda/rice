@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,14 @@
  * limitations under the License.
  */
 package org.kuali.rice.kew.rule.web;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.PropertyUtils;
@@ -44,14 +52,6 @@ import org.kuali.rice.kns.web.ui.Field;
 import org.kuali.rice.kns.web.ui.Row;
 import org.kuali.rice.kns.web.ui.Section;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
 /**
  * Some utilities which are utilized by the {@link RuleAction}.
  *
@@ -68,11 +68,11 @@ public final class WebRuleUtils {
 	private static final String RULE_ATTRIBUTES_SECTION_ID = "RuleAttributes";
 	private static final String RULE_ATTRIBUTES_SECTION_TITLE = "Rule Attributes";
 	private static final String ROLES_MAINTENANCE_SECTION_ID = "RolesMaintenance";
-	
+
 	private WebRuleUtils() {
 		throw new UnsupportedOperationException("do not call");
 	}
-	
+
 	/**
 	 * Copies the existing rule onto the current document.  This is used within the web-based rule GUI to make a
 	 * copy of a rule on the existing document.  Essentially, this method makes a copy of the rule and all
@@ -93,7 +93,7 @@ public final class WebRuleUtils {
 
             responsibilityCopy.setResponsibilityId(null);
             responsibilityCopy.setId(null);
-            
+
             List delegations = new ArrayList();
             for (Iterator iterator = responsibilityCopy.getDelegationRules().iterator(); iterator.hasNext();) {
                 RuleDelegationBo delegation = (RuleDelegationBo) iterator.next();
@@ -133,12 +133,12 @@ public final class WebRuleUtils {
         ruleCopy.setRuleResponsibilities(responsibilities);
         return ruleCopy;
     }
-    
+
     /**
      * Makes a copy of the rule and clears the document id on the rule and any of its delegates.
      * This method is used for making a copy of a rule for a new document.  It essentially calls
      * the copyRuleOntoExistingDocument method and then clears out the document IDs.
-     * 
+     *
      * @param webRuleBaseValues
      */
     public static WebRuleBaseValues copyToNewRule(WebRuleBaseValues webRuleBaseValues) throws Exception {
@@ -185,19 +185,19 @@ public final class WebRuleUtils {
 		if (documentType == null) {
 			throw new RiceRuntimeException("Failed to locate document type with name '" + documentTypeName + "'");
 		}
-		
+
 		// it appears that there is always an old maintainable, even in the case of a new document creation,
 		// if we don't initialize both the old and new versions we get errors during meshSections
 		initializeRuleAfterNew(oldRule, ruleTemplate, documentTypeName);
 		initializeRuleAfterNew(newRule, ruleTemplate, documentTypeName);
 	}
-    
+
 	private static void initializeRuleAfterNew(RuleBaseValues rule, RuleTemplateBo ruleTemplate, String documentTypeName) {
 		rule.setRuleTemplate(ruleTemplate);
 		rule.setRuleTemplateId(ruleTemplate.getId());
 		rule.setDocTypeName(documentTypeName);
 	}
-	
+
 	public static void validateRuleAndResponsibility(RuleDelegationBo oldRuleDelegation, RuleDelegationBo newRuleDelegation, Map<String, String[]> parameters) {
 		String[] responsibilityIds = parameters.get(RESPONSIBILITY_ID_PARAM);
 		if (ArrayUtils.isEmpty(responsibilityIds)) {
@@ -212,42 +212,45 @@ public final class WebRuleUtils {
 			oldRuleDelegation.setResponsibilityId(responsibilityId);
 			newRuleDelegation.setResponsibilityId(responsibilityId);
 		}
-		
+
 	}
 
 	public static void establishDefaultRuleValues(RuleBaseValues rule) {
-		rule.setActive(true);
+        rule.setActive(true);
 
-        RuleBaseValues defaultRule = ((RuleServiceInternal) KEWServiceLocator.getService(KEWServiceLocator.RULE_SERVICE)).findDefaultRuleByRuleTemplateId(
-        		rule.getRuleTemplate().getDelegationTemplateId());
-        if (defaultRule != null) {
-            defaultRule.setActivationDate(null);
-            defaultRule.setCurrentInd(null);
-            defaultRule.setDeactivationDate(null);
-            defaultRule.setDocTypeName(null);
-            defaultRule.setVersionNumber(null);
-            defaultRule.setId(null);
-            defaultRule.setTemplateRuleInd(Boolean.FALSE);
-            defaultRule.setVersionNbr(null);
-            try {
-				PropertyUtils.copyProperties(rule, defaultRule);
-			} catch (IllegalAccessException e) {
-				throw new RuntimeException(e);
-			} catch (InvocationTargetException e) {
-				throw new RuntimeException(e);
-			} catch (NoSuchMethodException e) {
-				throw new RuntimeException(e);
-			}
+        if (rule.getRuleTemplate().getDelegationTemplateId() != null) {
+            RuleBaseValues defaultRule =
+                    ((RuleServiceInternal) KEWServiceLocator.getService(KEWServiceLocator.RULE_SERVICE)).
+                    findDefaultRuleByRuleTemplateId(rule.getRuleTemplate().getDelegationTemplateId());
+
+            if (defaultRule != null) {
+                defaultRule.setActivationDate(null);
+                defaultRule.setCurrentInd(null);
+                defaultRule.setDeactivationDate(null);
+                defaultRule.setDocTypeName(null);
+                defaultRule.setVersionNumber(null);
+                defaultRule.setId(null);
+                defaultRule.setTemplateRuleInd(Boolean.FALSE);
+                defaultRule.setVersionNbr(null);
+                try {
+                    PropertyUtils.copyProperties(rule, defaultRule);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                } catch (InvocationTargetException e) {
+                    throw new RuntimeException(e);
+                } catch (NoSuchMethodException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
-	}
-	
+    }
 
 	public static List<Section> customizeSections(RuleBaseValues rule, List<Section> sections, boolean delegateRule) {
 
 		List<Section> finalSections = new ArrayList<Section>();
 		for (Section section : sections) {
 			// unfortunately, in the case of an inquiry the sectionId will always be null so we have to check section title
-			if (section.getSectionTitle().equals(RULE_ATTRIBUTES_SECTION_TITLE) || 
+			if (section.getSectionTitle().equals(RULE_ATTRIBUTES_SECTION_TITLE) ||
 					RULE_ATTRIBUTES_SECTION_ID.equals(section.getSectionId())) {
 				List<Row> ruleTemplateRows = getRuleTemplateRows(rule, delegateRule);
 				if (!ruleTemplateRows.isEmpty()) {
@@ -262,7 +265,7 @@ public final class WebRuleUtils {
 				finalSections.add(section);
 			}
 		}
-		
+
 		return finalSections;
     }
 
@@ -292,7 +295,7 @@ public final class WebRuleUtils {
    		}
    		return rows;
    	}
-	
+
 	public static void transformFieldConversions(List<Row> rows, Map<String, String> fieldNameMap) {
 		for (Row row : rows) {
 			Map<String, String> transformedFieldConversions = new HashMap<String, String>();
@@ -360,16 +363,16 @@ public final class WebRuleUtils {
 		rule.setCurrentInd(false);
 		rule.setVersionNbr(null);
 		rule.setObjectId(null);
-		rule.setVersionNumber(0L);
+		rule.setVersionNumber(null);
 	}
-	
+
 	public static void clearKeysForSave(RuleDelegationBo ruleDelegation) {
 		ruleDelegation.setRuleDelegationId(null);
 		ruleDelegation.setObjectId(null);
-		ruleDelegation.setVersionNumber(0L);
+		ruleDelegation.setVersionNumber(null);
 		clearKeysForSave(ruleDelegation.getDelegationRule());
 	}
-	
+
     public static void translateResponsibilitiesForSave(RuleBaseValues rule) {
 		rule.getRuleResponsibilities().clear();
 		for (PersonRuleResponsibility responsibility : rule.getPersonResponsibilities()) {
@@ -415,7 +418,7 @@ public final class WebRuleUtils {
 			rule.getRuleResponsibilities().add(ruleResponsibility);
 		}
 	}
-    
+
     public static void translateFieldValuesForSave(RuleBaseValues rule) {
     	RuleTemplateBo ruleTemplate = KEWServiceLocator.getRuleTemplateService().findByRuleTemplateId(rule.getRuleTemplateId());
 
@@ -430,7 +433,7 @@ public final class WebRuleUtils {
             WorkflowRuleAttributeRows workflowRuleAttributeRows =
                     KEWServiceLocator.getWorkflowRuleAttributeMediator().getRuleRows(parameterMap, ruleTemplateAttribute);
 
-						
+
 			// validate rule data populates the rule extension values for us
 			List<RemotableAttributeError> attValidationErrors = workflowRuleAttributeRows.getValidationErrors();
 
@@ -439,7 +442,7 @@ public final class WebRuleUtils {
 			if (attValidationErrors != null && !attValidationErrors.isEmpty()) {
 				throw new RiceRuntimeException("Encountered attribute validation errors when attempting to save the Rule!");
 			}
-			
+
 			Map<String, String> ruleExtensionValuesMap = workflowRuleAttributeRows.getRuleExtensionValues();
 			if (ruleExtensionValuesMap != null && !ruleExtensionValuesMap.isEmpty()) {
 				RuleExtensionBo ruleExtension = new RuleExtensionBo();
@@ -455,7 +458,7 @@ public final class WebRuleUtils {
                 ruleExtension.setExtensionValues(ruleExtensionValues);
 				extensions.add(ruleExtension);
 			}
-				
+
 		}
 		rule.setRuleExtensions(extensions);
 
@@ -493,7 +496,7 @@ public final class WebRuleUtils {
     	}
     	return fieldMap;
     }
-    
+
     public static void processRuleForDelegationSave(RuleDelegationBo ruleDelegation) {
     	RuleBaseValues rule = ruleDelegation.getDelegationRule();
     	rule.setDelegateRule(true);
@@ -503,7 +506,7 @@ public final class WebRuleUtils {
     		responsibility.setPriority(null);
     	}
     }
-    
+
     public static void populateForCopyOrEdit(RuleBaseValues oldRule, RuleBaseValues newRule) {
 		populateRuleMaintenanceFields(oldRule);
 		populateRuleMaintenanceFields(newRule);
@@ -516,7 +519,7 @@ public final class WebRuleUtils {
 			newRule.setDocTypeName(oldRule.getDocTypeName());
 		}
 	}
-    
+
     /**
 	 * This method populates fields on RuleBaseValues which are used only for
 	 * maintenance purposes.  In otherwords, it populates the non-persistent fields
@@ -527,7 +530,7 @@ public final class WebRuleUtils {
 		translateResponsibilitiesForLoad(rule);
 		translateRuleExtensionsForLoad(rule);
 	}
-	
+
 	public static void translateResponsibilitiesForLoad(RuleBaseValues rule) {
 		for (RuleResponsibilityBo responsibility : rule.getRuleResponsibilities()) {
 			if (responsibility.getRuleResponsibilityType().equals(KewApiConstants.RULE_RESPONSIBILITY_WORKFLOW_ID)) {
@@ -554,7 +557,7 @@ public final class WebRuleUtils {
 		// since we've loaded the responsibilities, let's clear the originals so they don't get serialized to the maint doc XML
 		rule.getRuleResponsibilities().clear();
 	}
-	
+
 	public static void copyResponsibility(RuleResponsibilityBo source, RuleResponsibilityBo target) {
 		try {
 			BeanUtils.copyProperties(target, source);
@@ -562,7 +565,7 @@ public final class WebRuleUtils {
 			throw new RiceRuntimeException("Failed to copy properties from source to target responsibility", e);
 		}
 	}
-	
+
 	public static void translateRuleExtensionsForLoad(RuleBaseValues rule) {
 		for (RuleExtensionBo ruleExtension : rule.getRuleExtensions()) {
 			String ruleTemplateAttributeId = ruleExtension.getRuleTemplateAttributeId();
@@ -574,14 +577,14 @@ public final class WebRuleUtils {
 		// since we've loaded the extensions, let's clear the originals so that they don't get serialized to the maint doc XML
 		rule.getRuleExtensions().clear();
 	}
-	
+
 	public static void processRuleForCopy(String documentNumber, RuleBaseValues oldRule, RuleBaseValues newRule) {
 		WebRuleUtils.populateForCopyOrEdit(oldRule, newRule);
 		clearKeysForCopy(newRule);
 		newRule.setDocumentId(documentNumber);
 	}
-	
-	public static void clearKeysForCopy(RuleBaseValues rule) {    	
+
+	public static void clearKeysForCopy(RuleBaseValues rule) {
     	rule.setId(null);
     	rule.setPreviousRuleId(null);
     	rule.setPreviousVersion(null);
@@ -602,5 +605,5 @@ public final class WebRuleUtils {
 		responsibility.setId(null);
 		responsibility.setRuleBaseValuesId(null);
     }
-    
+
 }

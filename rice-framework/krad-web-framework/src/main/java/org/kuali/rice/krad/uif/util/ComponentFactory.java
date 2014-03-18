@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,6 @@
  * limitations under the License.
  */
 package org.kuali.rice.krad.uif.util;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -82,20 +77,23 @@ import org.kuali.rice.krad.uif.field.InputField;
 import org.kuali.rice.krad.uif.field.LinkField;
 import org.kuali.rice.krad.uif.field.MessageField;
 import org.kuali.rice.krad.uif.field.SpaceField;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.view.InquiryView;
-import org.kuali.rice.krad.uif.view.View;
 import org.kuali.rice.krad.uif.widget.Inquiry;
 import org.kuali.rice.krad.uif.widget.LightBox;
 import org.kuali.rice.krad.uif.widget.QuickFinder;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
- * Factory class for creating new UIF components from their base definitions
- * in the dictionary
+ * Factory class for creating new UIF components from their base definitions in the dictionary.
  *
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 public class ComponentFactory {
-
     private static Log LOG = LogFactory.getLog(ComponentFactory.class);
 
     public static final String TEXT_CONTROL = "Uif-TextControl";
@@ -184,69 +182,34 @@ public class ComponentFactory {
     private static Map<String, Component> cache = new HashMap<String, Component>();
 
     /**
-     * Gets a fresh copy of the component by the id passed in which used to look up the component in
-     * the view index, then retrieve a new instance with initial state configured using the factory id
-     *
-     * @param id id for the component in the view index
-     * @return Component new instance
-     */
-    public static Component getNewInstanceForRefresh(final View view, final String id) {
-        final Component origComponent = view.getViewIndex().getComponentById(id);
-
-        if (origComponent == null) {
-            throw new RuntimeException(id + " not found in view index try setting p:forceSessionPersistence=\"true\" in xml");
-        }
-
-        Component component = null;
-        if (view.getViewIndex().getInitialComponentStates().containsKey(origComponent.getBaseId())) {
-            component = view.getViewIndex().getInitialComponentStates().get(origComponent.getBaseId());
-            LOG.debug("getNewInstanceForRefresh: id '" + id + "' was found in initialStates");
-        } else {
-            component = (Component) KRADServiceLocatorWeb.getDataDictionaryService().getDictionaryObject(
-                    origComponent.getBaseId());
-            LOG.debug("getNewInstanceForRefresh: id '" + id
-                    + "' was NOT found in initialStates. New one fetched from DD");
-        }
-
-        if (component != null) {
-            component = ComponentUtils.copy(component);
-            component.setId(origComponent.getBaseId());
-        }
-
-        return component;
-    }
-
-    /**
-     * Returns a new <code>Component</code> instance for the given bean id from the spring factory
+     * Returns a new {@link Component} instance for the given bean id from the spring factory.
      *
      * @param beanId id of the bean definition
      * @return new component instance or null if no such component definition was found
      */
-    public static Component getNewComponentInstance(final String beanId) {
+    public static Component getNewComponentInstance(String beanId) {
         Component component;
 
         if (cache.containsKey(beanId)) {
             component = cache.get(beanId);
         } else {
-            component = (Component) KRADServiceLocatorWeb.getDataDictionaryService()
-                    .getDictionaryObject(beanId);
+            component = (Component) KRADServiceLocatorWeb.getDataDictionaryService().getDictionaryBean(beanId);
 
             // clear id before returning so duplicates do not occur
             component.setId(null);
-            component.setBaseId(null);
 
             // populate property expressions from expression graph
-            ExpressionUtils.populatePropertyExpressionsFromGraph(component, true);
-            
+            ViewLifecycle.getExpressionEvaluator().populatePropertyExpressionsFromGraph(component, true);
+
             CopyUtils.preventModification(component);
 
-            // add to cache
             synchronized (cache) {
                 cache.put(beanId, component);
             }
         }
-        
+
         component = ComponentUtils.copy(component);
+
         return component;
     }
 
@@ -583,6 +546,8 @@ public class ComponentFactory {
      * is really just a more configuration complete field
      * </p>
      *
+     * @param remotableField field defined by a remove attribute
+     * 
      * @return AttributeField instance built from remotable field
      */
     public static InputField translateRemotableField(RemotableAttributeField remotableField) {
@@ -1060,7 +1025,6 @@ public class ComponentFactory {
         return (CollectionGroup) getNewComponentInstance(COLLECTION_WITH_DISCLOSURE_GROUP);
     }
 
-
     /**
      * Gets the collection group table layout
      *
@@ -1234,6 +1198,7 @@ public class ComponentFactory {
 
     /**
      * Gets a component instance for an input field in the lookup criteria section
+     * @return lookup input field instance
      */
     public static LookupInputField getLookupCriteriaInputField() {
         return (LookupInputField) getNewComponentInstance(LOOKUP_CRITERIA_FIELD);
@@ -1242,6 +1207,7 @@ public class ComponentFactory {
     /**
      * Gets a component instance for an input field for the active indicator
      * in the lookup criteria section
+     * @return lookup input field instance
      */
     public static LookupInputField getLookupCriteriaActiveIndicatorInputField() {
         return (LookupInputField) getNewComponentInstance(LOOKUP_CRITERIA_ACTIVE_INDICATOR_FIELD);

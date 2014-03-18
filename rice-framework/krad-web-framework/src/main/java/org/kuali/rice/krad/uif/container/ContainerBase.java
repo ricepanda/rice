@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package org.kuali.rice.krad.uif.container;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
 
 import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
@@ -25,15 +24,16 @@ import org.kuali.rice.krad.datadictionary.validator.ValidationTrace;
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.component.ComponentBase;
+import org.kuali.rice.krad.uif.component.DelayedCopy;
 import org.kuali.rice.krad.uif.element.Header;
 import org.kuali.rice.krad.uif.element.Message;
 import org.kuali.rice.krad.uif.element.ValidationMessages;
 import org.kuali.rice.krad.uif.layout.LayoutManager;
-import org.kuali.rice.krad.uif.lifecycle.LifecycleTaskFactory;
-import org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase;
-import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleTask;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleRestriction;
 import org.kuali.rice.krad.uif.util.ComponentFactory;
 import org.kuali.rice.krad.uif.util.ComponentUtils;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.widget.Help;
 import org.kuali.rice.krad.uif.widget.Tooltip;
 
@@ -55,6 +55,7 @@ public abstract class ContainerBase extends ComponentBase implements Container {
 	private int defaultItemPosition;
 
 	private Help help;
+	
 	private LayoutManager layoutManager;
 
 	private Header header;
@@ -63,6 +64,7 @@ public abstract class ContainerBase extends ComponentBase implements Container {
 	private String instructionalText;
 	private Message instructionalMessage;
 
+	@DelayedCopy
     private ValidationMessages validationMessages;
 
 	/**
@@ -71,13 +73,12 @@ public abstract class ContainerBase extends ComponentBase implements Container {
 	public ContainerBase() {
 		defaultItemPosition = 1;
 	}
-	
+
 	/**
-	 * Determine if remote field holders should be processed for this container.
-	 * 
-	 * @return True if remote field holders should be processed for this container.
+	 * {@inheritDoc}
 	 */
-	protected boolean isProcessRemoteFieldHolders() {
+	@Override
+	public boolean isProcessRemoteFieldHolders() {
 	    return true;
 	}
 
@@ -90,32 +91,29 @@ public abstract class ContainerBase extends ComponentBase implements Container {
 	 * <li>Initializes LayoutManager</li>
 	 * </ul>
 	 *
-	 * @see org.kuali.rice.krad.uif.component.ComponentBase#performInitialization(org.kuali.rice.krad.uif.view.View, java.lang.Object)
+	 * {@inheritDoc}
 	 */
 	@SuppressWarnings("deprecation")
     @Override
 	public void performInitialization(Object model) {
 		super.performInitialization(model);
 
-        sortItems(model);
-
         if ((StringUtils.isNotBlank(instructionalText) || (getPropertyExpression("instructionalText") != null)) && (
                 instructionalMessage == null)) {
             instructionalMessage = ComponentFactory.getInstructionalMessage();
         }
 
-		if (layoutManager != null) {
+		if (layoutManager != null && !this.getItems().isEmpty()) {
 			layoutManager.performInitialization(model);
 		}
 	}
 
 	/**
-	 * @see org.kuali.rice.krad.uif.component.ComponentBase#performApplyModel(org.kuali.rice.krad.uif.view.View,
-	 *      java.lang.Object, org.kuali.rice.krad.uif.component.Component)
+	 * {@inheritDoc}
 	 */
 	@SuppressWarnings("deprecation")
     @Override
-	public void performApplyModel(Object model, Component parent) {
+	public void performApplyModel(Object model, LifecycleElement parent) {
 		super.performApplyModel(model, parent);
 
 		// setup summary message field if necessary
@@ -123,9 +121,9 @@ public abstract class ContainerBase extends ComponentBase implements Container {
 			instructionalMessage.setMessageText(instructionalText);
 		}
 
-		if (layoutManager != null) {
-			layoutManager.performApplyModel(model, this);
-		}
+        if (layoutManager != null && !this.getItems().isEmpty()) {
+            layoutManager.performApplyModel(model, this);
+        }
 	}
 
 	/**
@@ -137,90 +135,49 @@ public abstract class ContainerBase extends ComponentBase implements Container {
 	 * <li>Finalizes LayoutManager</li>
 	 * </ul>
 	 *
-	 * @see org.kuali.rice.krad.uif.component.ComponentBase#performFinalize(org.kuali.rice.krad.uif.view.View,
-	 *      java.lang.Object, org.kuali.rice.krad.uif.component.Component)
+	 * {@inheritDoc}
 	 */
 	@SuppressWarnings("deprecation")
     @Override
-	public void performFinalize(Object model, Component parent) {
+	public void performFinalize(Object model, LifecycleElement parent) {
 		super.performFinalize(model, parent);
 
         if(header != null){
             header.addDataAttribute(UifConstants.DataAttributes.HEADER_FOR, this.getId());
         }
 
-		if (layoutManager != null) {
-			layoutManager.performFinalize(model, this);
-		}
-
-	}
-
-	/**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#initializePendingTasks(org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase, java.util.Queue)
-     */
-    @Override
-    public void initializePendingTasks(ViewLifecyclePhase phase, Queue<ViewLifecycleTask> pendingTasks) {
-        super.initializePendingTasks(phase, pendingTasks);
-        
-        if (phase.getViewPhase().equals(UifConstants.ViewPhases.INITIALIZE)) {
-            pendingTasks.add(LifecycleTaskFactory.getTask(InitializeContainerFromHelperTask.class, phase));
+        if (layoutManager != null && !this.getItems().isEmpty()) {
+            layoutManager.performFinalize(model, this);
         }
-        
-        if (layoutManager != null) {
-            layoutManager.initializePendingTasks(phase, pendingTasks);
-        }
-        
-        if (phase.getViewPhase().equals(UifConstants.ViewPhases.INITIALIZE)
-                && isProcessRemoteFieldHolders()) {
-            pendingTasks.add(LifecycleTaskFactory.getTask(ProcessRemoteFieldsHolderTask.class, phase));
+
+        // Generate validation messages
+        if (validationMessages != null) {
+            validationMessages.generateMessages(ViewLifecycle.getView(), model, this);
         }
     }
 
     /**
-	 * @see org.kuali.rice.krad.uif.component.ComponentBase#getComponentsForLifecycle()
-	 */
-	@Override
-	public List<Component> getComponentsForLifecycle() {
-		List<Component> components = super.getComponentsForLifecycle();
-
-		components.add(header);
-		components.add(footer);
-		components.add(validationMessages);
-		components.add(help);
-		components.add(instructionalMessage);
-
-		for (Component component : getItems()) {
-			components.add(component);
-		}
-
-		if (layoutManager != null) {
-			components.addAll(layoutManager.getComponentsForLifecycle());
-		}
-
-		return components;
-	}
-
-    /**
-     * @see org.kuali.rice.krad.uif.component.Component#getComponentPrototypes()
+     * {@inheritDoc}
      */
     @Override
-    public List<Component> getComponentPrototypes() {
-        List<Component> components = super.getComponentPrototypes();
+    public List<String> getAdditionalTemplates() {
+        List<String> additionalTemplates = super.getAdditionalTemplates();
 
         if (layoutManager != null) {
-            components.addAll(layoutManager.getComponentPrototypes());
+            if (additionalTemplates.isEmpty()) {
+                additionalTemplates = new ArrayList<String>();
+            }
+            additionalTemplates.add(layoutManager.getTemplate());
         }
-
-        return components;
+        
+        return additionalTemplates;
     }
 
     /**
      * Performs sorting of the container items based on the order property
-     *
-     * @param view view instance containing the container
-     * @param model model object containing the view data
      */
-    protected void sortItems(Object model) {
+    @Override
+    public void sortItems() {
         // sort items list by the order property
         List<? extends Component> sortedItems = ComponentUtils.sort(getItems(), defaultItemPosition);
         setItems(sortedItems);
@@ -230,13 +187,14 @@ public abstract class ContainerBase extends ComponentBase implements Container {
 	 * @see org.kuali.rice.krad.uif.container.Container#getValidationMessages()
 	 */
 	@Override
+    @ViewLifecycleRestriction
     @BeanTagAttribute(name="validationMessages",type= BeanTagAttribute.AttributeType.SINGLEBEAN)
 	public ValidationMessages getValidationMessages() {
 		return this.validationMessages;
 	}
 
 	/**
-	 * @see org.kuali.rice.krad.uif.container.Container#setValidationMessages(org.kuali.rice.krad.uif.element.ValidationMessages)
+	 * {@inheritDoc}
 	 */
 	@Override
 	public void setValidationMessages(ValidationMessages validationMessages) {
@@ -283,7 +241,7 @@ public abstract class ContainerBase extends ComponentBase implements Container {
     }
 
     /**
-	 * @see org.kuali.rice.krad.uif.container.Container#getItems()
+	 * {@inheritDoc}
 	 */
 	@Override
     @BeanTagAttribute(name="items",type= BeanTagAttribute.AttributeType.LISTBEAN)
@@ -320,7 +278,7 @@ public abstract class ContainerBase extends ComponentBase implements Container {
 	}
 
 	/**
-	 * @see org.kuali.rice.krad.uif.container.Container#getLayoutManager()
+	 * {@inheritDoc}
 	 */
 	@Override
     @BeanTagAttribute(name="layoutManager",type= BeanTagAttribute.AttributeType.SINGLEBEAN)
@@ -329,7 +287,7 @@ public abstract class ContainerBase extends ComponentBase implements Container {
 	}
 
 	/**
-	 * @see org.kuali.rice.krad.uif.container.Container#setLayoutManager(org.kuali.rice.krad.uif.layout.LayoutManager)
+	 * {@inheritDoc}
 	 */
 	@Override
 	public void setLayoutManager(LayoutManager layoutManager) {
@@ -337,7 +295,7 @@ public abstract class ContainerBase extends ComponentBase implements Container {
 	}
 
 	/**
-	 * @see org.kuali.rice.krad.uif.container.Container#getHeader()
+	 * {@inheritDoc}
 	 */
 	@Override
     @BeanTagAttribute(name="header",type= BeanTagAttribute.AttributeType.SINGLEBEAN)
@@ -346,7 +304,7 @@ public abstract class ContainerBase extends ComponentBase implements Container {
 	}
 
 	/**
-	 * @see org.kuali.rice.krad.uif.container.Container#setHeader(org.kuali.rice.krad.uif.element.Header)
+	 * {@inheritDoc}
 	 */
 	@Override
 	public void setHeader(Header header) {
@@ -354,7 +312,7 @@ public abstract class ContainerBase extends ComponentBase implements Container {
 	}
 
 	/**
-	 * @see org.kuali.rice.krad.uif.container.Container#getFooter()
+	 * {@inheritDoc}
 	 */
 	@Override
     @BeanTagAttribute(name="footer",type= BeanTagAttribute.AttributeType.SINGLEBEAN)
@@ -363,7 +321,7 @@ public abstract class ContainerBase extends ComponentBase implements Container {
 	}
 
 	/**
-	 * @see org.kuali.rice.krad.uif.container.Container#setFooter(org.kuali.rice.krad.uif.container.Group)
+	 * {@inheritDoc}
 	 */
 	@Override
 	public void setFooter(Group footer) {
@@ -481,50 +439,7 @@ public abstract class ContainerBase extends ComponentBase implements Container {
 	}
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        ContainerBase containerBaseCopy = (ContainerBase) component;
-
-        containerBaseCopy.setDefaultItemPosition(this.defaultItemPosition);
-
-        if (this.footer != null) {
-            containerBaseCopy.setFooter((Group) this.footer.copy());
-        }
-
-        if (this.header != null) {
-            containerBaseCopy.setHeader((Header) this.header.copy());
-        }
-
-        if (this.help != null) {
-            containerBaseCopy.setHelp((Help) this.help.copy());
-        }
-
-        if (this.instructionalMessage != null) {
-            containerBaseCopy.setInstructionalMessage((Message) this.instructionalMessage.copy());
-        }
-
-        containerBaseCopy.setInstructionalText(this.instructionalText);
-
-        if (this.layoutManager != null) {
-            containerBaseCopy.setLayoutManager((LayoutManager) this.layoutManager.copy());
-        }
-
-        if (getItems() != null) {
-            List<Component> itemsCopy = ComponentUtils.copy(new ArrayList<Component>(getItems()));
-            containerBaseCopy.setItems(itemsCopy);
-        }
-
-        if (this.validationMessages != null) {
-            containerBaseCopy.setValidationMessages((ValidationMessages) this.validationMessages.copy());
-        }
-    }
-
-    /**
-     * @see org.kuali.rice.krad.uif.component.Component#completeValidation
+     * {@inheritDoc}
      */
     @Override
     public void completeValidation(ValidationTrace tracer){

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,6 @@
  * limitations under the License.
  */
 package org.kuali.rice.krad.web.controller;
-
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
@@ -54,10 +45,11 @@ import org.kuali.rice.krad.service.KRADServiceLocator;
 import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
 import org.kuali.rice.krad.service.LegacyDataAdapter;
 import org.kuali.rice.krad.service.NoteService;
+import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.UifConstants.WorkflowAction;
 import org.kuali.rice.krad.uif.UifParameters;
 import org.kuali.rice.krad.uif.UifPropertyPaths;
-import org.kuali.rice.krad.uif.container.CollectionGroup;
+import org.kuali.rice.krad.uif.component.BindingInfo;
 import org.kuali.rice.krad.uif.util.ObjectPropertyUtils;
 import org.kuali.rice.krad.util.GlobalVariables;
 import org.kuali.rice.krad.util.KRADConstants;
@@ -72,6 +64,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 
 /**
  * Base controller class for all KRAD <code>DocumentView</code> screens working
@@ -148,7 +148,7 @@ public abstract class DocumentControllerBase extends UifControllerBase {
     protected void loadDocument(DocumentFormBase form) throws WorkflowException {
         String docId = form.getDocId();
 
-        if ( LOG.isDebugEnabled() ) {
+        if (LOG.isDebugEnabled()) {
             LOG.debug("Loading document" + docId);
         }
 
@@ -187,7 +187,7 @@ public abstract class DocumentControllerBase extends UifControllerBase {
      * the new document instance should be set
      */
     protected void createDocument(DocumentFormBase form) throws WorkflowException {
-        if ( LOG.isDebugEnabled() ) {
+        if (LOG.isDebugEnabled()) {
             LOG.debug("Creating new document instance for doc type: " + form.getDocTypeName());
         }
         Document doc = getDocumentService().getNewDocument(form.getDocTypeName());
@@ -235,7 +235,7 @@ public abstract class DocumentControllerBase extends UifControllerBase {
 
         performWorkflowAction(documentForm, WorkflowAction.CANCEL, false);
 
-        return returnToPrevious(form);
+        return returnToHub(form);
     }
 
     /**
@@ -259,8 +259,8 @@ public abstract class DocumentControllerBase extends UifControllerBase {
      * @return ModelAndView
      */
     @RequestMapping(params = "methodToCall=complete")
-    public ModelAndView complete(@ModelAttribute("KualiForm")
-    DocumentFormBase form, BindingResult result, HttpServletRequest request, HttpServletResponse response) throws Exception {
+    public ModelAndView complete(@ModelAttribute("KualiForm") DocumentFormBase form, BindingResult result,
+            HttpServletRequest request, HttpServletResponse response) throws Exception {
         performWorkflowAction(form, WorkflowAction.COMPLETE, true);
 
         return getUIFModelAndView(form);
@@ -291,7 +291,12 @@ public abstract class DocumentControllerBase extends UifControllerBase {
             HttpServletRequest request, HttpServletResponse response) throws Exception {
         performWorkflowAction(form, WorkflowAction.BLANKETAPPROVE, true);
 
-        return getUIFModelAndView(form);
+        if (GlobalVariables.getMessageMap().hasErrors()) {
+            return getUIFModelAndView(form);
+        }
+        else {
+            return returnToHub(form);
+        }
     }
 
     /**
@@ -359,7 +364,7 @@ public abstract class DocumentControllerBase extends UifControllerBase {
      */
     @RequestMapping(params = "methodToCall=sendAdHocRequests")
     public ModelAndView sendAdHocRequests(@ModelAttribute("KualiForm") DocumentFormBase form, BindingResult result,
-                              HttpServletRequest request, HttpServletResponse response) {
+            HttpServletRequest request, HttpServletResponse response) {
         performWorkflowAction(form, WorkflowAction.SENDADHOCREQUESTS, true);
 
         return getUIFModelAndView(form);
@@ -376,7 +381,7 @@ public abstract class DocumentControllerBase extends UifControllerBase {
     protected void performWorkflowAction(DocumentFormBase form, WorkflowAction action, boolean checkSensitiveData) {
         Document document = form.getDocument();
 
-        if ( LOG.isDebugEnabled() ) {
+        if (LOG.isDebugEnabled()) {
             LOG.debug("Performing workflow action " + action.name() + "for document: " + document.getDocumentNumber());
         }
 
@@ -397,16 +402,18 @@ public abstract class DocumentControllerBase extends UifControllerBase {
                     successMessageKey = RiceKeyConstants.MESSAGE_SAVED;
                     break;
                 case ROUTE:
-                    document = getDocumentService().routeDocument(document, form.getAnnotation(), combineAdHocRecipients(form));
+                    document = getDocumentService().routeDocument(document, form.getAnnotation(),
+                            combineAdHocRecipients(form));
                     successMessageKey = RiceKeyConstants.MESSAGE_ROUTE_SUCCESSFUL;
                     break;
                 case BLANKETAPPROVE:
-                    document = getDocumentService().blanketApproveDocument(document, form.getAnnotation(), combineAdHocRecipients(
-                            form));
+                    document = getDocumentService().blanketApproveDocument(document, form.getAnnotation(),
+                            combineAdHocRecipients(form));
                     successMessageKey = RiceKeyConstants.MESSAGE_ROUTE_APPROVED;
                     break;
                 case APPROVE:
-                    document = getDocumentService().approveDocument(document, form.getAnnotation(), combineAdHocRecipients(form));
+                    document = getDocumentService().approveDocument(document, form.getAnnotation(),
+                            combineAdHocRecipients(form));
                     successMessageKey = RiceKeyConstants.MESSAGE_ROUTE_APPROVED;
                     break;
                 case DISAPPROVE:
@@ -420,8 +427,8 @@ public abstract class DocumentControllerBase extends UifControllerBase {
                     successMessageKey = RiceKeyConstants.MESSAGE_ROUTE_FYIED;
                     break;
                 case ACKNOWLEDGE:
-                    document = getDocumentService().acknowledgeDocument(document, form.getAnnotation(), combineAdHocRecipients(
-                            form));
+                    document = getDocumentService().acknowledgeDocument(document, form.getAnnotation(),
+                            combineAdHocRecipients(form));
                     successMessageKey = RiceKeyConstants.MESSAGE_ROUTE_ACKNOWLEDGED;
                     break;
                 case CANCEL:
@@ -432,12 +439,14 @@ public abstract class DocumentControllerBase extends UifControllerBase {
                     break;
                 case COMPLETE:
                     if (getDocumentService().documentExists(document.getDocumentNumber())) {
-                        document = getDocumentService().completeDocument(document, form.getAnnotation(), combineAdHocRecipients(form));
+                        document = getDocumentService().completeDocument(document, form.getAnnotation(),
+                                combineAdHocRecipients(form));
                         successMessageKey = RiceKeyConstants.MESSAGE_ROUTE_SUCCESSFUL;
                     }
                     break;
                 case SENDADHOCREQUESTS:
-                    getDocumentService().sendAdHocRequests(document, form.getAnnotation(), combineAdHocRecipients(form));
+                    getDocumentService().sendAdHocRequests(document, form.getAnnotation(), combineAdHocRecipients(
+                            form));
                     successMessageKey = RiceKeyConstants.MESSAGE_ROUTE_SUCCESSFUL;
                     break;
             }
@@ -448,14 +457,19 @@ public abstract class DocumentControllerBase extends UifControllerBase {
                 GlobalVariables.getMessageMap().putInfo(KRADConstants.GLOBAL_MESSAGES, successMessageKey);
             }
         } catch (ValidationException e) {
-            // if errors in map, swallow exception so screen will draw with errors
-            // if not then throw runtime because something bad happened
+            // log the error and swallow exception so screen will draw with errors.
+            // we don't want the exception to bubble up and the user to see an incident page, but instead just return to
+            // the page and display the actual errors. This would need a fix to the API at some point.
+            KRADUtils.logErrors();
+            LOG.error("Validation Exception occured for document :" + document.getDocumentNumber(), e);
+
+            // if no errors in map then throw runtime because something bad happened
             if (GlobalVariables.getMessageMap().hasNoErrors()) {
                 throw new RiceRuntimeException("Validation Exception with no error message.", e);
             }
         } catch (Exception e) {
             throw new RiceRuntimeException(
-                    "Exception trying to invoke action " + action.name() + "for document: " + document
+                    "Exception trying to invoke action " + action.name() + " for document: " + document
                             .getDocumentNumber(), e);
         }
 
@@ -472,7 +486,8 @@ public abstract class DocumentControllerBase extends UifControllerBase {
             HttpServletRequest request, HttpServletResponse response) throws Exception {
 
         String workflowSuperUserUrl = getConfigurationService().getPropertyValueAsString(KRADConstants.WORKFLOW_URL_KEY)
-                + "/" + KRADConstants.SUPERUSER_ACTION;
+                + "/"
+                + KRADConstants.SUPERUSER_ACTION;
 
         Properties props = new Properties();
         props.put(UifParameters.METHOD_TO_CALL, "displaySuperUserDocument");
@@ -493,10 +508,13 @@ public abstract class DocumentControllerBase extends UifControllerBase {
             HttpServletRequest request, HttpServletResponse response) {
 
         // Get the note add line
-        String selectedCollectionPath = uifForm.getActionParamaterValue(UifParameters.SELLECTED_COLLECTION_PATH);
-        CollectionGroup collectionGroup = uifForm.getPostedView().getViewIndex().getCollectionGroupByPath(
-                selectedCollectionPath);
-        String addLinePath = collectionGroup.getAddLineBindingInfo().getBindingPath();
+        String selectedCollectionPath = uifForm.getActionParamaterValue(UifParameters.SELECTED_COLLECTION_PATH);
+        String selectedCollectionId = uifForm.getActionParamaterValue(UifParameters.SELECTED_COLLECTION_ID);
+
+        BindingInfo addLineBindingInfo = (BindingInfo) uifForm.getViewPostMetadata().getComponentPostData(
+                selectedCollectionId, UifConstants.PostMetadata.ADD_LINE_BINDING_INFO);
+
+        String addLinePath = addLineBindingInfo.getBindingPath();
         Object addLine = ObjectPropertyUtils.getPropertyValue(uifForm, addLinePath);
         Note newNote = (Note) addLine;
         newNote.setNotePostedTimestampToCurrent();
@@ -555,8 +573,6 @@ public abstract class DocumentControllerBase extends UifControllerBase {
 
         // if the rule evaluation passed, let's add the note; otherwise, return with an error
         if (rulePassed) {
-            //newNote.refresh(); // OJB Method
-
             DocumentHeader documentHeader = document.getDocumentHeader();
 
             // adding the attachment after refresh gets called, since the attachment record doesn't get persisted
@@ -612,7 +628,7 @@ public abstract class DocumentControllerBase extends UifControllerBase {
             //so refreshNonUpdateableReferences() should work the same as refresh()
             if (note.getNoteIdentifier()
                     != null) { // KULRICE-2343 don't blow away note reference if the note wasn't persisted
-            //    attachment.refreshNonUpdateableReferences(); // OJB Method
+                //    attachment.refreshNonUpdateableReferences(); // OJB Method
             }
             getAttachmentService().deleteAttachmentContents(attachment);
         }
@@ -652,13 +668,12 @@ public abstract class DocumentControllerBase extends UifControllerBase {
 
     /**
      * Gets attachment based on noteIdentifier parameter.
+     *
      * @param uifForm
      * @param result
-     * @return request
-     * @return response
+     * @return
      * @throws FileNotFoundException
      * @throws IOException
-     * @return
      */
     @RequestMapping(method = RequestMethod.POST, params = "methodToCall=downloadBOAttachment")
     public ModelAndView downloadBOAttachment(@ModelAttribute("KualiForm") UifFormBase uifForm, BindingResult result,
@@ -682,7 +697,6 @@ public abstract class DocumentControllerBase extends UifControllerBase {
 
         return null;
     }
-
 
     /**
      * Called by the cancel attachment action on a note. Method
@@ -710,7 +724,7 @@ public abstract class DocumentControllerBase extends UifControllerBase {
      * @param context - additional context that needs to be passed back with the
      * question response
      * @return - view for spring to forward to, or null if processing should
-     *         continue
+     * continue
      * @throws Exception
      */
     protected String checkAndWarnAboutSensitiveData(DocumentFormBase form, HttpServletRequest request,
@@ -721,56 +735,56 @@ public abstract class DocumentControllerBase extends UifControllerBase {
         Document document = form.getDocument();
 
         // TODO: need to move containsSensitiveDataPatternMatch to util class in krad
-//        boolean containsSensitiveData = false;
-//        //boolean containsSensitiveData = WebUtils.containsSensitiveDataPatternMatch(fieldValue);
-//
-//        // check if warning is configured in which case we will prompt, or if
-//        // not business rules will thrown an error
-//        boolean warnForSensitiveData = CoreFrameworkServiceLocator.getParameterService().getParameterValueAsBoolean(
-//                KRADConstants.KRAD_NAMESPACE, ParameterConstants.ALL_COMPONENT,
-//                KRADConstants.SystemGroupParameterNames.SENSITIVE_DATA_PATTERNS_WARNING_IND);
-//
-//        // determine if the question has been asked yet
-//        Map<String, String> ticketContext = new HashMap<String, String>();
-//        ticketContext.put(KRADPropertyConstants.DOCUMENT_NUMBER, document.getDocumentNumber());
-//        ticketContext.put(KRADConstants.CALLING_METHOD, caller);
-//        ticketContext.put(KRADPropertyConstants.NAME, fieldName);
-//
-//        boolean questionAsked = GlobalVariables.getUserSession().hasMatchingSessionTicket(
-//                KRADConstants.SENSITIVE_DATA_QUESTION_SESSION_TICKET, ticketContext);
-//
-//        // start in logic for confirming the sensitive data
-//        if (containsSensitiveData && warnForSensitiveData && !questionAsked) {
-//            Object question = request.getParameter(KRADConstants.QUESTION_INST_ATTRIBUTE_NAME);
-//            if (question == null || !KRADConstants.DOCUMENT_SENSITIVE_DATA_QUESTION.equals(question)) {
-//
-//                // TODO not ready for question framework yet
-//                /*
-//                     * // question hasn't been asked, prompt to continue return
-//                     * this.performQuestionWithoutInput(mapping, form, request,
-//                     * response, KRADConstants.DOCUMENT_SENSITIVE_DATA_QUESTION,
-//                     * getKualiConfigurationService()
-//                     * .getPropertyValueAsString(RiceKeyConstants
-//                     * .QUESTION_SENSITIVE_DATA_DOCUMENT),
-//                     * KRADConstants.CONFIRMATION_QUESTION, caller, context);
-//                     */
-//                viewName = "ask_user_questions";
-//            } else {
-//                Object buttonClicked = request.getParameter(KRADConstants.QUESTION_CLICKED_BUTTON);
-//
-//                // if no button clicked just reload the doc
-//                if (ConfirmationQuestion.NO.equals(buttonClicked)) {
-//                    // TODO figure out what to return
-//                    viewName = "user_says_no";
-//                }
-//
-//                // answered yes, create session ticket so we not to ask question
-//                // again if there are further question requests
-//                SessionTicket ticket = new SessionTicket(KRADConstants.SENSITIVE_DATA_QUESTION_SESSION_TICKET);
-//                ticket.setTicketContext(ticketContext);
-//                GlobalVariables.getUserSession().putSessionTicket(ticket);
-//            }
-//        }
+        //        boolean containsSensitiveData = false;
+        //        //boolean containsSensitiveData = WebUtils.containsSensitiveDataPatternMatch(fieldValue);
+        //
+        //        // check if warning is configured in which case we will prompt, or if
+        //        // not business rules will thrown an error
+        //        boolean warnForSensitiveData = CoreFrameworkServiceLocator.getParameterService().getParameterValueAsBoolean(
+        //                KRADConstants.KRAD_NAMESPACE, ParameterConstants.ALL_COMPONENT,
+        //                KRADConstants.SystemGroupParameterNames.SENSITIVE_DATA_PATTERNS_WARNING_IND);
+        //
+        //        // determine if the question has been asked yet
+        //        Map<String, String> ticketContext = new HashMap<String, String>();
+        //        ticketContext.put(KRADPropertyConstants.DOCUMENT_NUMBER, document.getDocumentNumber());
+        //        ticketContext.put(KRADConstants.CALLING_METHOD, caller);
+        //        ticketContext.put(KRADPropertyConstants.NAME, fieldName);
+        //
+        //        boolean questionAsked = GlobalVariables.getUserSession().hasMatchingSessionTicket(
+        //                KRADConstants.SENSITIVE_DATA_QUESTION_SESSION_TICKET, ticketContext);
+        //
+        //        // start in logic for confirming the sensitive data
+        //        if (containsSensitiveData && warnForSensitiveData && !questionAsked) {
+        //            Object question = request.getParameter(KRADConstants.QUESTION_INST_ATTRIBUTE_NAME);
+        //            if (question == null || !KRADConstants.DOCUMENT_SENSITIVE_DATA_QUESTION.equals(question)) {
+        //
+        //                // TODO not ready for question framework yet
+        //                /*
+        //                     * // question hasn't been asked, prompt to continue return
+        //                     * this.performQuestionWithoutInput(mapping, form, request,
+        //                     * response, KRADConstants.DOCUMENT_SENSITIVE_DATA_QUESTION,
+        //                     * getKualiConfigurationService()
+        //                     * .getPropertyValueAsString(RiceKeyConstants
+        //                     * .QUESTION_SENSITIVE_DATA_DOCUMENT),
+        //                     * KRADConstants.CONFIRMATION_QUESTION, caller, context);
+        //                     */
+        //                viewName = "ask_user_questions";
+        //            } else {
+        //                Object buttonClicked = request.getParameter(KRADConstants.QUESTION_CLICKED_BUTTON);
+        //
+        //                // if no button clicked just reload the doc
+        //                if (ConfirmationQuestion.NO.equals(buttonClicked)) {
+        //                    // TODO figure out what to return
+        //                    viewName = "user_says_no";
+        //                }
+        //
+        //                // answered yes, create session ticket so we not to ask question
+        //                // again if there are further question requests
+        //                SessionTicket ticket = new SessionTicket(KRADConstants.SENSITIVE_DATA_QUESTION_SESSION_TICKET);
+        //                ticket.setTicketContext(ticketContext);
+        //                GlobalVariables.getUserSession().putSessionTicket(ticket);
+        //            }
+        //        }
 
         // returning null will indicate processing should continue (no redirect)
         return viewName;

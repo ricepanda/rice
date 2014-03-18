@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p" xsi:schemaLocation="http://www.springframework.org/schema/beans         http://www.springframework.org/schema/beans/spring-beans-2.0.xsd">
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -37,20 +37,6 @@
       </list>
     </property>
     <property name="objectLabel" value="Account"/>
-    <!-- 
-    <property name="relationships">
-      <list>
-        <bean parent="RelationshipDefinition">
-          <property name="objectAttributeName" value="extension.accountType"/>
-          <property name="primitiveAttributes">
-            <list>
-              <bean parent="PrimitiveAttributeDefinition" p:sourceName="extension.accountTypeCode" p:targetName="accountTypeCode"/>
-            </list>
-          </property>
-        </bean>
-      </list>
-    </property> -->    
-    
   </bean>
 
 <!-- Attribute Definitions -->
@@ -103,9 +89,23 @@
   <bean id="Account-extension.accountType.codeAndDescription-parentBean" abstract="true" parent="AccountType-codeAndDescription">
     <property name="name" value="extension.accountType.codeAndDescription"/>
   </bean>
+
   <bean id="Account-amId" parent="Account-amId-parentBean"/>
 
-  <bean id="Account-amId-parentBean" abstract="true" parent="AccountManager-amId">
+  <bean id="Account-amId-parentBean" abstract="true" parent="AttributeDefinition">
+    <property name="forceUppercase" value="false"/>
+    <property name="shortLabel" value="Account Manager"/>
+    <property name="maxLength" value="30"/>
+    <property name="validationPattern">
+      <bean parent="AnyCharacterValidationPattern"/>
+    </property>
+    <property name="control">
+      <bean parent="TextControlDefinition" p:size="30"/>
+    </property>
+    <property name="summary" value="Account Manager"/>
+    <property name="name" value="amId"/>
+    <property name="label" value="Account Manager"/>
+    <property name="description" value="Account Manager"/>
   </bean>
 
 <!-- Business Object Inquiry Definition -->

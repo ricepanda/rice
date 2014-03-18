@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -200,6 +200,54 @@ public class DateTimeServiceTest extends KRADTestCase {
         assertEquals("unexpected day", 1, serviceCalendar.get(Calendar.DAY_OF_MONTH));
         assertEquals("unexpected hours", 0, serviceCalendar.get(Calendar.HOUR_OF_DAY));
         assertEquals("unexpected minutes", 0, serviceCalendar.get(Calendar.MINUTE));
+        assertEquals("unexpected seconds", 0, serviceCalendar.get(Calendar.SECOND));
+    }
+
+    /**
+     * tests {@link org.kuali.rice.core.api.datetime.DateTimeService#convertToSqlTime(String)} with a blank value
+     *
+     * @throws ParseException
+     */
+    @Test public void testConvertToSqlTime_blankTimeString() throws ParseException {
+        boolean failedAsExpected = false;
+
+        try {
+            CoreApiServiceLocator.getDateTimeService().convertToSqlTime("");
+        }
+        catch (IllegalArgumentException e) {
+            failedAsExpected = true;
+        }
+
+        assertTrue("blank timeString failed to fail", failedAsExpected);
+    }
+
+    /**
+     * tests {@link org.kuali.rice.core.api.datetime.DateTimeService#convertToSqlTime(String)} with an invalid time string
+     */
+    @Test public void testConvertToSqlTime_invalidTimeString() {
+        boolean failedAsExpected = false;
+
+        try {
+            CoreApiServiceLocator.getDateTimeService().convertToSqlTime("foo");
+        }
+        catch (ParseException e) {
+            failedAsExpected = true;
+        }
+
+        assertTrue("invalid timeString failed to fail", failedAsExpected);
+    }
+
+    /**
+     * tests {@link org.kuali.rice.core.api.datetime.DateTimeService#convertToSqlTime(String)} with a valid date string
+     */
+    @Test public void testConvertToSqlTime_validTimeString() throws ParseException {
+        java.sql.Time serviceTime = CoreApiServiceLocator.getDateTimeService().convertToSqlTime("10:28 am");
+
+        Calendar serviceCalendar = Calendar.getInstance();
+        serviceCalendar.setTime(serviceTime);
+
+        assertEquals("unexpected hours", 10, serviceCalendar.get(Calendar.HOUR_OF_DAY));
+        assertEquals("unexpected minutes", 28, serviceCalendar.get(Calendar.MINUTE));
         assertEquals("unexpected seconds", 0, serviceCalendar.get(Calendar.SECOND));
     }
 

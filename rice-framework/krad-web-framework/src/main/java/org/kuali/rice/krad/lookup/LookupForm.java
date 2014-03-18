@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ public class LookupForm extends UifFormBase {
     private String returnTarget;
 
     private String lookupCollectionName;
+    private String lookupCollectionId;
     private String referencesToRefresh;
     private String quickfinderId;
 
@@ -53,6 +54,7 @@ public class LookupForm extends UifFormBase {
     private Map<String, String> lookupCriteria;
 
     private Collection<?> lookupResults;
+    private boolean displayResults;
 
     public LookupForm() {
         super();
@@ -73,12 +75,12 @@ public class LookupForm extends UifFormBase {
     public void postBind(HttpServletRequest request) {
         super.postBind(request);
 
+        if (StringUtils.isBlank(getDataObjectClassName())) {
+            setDataObjectClassName(((LookupView) getView()).getDataObjectClass().getName());
+        }
+
         Lookupable lookupable = getLookupable();
         if ((lookupable != null) && (lookupable.getDataObjectClass() == null)) {
-            if (StringUtils.isBlank(getDataObjectClassName())) {
-                setDataObjectClassName(((LookupView) getView()).getDataObjectClass().getName());
-            }
-
             Class<?> dataObjectClass;
             try {
                 dataObjectClass = Class.forName(getDataObjectClassName());
@@ -100,15 +102,11 @@ public class LookupForm extends UifFormBase {
     /**
      * Returns an {@link Lookupable} instance associated with the lookup view.
      *
-     * @return Lookupable instance or null if one cannnot be created
+     * @return Lookupable instance or null if one does not exist
      */
     public Lookupable getLookupable() {
-        if ((getView() != null) && (getView().getViewHelperService() != null) && Lookupable.class.isAssignableFrom(
-                getView().getViewHelperService().getClass())) {
-            return (Lookupable) getView().getViewHelperService();
-        } else if ((getPostedView() != null) && (getPostedView().getViewHelperService() != null) && Lookupable.class
-                .isAssignableFrom(getPostedView().getViewHelperService().getClass())) {
-            return (Lookupable) getPostedView().getViewHelperService();
+        if (getViewHelperService() != null) {
+            return (Lookupable) getViewHelperService();
         }
 
         return null;
@@ -128,7 +126,9 @@ public class LookupForm extends UifFormBase {
     }
 
     /**
-     * @see LookupForm#getDataObjectClassName()
+     * Setter for {@link LookupForm#getDataObjectClassName()}
+     * 
+     * @param dataObjectClassName property value
      */
     public void setDataObjectClassName(String dataObjectClassName) {
         this.dataObjectClassName = dataObjectClassName;
@@ -225,6 +225,14 @@ public class LookupForm extends UifFormBase {
      */
     public void setLookupCollectionName(String lookupCollectionName) {
         this.lookupCollectionName = lookupCollectionName;
+    }
+
+    public String getLookupCollectionId() {
+        return lookupCollectionId;
+    }
+
+    public void setLookupCollectionId(String lookupCollectionId) {
+        this.lookupCollectionId = lookupCollectionId;
     }
 
     /**
@@ -336,4 +344,11 @@ public class LookupForm extends UifFormBase {
         this.lookupResults = lookupResults;
     }
 
+    public boolean isDisplayResults() {
+        return displayResults;
+    }
+
+    public void setDisplayResults(boolean displayResults) {
+        this.displayResults = displayResults;
+    }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,12 @@
  */
 package org.kuali.rice.kim.bo.ui;
 
+import java.sql.Timestamp;
+
 import javax.persistence.Column;
+import javax.persistence.Embeddable;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.Transient;
-import java.sql.Timestamp;
 
 /**
  * This is a description of what this class does - shyu don't forget to fill this in. 
@@ -27,10 +29,11 @@ import java.sql.Timestamp;
  *
  */
 @MappedSuperclass
-public class KimDocumentBoActiveToFromBase  extends KimDocumentBoBase {
+public class KimDocumentBoActiveToFromBase extends KimDocumentBoBase {
+
     private static final long serialVersionUID = 9042706897191231671L;
 
-	@Column(name="ACTV_FRM_DT")
+    @Column(name="ACTV_FRM_DT")
 	protected Timestamp activeFromDate;
 	@Column(name="ACTV_TO_DT")
 	protected Timestamp activeToDate;

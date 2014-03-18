@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,15 @@ public class MockInquirable implements Inquirable {
     }
 
     /**
-     * @see org.kuali.rice.krad.inquiry.Inquirable#setDataObjectClass(java.lang.Class)
+     * {@inheritDoc}
+     */
+    @Override
+    public Class<?> getDataObjectClass() {
+        return dataObjectClass;
+    }
+
+    /**
+     * {@inheritDoc}
      */
     @Override
     public void setDataObjectClass(Class<?> dataObjectClass) {

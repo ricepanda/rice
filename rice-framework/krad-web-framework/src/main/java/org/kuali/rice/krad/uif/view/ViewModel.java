@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 package org.kuali.rice.krad.uif.view;
 
 import org.kuali.rice.krad.uif.UifConstants.ViewType;
+import org.kuali.rice.krad.uif.component.Component;
+import org.kuali.rice.krad.uif.lifecycle.ViewPostMetadata;
+import org.kuali.rice.krad.uif.service.ViewHelperService;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.Serializable;
@@ -24,13 +27,12 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Interface that must be implemented for classes the provide the backing data (model) for a {@link View}
+ * Interface that must be implemented for classes the provide the backing data (model) for a
+ * {@link org.kuali.rice.krad.uif.view.View}.
  *
- * <p>
- * Since the View relies on helper properties from the model it is necessary the backing object implement the
+ * <p>Since the View relies on helper properties from the model it is necessary the backing object implement the
  * ViewModel interface. Note model objects can extend {@link org.kuali.rice.krad.web.form.UifFormBase} which implements
- * the ViewModel interface.
- * </p>
+ * the ViewModel interface.</p>
  *
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
@@ -114,22 +116,28 @@ public interface ViewModel extends Serializable {
     public void setView(View view);
 
     /**
-     * View instance for the page that made a request. Since a new view instance
-     * gets initialized for each request before the controller logic is invoked,
-     * any state about the previous view is lost. This could be needed to read
-     * metadata from the view for such things as collection processing. When
-     * this is necessary the previous view instance can be retrieved
+     * Returns the view helper service instance that was configured for the current view.
      *
-     * @return View instance
+     * @return instance of view helper service, null if view is null
      */
-    public View getPostedView();
+    public ViewHelperService getViewHelperService() throws IllegalAccessException, InstantiationException;
 
     /**
-     * Setter for the previous view instance
+     * Gets the {@link org.kuali.rice.krad.uif.lifecycle.ViewPostMetadata} that has been built up from processing
+     * of a view.
      *
-     * @param previousView
+     * <p>The view post metadata is used to read information about the view that was rendered when a post occurs. For
+     * example, you might need to check whether a particular flag was enabled for the rendered view when processing
+     * the post logic</p>
+     *
+     * @return ViewPostMetadata instance for the previously processed view
      */
-    public void setPostedView(View previousView);
+    public ViewPostMetadata getViewPostMetadata();
+
+    /**
+     * @see ViewModel#getViewPostMetadata()
+     */
+    public void setViewPostMetadata(ViewPostMetadata viewPostMetadata);
 
     /**
      * Id for the current page being displayed within the view
@@ -171,7 +179,7 @@ public interface ViewModel extends Serializable {
     /**
      * Setter for the view's request parameter map
      *
-     * @param viewRequestParameters
+     * @param viewRequestParameters map of request parameters
      */
     public void setViewRequestParameters(Map<String, String> viewRequestParameters);
 
@@ -256,7 +264,8 @@ public interface ViewModel extends Serializable {
     public Map<String, Object> getClientStateForSyncing();
 
     /**
-     * Holds Set of String identifiers for lines that were selected in a collection
+     * Holds Set of String identifiers for lines that were selected in a collection from a single page.
+     * selectedCollectionLines are request level values and get reset with every page request
      *
      * <p>
      * When the select field is enabled for a <code>CollectionGroup</code>, the framework will be
@@ -349,6 +358,23 @@ public interface ViewModel extends Serializable {
     public void setUpdateComponentId(String updateComponentId);
 
     /**
+     * Component instance that been built for a refresh/disclosure request.
+     *
+     * <p>This is generally set by org.kuali.rice.krad.uif.lifecycle.ViewLifecycle#performComponentLifecycle(org.kuali.rice.krad.uif.view.View,
+     * java.lang.Object, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse,
+     * org.kuali.rice.krad.uif.lifecycle.ViewPostMetadata, java.lang.String) after processing the lifecycle. The form
+     * property provides access to the rendering layer.</p>
+     *
+     * @return component instance for updating
+     */
+    public Component getUpdateComponent();
+
+    /**
+     * @see ViewModel#getUpdateComponent()
+     */
+    public void setUpdateComponent(Component updateComponent);
+
+    /**
      * Indicates whether the request was made by an ajax call
      *
      * <p>
@@ -364,14 +390,14 @@ public interface ViewModel extends Serializable {
      *
      * @return boolean true if the request was an ajax call, false if not
      */
-    public boolean isAjaxRequest();
+    boolean isAjaxRequest();
 
     /**
      * Set the ajaxRequest
      *
      * @param ajaxRequest
      */
-    public void setAjaxRequest(boolean ajaxRequest);
+    void setAjaxRequest(boolean ajaxRequest);
 
     /**
      * Gets the return type for the ajax call
@@ -384,28 +410,35 @@ public interface ViewModel extends Serializable {
      * @return String return type
      * @see org.kuali.rice.krad.uif.UifConstants.AjaxReturnTypes
      */
-    public String getAjaxReturnType();
+    String getAjaxReturnType();
+
+    /**
+     * Setter for the type of ajax return
+     *
+     * @param ajaxReturnType
+     */
+    void setAjaxReturnType(String ajaxReturnType);
 
     /**
      * Indicates whether the request is to update a component (only applicable for ajax requests)
      *
      * @return boolean true if the request is for update component, false if not
      */
-    public boolean isUpdateComponentRequest();
+    boolean isUpdateComponentRequest();
 
     /**
      * Indicates whether the request is to update a page (only applicable for ajax requests)
      *
      * @return boolean true if the request is for update page, false if not
      */
-    public boolean isUpdatePageRequest();
+    boolean isUpdatePageRequest();
 
     /**
      * Indicates whether the request is to update a dialog (only applicable for ajax requests)
      *
      * @return boolean true if the request is for update dialog, false if not
      */
-    public boolean isUpdateDialogRequest();
+    boolean isUpdateDialogRequest();
 
     /**
      * Indicates whether the request is for a non-update of the view (only applicable for ajax requests)
@@ -416,23 +449,7 @@ public interface ViewModel extends Serializable {
      *
      * @return boolean true if the request is for non-update, false if not
      */
-    public boolean isUpdateNoneRequest();
-
-    /**
-     * Indicates whether the request will result in building an entire view
-     *
-     * @return boolean true if the full view will be built, false if not
-     */
-    public boolean isBuildViewRequest();
-
-    public boolean isUpdateViewRequest();
-
-    /**
-     * Setter for the type of ajax return
-     *
-     * @param ajaxReturnType
-     */
-    public void setAjaxReturnType(String ajaxReturnType);
+    boolean isUpdateNoneRequest();
 
     /**
      * Indicates whether the request should return a JSON string
@@ -449,7 +466,7 @@ public interface ViewModel extends Serializable {
      *
      * @return boolean true if request is for JSON, false if not
      */
-    public boolean isJsonRequest();
+    boolean isJsonRequest();
 
     /**
      * Template the will be invoked to return a JSON string
@@ -461,14 +478,26 @@ public interface ViewModel extends Serializable {
      *
      * @return path to template
      */
-    public String getRequestJsonTemplate();
+    String getRequestJsonTemplate();
 
     /**
      * Setter for the template to render for the request
      *
      * @param requestJsonTemplate
      */
-    public void setRequestJsonTemplate(String requestJsonTemplate);
+    void setRequestJsonTemplate(String requestJsonTemplate);
+
+    /**
+     * Indicates whether the request is for paging a collection (or sorting).
+     *
+     * @return boolean true if a paging request is present, false if not
+     */
+    boolean isCollectionPagingRequest();
+
+    /**
+     * @see ViewModel#isCollectionPagingRequest()
+     */
+    void setCollectionPagingRequest(boolean collectionPagingRequest);
 
     /**
      * A generic map for framework pieces (such as component modifiers) that need to dynamically store

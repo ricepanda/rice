@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,9 @@ import java.util.Map.Entry;
 import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.krad.uif.component.ClientSideState;
 import org.kuali.rice.krad.uif.component.Component;
-import org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleTaskBase;
 import org.kuali.rice.krad.uif.util.CloneUtils;
 import org.kuali.rice.krad.uif.util.ObjectPropertyUtils;
 import org.kuali.rice.krad.uif.view.View;
@@ -34,7 +35,7 @@ import org.kuali.rice.krad.uif.view.ViewModel;
  * 
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-public class SyncClientSideStateTask extends AbstractViewLifecycleTask {
+public class SyncClientSideStateTask extends ViewLifecycleTaskBase<Component> {
 
     /**
      * Constructor.
@@ -42,19 +43,19 @@ public class SyncClientSideStateTask extends AbstractViewLifecycleTask {
      * @param phase The apply model phase for the component.
      */
     public SyncClientSideStateTask(ViewLifecyclePhase phase) {
-        super(phase);
+        super(phase, Component.class);
     }
 
     /**
      * Updates the properties of the given component instance with the value found from the
      * corresponding map of client state (if found)
      * 
-     * @see org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask#performLifecycleTask()
+     * {@inheritDoc}
      */
     @Override
     protected void performLifecycleTask() {
-        Component component = getPhase().getComponent();
-        ViewModel model = (ViewModel) getPhase().getModel();
+        Component component = (Component) getElementState().getElement();
+        ViewModel model = (ViewModel) ViewLifecycle.getModel();
 
         // find the map of state that was sent for component (if any)
         Map<String, Object> clientSideState = model.getClientStateForSyncing();

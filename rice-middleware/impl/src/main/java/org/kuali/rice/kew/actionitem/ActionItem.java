@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 package org.kuali.rice.kew.actionitem;
+
+import org.kuali.rice.core.api.delegation.DelegationType;
 
 import javax.persistence.Entity;
 import javax.persistence.NamedQueries;
@@ -40,7 +42,11 @@ import java.util.Map;
                 + "  WHERE ai.principalId = :principalId AND (ai.delegationType IS NULL OR ai.delegationType = 'P')"),
         @NamedQuery(name = "ActionItem.GetMaxDateAndCountForPrincipalId", query =
                 "SELECT MAX(ai.dateAssigned) AS max_date, COUNT(DISTINCT(ai.documentId)) AS total_records FROM ActionItem ai"
-                        + "  WHERE ai.principalId = :principalId")})
+                        + "  WHERE ai.principalId = :principalId"),
+        @NamedQuery(name = "ActionItem.GetQuickLinksDocumentTypeNameAndCount", query =
+                "select ai.docName, COUNT(ai) from ActionItem ai where ai.principalId = :principalId " +
+                        "and (ai.delegationType is null or ai.delegationType != :delegationType)"
+                        + " group by ai.docName")})
 public class ActionItem extends ActionItemBase {
 
     private static final long serialVersionUID = -1079562205125660151L;

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,13 @@ import org.kuali.rice.krad.datadictionary.DataDictionary;
 import org.kuali.rice.krad.datadictionary.DataDictionaryEntry;
 import org.kuali.rice.krad.datadictionary.DataDictionaryException;
 import org.kuali.rice.krad.datadictionary.DefaultListableBeanFactory;
+import org.kuali.rice.krad.datadictionary.uif.UifBeanFactoryPostProcessor;
+import org.kuali.rice.krad.datadictionary.uif.UifDictionaryBean;
+import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.component.Component;
-import org.kuali.rice.krad.uif.util.ExpressionUtils;
-import org.kuali.rice.krad.uif.util.UifBeanFactoryPostProcessor;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleUtils;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.view.View;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.core.io.FileSystemResource;
@@ -155,8 +159,6 @@ public class Validator {
             object.completeValidation(tracer.getCopy());
 
             runValidationsOnLifecycle(object, tracer.getCopy());
-
-            runValidationsOnPrototype(object, tracer.getCopy());
         }
 
         compileFinalReport();
@@ -177,8 +179,9 @@ public class Validator {
 
     /**
      * Validates the beans in a collection of xml files
-     *
+     * @param xmlFiles files to validate
      * @param failOnWarning - Whether detecting a warning should cause the validation to fail
+     * 
      * @return Returns true if the beans past validation
      */
     public boolean validate(String[] xmlFiles, boolean failOnWarning) {
@@ -211,7 +214,7 @@ public class Validator {
     private void runValidationsOnComponents(Component component, ValidationTrace tracer) {
 
         try {
-            ExpressionUtils.populatePropertyExpressionsFromGraph(component, false);
+            ViewLifecycle.getExpressionEvaluator().populatePropertyExpressionsFromGraph(component, false);
         } catch (Exception e) {
             String value[] = {"view = " + component.getId()};
             tracerTemp.createError("Error Validating Bean View while loading expressions", value);
@@ -229,76 +232,49 @@ public class Validator {
         try {
             runValidationsOnLifecycle(component, tracer.getCopy());
         } catch (Exception e) {
-            String value[] = {component.getId(), component.getComponentsForLifecycle().size() + "",
+            String value[] = {component.getId(),
+                    ViewLifecycleUtils.getElementsForLifecycle(component).size() + "",
                     "Exception " + e.getMessage()};
             tracerTemp.createError("Error Validating Bean Lifecycle", value);
-        }
-
-        try {
-            runValidationsOnPrototype(component, tracer.getCopy());
-        } catch (Exception e) {
-            String value[] = {component.getId(), component.getComponentPrototypes().size() + "",
-                    "Exceptions : " + e.getLocalizedMessage()};
-            tracerTemp.createError("Error Validating Bean Prototypes", value);
         }
     }
 
     /**
      * Runs the validations on a components lifecycle items
      *
-     * @param component - The component whose lifecycle items are being checked
+     * @param element - The component whose lifecycle items are being checked
      * @param tracer - The current bean trace for the validation line
      */
-    private void runValidationsOnLifecycle(Component component, ValidationTrace tracer) {
-        List<Component> nestedComponents = component.getComponentsForLifecycle();
+    private void runValidationsOnLifecycle(LifecycleElement element, ValidationTrace tracer) {
+        Map<String, LifecycleElement> nestedComponents =
+                ViewLifecycleUtils.getElementsForLifecycle(element, UifConstants.ViewPhases.INITIALIZE);
         if (nestedComponents == null) {
             return;
         }
-        if (!doValidationOnUIFBean(component)) {
-            return;
+
+        Component component = null;
+        if (element instanceof Component) {
+            component = (Component) element;
+            if (!doValidationOnUIFBean(component)) {
+                return;
+            }
+            tracer.addBean(component);
         }
-        tracer.addBean(component);
-        for (Component temp : nestedComponents) {
-            if (temp == null) {
+        
+        for (LifecycleElement temp : nestedComponents.values()) {
+            if (!(temp instanceof Component)) {
                 continue;
             }
             if (tracer.getValidationStage() == ValidationTrace.START_UP) {
-                ExpressionUtils.populatePropertyExpressionsFromGraph(temp, false);
+                ViewLifecycle.getExpressionEvaluator().populatePropertyExpressionsFromGraph((Component) temp, false);
             }
-            if (temp.isRender()) {
-                temp.completeValidation(tracer.getCopy());
+            if (((Component) temp).isRender()) {
+                ((DataDictionaryEntry) temp).completeValidation(tracer.getCopy());
                 runValidationsOnLifecycle(temp, tracer.getCopy());
             }
         }
-    }
-
-    /**
-     * Runs the validations on a components prototypes
-     *
-     * @param component - The component whose prototypes are being checked
-     * @param tracer - The current bean trace for the validation line
-     */
-    private void runValidationsOnPrototype(Component component, ValidationTrace tracer) {
-        List<Component> componentPrototypes = component.getComponentPrototypes();
-        if (componentPrototypes == null) {
-            return;
-        }
-        if (!doValidationOnUIFBean(component)) {
-            return;
-        }
-        tracer.addBean(component);
-        for (Component temp : componentPrototypes) {
-            if (temp == null) {
-                continue;
-            }
-            if (tracer.getValidationStage() == ValidationTrace.START_UP) {
-                ExpressionUtils.populatePropertyExpressionsFromGraph(temp, false);
-            }
-            if (temp.isRender()) {
-                temp.completeValidation(tracer.getCopy());
-                runValidationsOnPrototype(temp, tracer.getCopy());
-            }
-        }
+        
+        ViewLifecycleUtils.recycleElementMap(nestedComponents);
     }
 
     /**
@@ -368,33 +344,8 @@ public class Validator {
         expression = StringUtils.replace(expression, "<=", " <= ");
         expression = StringUtils.replace(expression, ">=", " >= ");
 
-        String stack = "";
         ArrayList<String> controlNames = new ArrayList<String>();
-
-        boolean expectingSingleQuote = false;
-        boolean ignoreNext = false;
-        for (int i = 0; i < expression.length(); i++) {
-            char c = expression.charAt(i);
-            if (!expectingSingleQuote && !ignoreNext && (c == '(' || c == ' ' || c == ')')) {
-                ExpressionUtils.evaluateCurrentStack(stack.trim(), controlNames);
-                //reset stack
-                stack = "";
-                continue;
-            } else if (!ignoreNext && c == '\'') {
-                stack = stack + c;
-                expectingSingleQuote = !expectingSingleQuote;
-            } else if (c == '\\') {
-                stack = stack + c;
-                ignoreNext = !ignoreNext;
-            } else {
-                stack = stack + c;
-                ignoreNext = false;
-            }
-        }
-
-        if (StringUtils.isNotEmpty(stack)) {
-            ExpressionUtils.evaluateCurrentStack(stack.trim(), controlNames);
-        }
+        controlNames.addAll(ViewLifecycle.getExpressionEvaluator().findControlNamesInExpression(expression));
 
         return controlNames;
     }
@@ -475,14 +426,14 @@ public class Validator {
             xmlReader.loadBeanDefinitions(core);
         } catch (Exception e) {
             LOG.error("Error loading bean definitions", e);
-            throw new DataDictionaryException("Error loading bean definitions: " + e.getLocalizedMessage());
+            throw new DataDictionaryException("Error loading bean definitions: " + e.getLocalizedMessage(), e);
         }
 
         try {
             xmlReader.loadBeanDefinitions(getResources(test));
         } catch (Exception e) {
             LOG.error("Error loading bean definitions", e);
-            throw new DataDictionaryException("Error loading bean definitions: " + e.getLocalizedMessage());
+            throw new DataDictionaryException("Error loading bean definitions: " + e.getLocalizedMessage(), e);
         }
 
         UifBeanFactoryPostProcessor factoryPostProcessor = new UifBeanFactoryPostProcessor();

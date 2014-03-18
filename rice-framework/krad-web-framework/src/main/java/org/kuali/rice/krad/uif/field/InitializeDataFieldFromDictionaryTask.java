@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,25 +20,25 @@ import java.util.Map.Entry;
 
 import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.krad.datadictionary.AttributeDefinition;
-import org.kuali.rice.krad.service.DataDictionaryService;
 import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
 import org.kuali.rice.krad.uif.component.BindingInfo;
-import org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleTaskBase;
 import org.kuali.rice.krad.uif.util.ComponentFactory;
 import org.kuali.rice.krad.uif.util.ObjectPathExpressionParser;
 import org.kuali.rice.krad.uif.util.ObjectPathExpressionParser.PathEntry;
 import org.kuali.rice.krad.uif.util.ObjectPropertyUtils;
 import org.kuali.rice.krad.uif.util.ViewModelUtils;
 import org.kuali.rice.krad.uif.view.View;
+import org.kuali.rice.krad.util.KRADConstants;
 
 /**
  * Performs initialization on data fields based on attributes found in the data dictionary.
  * 
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-public class InitializeDataFieldFromDictionaryTask extends AbstractViewLifecycleTask {
+public class InitializeDataFieldFromDictionaryTask extends ViewLifecycleTaskBase<DataField> {
 
     /**
      * Constructor.
@@ -46,26 +46,25 @@ public class InitializeDataFieldFromDictionaryTask extends AbstractViewLifecycle
      * @param phase The initialize phase for the data field.
      */
     public InitializeDataFieldFromDictionaryTask(ViewLifecyclePhase phase) {
-        super(phase);
+        super(phase, DataField.class);
     }
 
     /**
      * Sets properties of the <code>InputField</code> (if blank) to the corresponding attribute
      * entry in the data dictionary
      * 
-     * @see org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask#performLifecycleTask()
+     * {@inheritDoc}
      */
     @Override
     protected void performLifecycleTask() {
-        DataField field = (DataField) getPhase().getComponent();
+        DataField field = (DataField) getElementState().getElement();
 
         AttributeDefinition attributeDefinition = null;
 
         String dictionaryAttributeName = field.getDictionaryAttributeName();
         String dictionaryObjectEntry = field.getDictionaryObjectEntry();
 
-        // if entry given but not attribute name, use field name as attribute
-        // name
+        // if entry given but not attribute name, use field name as attribute name
         if (StringUtils.isNotBlank(dictionaryObjectEntry) && StringUtils.isBlank(dictionaryAttributeName)) {
             dictionaryAttributeName = field.getPropertyName();
         }
@@ -78,11 +77,10 @@ public class InitializeDataFieldFromDictionaryTask extends AbstractViewLifecycle
 
         // if definition not found, recurse through path
         if (attributeDefinition == null) {
-
             BindingInfo fieldBindingInfo = field.getBindingInfo();
             String collectionPath = fieldBindingInfo.getCollectionPath();
-            String propertyPath;
 
+            String propertyPath;
             if (StringUtils.isNotBlank(collectionPath)) {
                 StringBuilder propertyPathBuilder = new StringBuilder();
 
@@ -124,19 +122,17 @@ public class InitializeDataFieldFromDictionaryTask extends AbstractViewLifecycle
 
     /**
      * Helper method for optimzing a call to
-     * {@link ViewModelUtils#getPropertyTypeByClassAndView(View, String)} while parsing a path
+     * {@link ViewModelUtils#getPropertyTypeByClassAndView(View, Object, String)} while parsing a path
      * expression for an attribute definition.
      *
-     * @param formClass The view's form class.
-     * @param modelClasses The view's model classes mapping.
      * @param rootPath The root path of the parse.
      * @param parentPath The parent path of the current parse entry.
      * @return The name of the dictionary entry to check at the current parse node.
      */
     private String getDictionaryEntryName(String rootPath, String parentPath) {
         Map<String, Class<?>> modelClasses = ViewLifecycle.getView().getObjectPathToConcreteClassMapping();
-        String modelClassPath = getModelClassPath(rootPath, parentPath);
 
+        String modelClassPath = getModelClassPath(rootPath, parentPath);
         if (modelClassPath == null) {
             return null;
         }
@@ -157,15 +153,19 @@ public class InitializeDataFieldFromDictionaryTask extends AbstractViewLifecycle
         int modelClassPathLength = modelClassPath.length();
 
         // check if property path matches one of the modelClass entries
-        for (Entry<String, Class<?>> modelClassEntry : modelClasses.entrySet()) {
-            String path = modelClassEntry.getKey();
-            int pathlen = path.length();
+        synchronized (modelClasses) {
+            // synchronizing on modelClasses prevents ConcurrentModificationException during
+            // asynchronous lifecycle processing
+            for (Entry<String, Class<?>> modelClassEntry : modelClasses.entrySet()) {
+                String path = modelClassEntry.getKey();
+                int pathlen = path.length();
 
-            if (modelClassPath.startsWith(path) && pathlen > bestMatchLength
-                    && modelClassPathLength > pathlen && modelClassPath.charAt(pathlen) == '.') {
-                bestMatchLength = pathlen;
-                modelClass = modelClassEntry.getValue();
-                modelProperty = modelClassPath.substring(pathlen + 1);
+                if (modelClassPath.startsWith(path) && pathlen > bestMatchLength
+                        && modelClassPathLength > pathlen && modelClassPath.charAt(pathlen) == '.') {
+                    bestMatchLength = pathlen;
+                    modelClass = modelClassEntry.getValue();
+                    modelProperty = modelClassPath.substring(pathlen + 1);
+                }
             }
         }
 
@@ -176,7 +176,7 @@ public class InitializeDataFieldFromDictionaryTask extends AbstractViewLifecycle
 
         if (dictionaryModelClass == null) {
             // If no full or partial match, look up based on the model directly
-            dictionaryModelClass = ObjectPropertyUtils.getPropertyType(getPhase().getModel(), modelClassPath);
+            dictionaryModelClass = ObjectPropertyUtils.getPropertyType(ViewLifecycle.getModel(), modelClassPath);
         }
 
         return dictionaryModelClass == null ? null : dictionaryModelClass.getName();
@@ -256,8 +256,8 @@ public class InitializeDataFieldFromDictionaryTask extends AbstractViewLifecycle
      * @return AttributeDefinition if found, or Null
      */
     protected AttributeDefinition findNestedDictionaryAttribute(String propertyPath) {
-        // attempt to find definition for parent and property
-        DataField field = (DataField) getPhase().getComponent();
+        DataField field = (DataField) getElementState().getElement();
+
         String fieldBindingPrefix = null;
         String dictionaryAttributePath = propertyPath;
 
@@ -282,42 +282,11 @@ public class InitializeDataFieldFromDictionaryTask extends AbstractViewLifecycle
             return null;
         }
 
-        final DataDictionaryService dataDictionaryService = KRADServiceLocatorWeb.getDataDictionaryService();
-        final String rootPath = fieldBindingPrefix;
-
-        class AttributePathEntry implements PathEntry {
-            AttributeDefinition attributeDefinition;
-            String dictionaryAttributeName;
-            String dictionaryObjectEntry;
-
-            @Override
-            public Object parse(String parentPath, Object node, String next) {
-                if (next == null) {
-                    return node;
-                }
-
-                if (attributeDefinition != null || node == null) {
-                    return null;
-                }
-
-                String dictionaryEntryName = getDictionaryEntryName(rootPath, parentPath);
-
-                if (dictionaryEntryName != null) {
-                    attributeDefinition = dataDictionaryService
-                            .getAttributeDefinition(dictionaryEntryName, next);
-
-                    if (attributeDefinition != null) {
-                        dictionaryObjectEntry = dictionaryEntryName;
-                        dictionaryAttributeName = next;
-                        return null;
-                    }
-                }
-
-                return node;
-            }
+        if (StringUtils.startsWith(dictionaryAttributePath, KRADConstants.LOOKUP_RANGE_LOWER_BOUND_PROPERTY_PREFIX)) {
+            dictionaryAttributePath = StringUtils.substringAfter(dictionaryAttributePath, KRADConstants.LOOKUP_RANGE_LOWER_BOUND_PROPERTY_PREFIX);
         }
 
-        AttributePathEntry attributePathEntry = new AttributePathEntry();
+        AttributePathEntry attributePathEntry = new AttributePathEntry(fieldBindingPrefix);
         ObjectPathExpressionParser
                 .parsePathExpression(attributePathEntry, dictionaryAttributePath, attributePathEntry);
 
@@ -328,6 +297,46 @@ public class InitializeDataFieldFromDictionaryTask extends AbstractViewLifecycle
         }
 
         return attributePathEntry.attributeDefinition;
+    }
+
+    protected class AttributePathEntry implements PathEntry {
+        AttributeDefinition attributeDefinition;
+
+        String dictionaryAttributeName;
+        String dictionaryObjectEntry;
+
+        String rootPath;
+
+        public AttributePathEntry(String rootPath) {
+             this.rootPath = rootPath;
+        }
+
+        @Override
+        public Object parse(String parentPath, Object node, String next) {
+            if (next == null) {
+                return node;
+            }
+
+            if (attributeDefinition != null || node == null) {
+                return null;
+            }
+
+            String dictionaryEntryName = getDictionaryEntryName(rootPath, parentPath);
+
+            if (dictionaryEntryName != null) {
+                attributeDefinition = KRADServiceLocatorWeb.getDataDictionaryService()
+                        .getAttributeDefinition(dictionaryEntryName, next);
+
+                if (attributeDefinition != null) {
+                    dictionaryObjectEntry = dictionaryEntryName;
+                    dictionaryAttributeName = next;
+
+                    return null;
+                }
+            }
+
+            return node;
+        }
     }
 
 }

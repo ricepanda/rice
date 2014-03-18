@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -200,32 +200,6 @@ public class PropertyReplacer extends UifDictionaryBeanBase implements Serializa
      */
     public void setReplacement(Object replacement) {
         this.replacement = replacement;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T propertyReplacer) {
-        super.copyProperties(propertyReplacer);
-
-        PropertyReplacer propertyReplacerCopy = ((PropertyReplacer) propertyReplacer);
-
-        propertyReplacerCopy.setCondition(this.condition);
-        propertyReplacerCopy.setPropertyName(this.propertyName);
-
-        if (this.replacement != null) {
-            Object replacementCopy = null;
-            if (this.replacement instanceof Component) {
-                replacementCopy = ((Component) this.replacement).copy();
-            } else if (this.replacement instanceof LayoutManager) {
-                replacementCopy = ((LayoutManager) this.replacement).copy();
-            } else {
-                replacementCopy = CloneUtils.deepClone(this.replacement);
-            }
-
-            propertyReplacerCopy.setReplacement(replacementCopy);
-        }
     }
 
     /**

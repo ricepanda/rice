@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ public class WorkflowProperty implements Serializable {
      * Returns the path to the property that is serializable, relative to the {@link WorkflowPropertyGroup} that
      * contains this object
      *
-     * @return
+     * @return path
      */
     @BeanTagAttribute(name = "path")
     public String getPath() {

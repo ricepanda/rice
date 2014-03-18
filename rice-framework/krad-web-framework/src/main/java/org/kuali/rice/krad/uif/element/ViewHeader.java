@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,14 @@
  */
 package org.kuali.rice.krad.uif.element;
 
-import java.util.List;
-
 import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
 import org.kuali.rice.krad.uif.CssConstants;
+import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.view.View;
 
 /**
@@ -46,13 +46,13 @@ public class ViewHeader extends Header {
      * Sets the supportTitleMessage if one has not been set and unified header is being used, based on the value
      * of page title
      *
-     * @see Component#performFinalize(org.kuali.rice.krad.uif.view.View, Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performFinalize(Object model, Component parent) {
+    public void performFinalize(Object model, LifecycleElement parent) {
         super.performFinalize(model, parent);
 
-        View view = ViewLifecycle.getActiveLifecycle().getView();
+        View view = ViewLifecycle.getView();
         if (supportTitleMessage != null &&
                 view.getCurrentPage() != null && view.getCurrentPage().getHeader() != null &&
                 view.isUnifiedHeader()) {
@@ -74,20 +74,15 @@ public class ViewHeader extends Header {
                 supportTitleMessage.setMessageText(pageHeader.getHeaderText().trim());
             }
         }
-    }
 
-    /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#getComponentsForLifecycle()
-     */
-    @Override
-    public List<Component> getComponentsForLifecycle() {
-        List<Component> components = super.getComponentsForLifecycle();
+        // Add content to the header if the wrapper will not be rendered due to lack of upper or lower groups
+        if (this.getUpperGroup() == null && this.getLowerGroup() == null) {
+            this.getCssClasses().addAll(0, view.getContentContainerCssClasses());
 
-        components.add(areaTitleMessage);
-        components.add(supportTitleMessage);
-        components.add(metadataMessage);
-
-        return components;
+            if (this.isSticky()) {
+                this.addDataAttribute(UifConstants.DataAttributes.STICKY, "true");
+            }
+        }
     }
 
     /**
@@ -231,29 +226,5 @@ public class ViewHeader extends Header {
      */
     public void setSticky(boolean sticky) {
         this.sticky = sticky;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        ViewHeader viewHeaderCopy = (ViewHeader) component;
-
-        if (this.areaTitleMessage != null) {
-            viewHeaderCopy.setAreaTitleMessage((Message) this.areaTitleMessage.copy());
-        }
-
-        if (this.supportTitleMessage != null) {
-            viewHeaderCopy.setSupportTitleMessage((Message) this.supportTitleMessage.copy());
-        }
-
-        if (this.metadataMessage != null) {
-            viewHeaderCopy.setMetadataMessage((Message) this.metadataMessage.copy());
-        }
-
-        viewHeaderCopy.setSticky(this.sticky);
     }
 }

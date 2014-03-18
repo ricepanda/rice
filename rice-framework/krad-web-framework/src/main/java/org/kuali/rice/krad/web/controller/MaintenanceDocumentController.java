@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -203,7 +203,7 @@ public class MaintenanceDocumentController extends DocumentControllerBase {
     public ModelAndView maintenanceDelete(@ModelAttribute("KualiForm") MaintenanceDocumentForm form,
             BindingResult result, HttpServletRequest request, HttpServletResponse response) throws Exception {
 
-        GlobalVariables.getMessageMap().putInfo(KRADConstants.GLOBAL_MESSAGES, RiceKeyConstants.MESSAGE_DELETE);
+        GlobalVariables.getMessageMap().putWarning(KRADConstants.GLOBAL_MESSAGES, RiceKeyConstants.MESSAGE_DELETE);
 
         setupMaintenance(form, request, KRADConstants.MAINTENANCE_DELETE_ACTION);
 
@@ -261,8 +261,7 @@ public class MaintenanceDocumentController extends DocumentControllerBase {
     /**
      * Override route to retrieve the maintenance object if it is an attachment
      *
-     * @see DocumentControllerBase.route
-     *      (DocumentFormBase, HttpServletRequest, HttpServletResponse)
+     * {@inheritDoc}
      */
     @Override
     @RequestMapping(params = "methodToCall=route")

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,12 @@ import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
 import org.kuali.rice.krad.datadictionary.validator.ValidationTrace;
 import org.kuali.rice.krad.datadictionary.validator.Validator;
-import org.kuali.rice.krad.uif.UifConstants.Position;
+import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
+import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.component.Component;
-import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleRestriction;
 import org.kuali.rice.krad.uif.util.ComponentFactory;
-import org.kuali.rice.krad.uif.util.ComponentUtils;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.util.KRADConstants;
 
 /**
@@ -47,25 +48,23 @@ public class Label extends ContentElementBase {
 
     private boolean renderColon;
 
-    private Position requiredMessagePlacement;
-    private Message requiredMessage;
+    private String requiredIndicator;
+    private boolean renderRequiredIndicator;
 
     private Message richLabelMessage;
     private List<Component> inlineComponents;
 
     public Label() {
         renderColon = true;
-
-        requiredMessagePlacement = Position.LEFT;
     }
 
     /**
      * Sets up rich message content for the label, if any exists
      *
-     * @see Component#performApplyModel(org.kuali.rice.krad.uif.view.View, Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performApplyModel(Object model, Component parent) {
+    public void performApplyModel(Object model, LifecycleElement parent) {
         super.performApplyModel(model, parent);
 
         if (richLabelMessage == null && labelText != null &&
@@ -74,43 +73,45 @@ public class Label extends ContentElementBase {
             Message message = ComponentFactory.getMessage();
             message.setMessageText(labelText);
             message.setInlineComponents(inlineComponents);
-            message.setGenerateSpan(false);
-
-            ViewLifecycle.spawnSubLifecyle(model, message, this);
+            message.setRenderWrapperTag(false);
 
             this.setRichLabelMessage(message);
         }
+
     }
 
     /**
      * The following finalization is performed:
      *
      * <ul>
+     * <li>Set the requiredIndicator</li>
      * <li>If label text is blank, set render to false for field</li>
+     * <li>Set the label text on the label field from the field's label property</li>
+     * <li>Set the render property on the label's required message field if this field is marked as required</li>
+     * </ul>
      *
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#performFinalize(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performFinalize(Object model, Component parent) {
+    public void performFinalize(Object model, LifecycleElement parent) {
         super.performFinalize(model, parent);
 
         if (StringUtils.isBlank(getLabelText())) {
             setRender(false);
         }
-    }
 
-    /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#getComponentsForLifecycle()
-     */
-    @Override
-    public List<Component> getComponentsForLifecycle() {
-        List<Component> components = super.getComponentsForLifecycle();
+        String defaultRequiredIndicator = (String) KRADServiceLocatorWeb.getDataDictionaryService().getDictionaryBean(
+                UifConstants.REQUIRED_INDICATOR_ID);
 
-        components.add(requiredMessage);
-        components.add(richLabelMessage);
+        if (requiredIndicator != null && !requiredIndicator.equals(defaultRequiredIndicator)) {
+            this.addDataAttribute(UifConstants.DataAttributes.REQ_INDICATOR, requiredIndicator);
+        } else if (requiredIndicator == null) {
+            requiredIndicator = defaultRequiredIndicator;
+        }
 
-        return components;
+        if ((getRequired() != null) && getRequired().booleanValue()) {
+            setRenderRequiredIndicator(true);
+        }
     }
 
     /**
@@ -178,49 +179,49 @@ public class Label extends ContentElementBase {
     }
 
     /**
-     * <code>Message</code> instance that will display a required indicator
+     * True if the indicator will be displayed when this label is first render, false otherwise.
+     *
+     * <p>This is set by the framework based on required constraint state, and generally should NOT
+     * be set in most cases.</p>
+     *
+     * @return true if rendering, false otherwise
+     */
+    public boolean isRenderRequiredIndicator() {
+        return renderRequiredIndicator;
+    }
+
+    /**
+     * @see org.kuali.rice.krad.uif.element.Label#isRenderRequiredIndicator()
+     *
+     * @param renderRequiredIndicator
+     */
+    public void setRenderRequiredIndicator(boolean renderRequiredIndicator) {
+        this.renderRequiredIndicator = renderRequiredIndicator;
+    }
+
+    /**
+     * String indicator that will be displayed as a required indicator
      *
      * <p>
      * To indicate a field must have a value (required input) the required
-     * message field can be set to display an indicator or message along with
-     * the label. The message field also dictates the styling of the required
-     * message
+     * indicator can be set to display an indicator or text along with
+     * the label.
      * </p>
      *
-     * @return Message instance
+     * @return the required indicator String to display
      */
-    @BeanTagAttribute(name="requiredMessage",type= BeanTagAttribute.AttributeType.SINGLEBEAN)
-    public Message getRequiredMessage() {
-        return this.requiredMessage;
+    @BeanTagAttribute(name="requiredIndicator")
+    public String getRequiredIndicator() {
+        return requiredIndicator;
     }
 
     /**
-     * Setter for the required message field
+     * @see org.kuali.rice.krad.uif.element.Label#getRequiredIndicator()
      *
-     * @param requiredMessage
+     * @param requiredIndicator
      */
-    public void setRequiredMessage(Message requiredMessage) {
-        this.requiredMessage = requiredMessage;
-    }
-
-    /**
-     * Indicates where the required message field should be placed in relation
-     * to the label field, valid options are 'LEFT' and 'RIGHT'
-     *
-     * @return the requiredMessage placement
-     */
-    @BeanTagAttribute(name="requiredMessagePlacement",type= BeanTagAttribute.AttributeType.SINGLEBEAN)
-    public Position getRequiredMessagePlacement() {
-        return this.requiredMessagePlacement;
-    }
-
-    /**
-     * Setter for the required message field placement
-     *
-     * @param requiredMessagePlacement
-     */
-    public void setRequiredMessagePlacement(Position requiredMessagePlacement) {
-        this.requiredMessagePlacement = requiredMessagePlacement;
+    public void setRequiredIndicator(String requiredIndicator) {
+        this.requiredIndicator = requiredIndicator;
     }
 
     /**
@@ -251,6 +252,7 @@ public class Label extends ContentElementBase {
      *
      * @return the Label's inlineComponents
      */
+    @ViewLifecycleRestriction
     @BeanTagAttribute(name="inlineComponents",type= BeanTagAttribute.AttributeType.LISTBEAN)
     public List<Component> getInlineComponents() {
         return inlineComponents;
@@ -266,36 +268,7 @@ public class Label extends ContentElementBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        Label labelCopy = (Label) component;
-
-        if (this.inlineComponents != null) {
-            List<Component> inlineComponentsCopy = ComponentUtils.copy(inlineComponents);
-            labelCopy.setInlineComponents(inlineComponentsCopy);
-        }
-
-        labelCopy.setLabelForComponentId(this.labelForComponentId);
-        labelCopy.setLabelText(this.labelText);
-        labelCopy.setRenderColon(this.renderColon);
-
-        if (this.requiredMessage != null) {
-            labelCopy.setRequiredMessage((Message)this.requiredMessage.copy());
-        }
-
-        if (this.richLabelMessage != null) {
-            labelCopy.setRichLabelMessage((Message)this.richLabelMessage.copy());
-        }
-
-        labelCopy.setRequiredMessagePlacement(this.requiredMessagePlacement);
-    }
-
-    /**
-     * @see org.kuali.rice.krad.uif.component.Component#completeValidation
+     * {@inheritDoc}
      */
     @Override
     public void completeValidation(ValidationTrace tracer){

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,9 @@ import static org.junit.Assert.*
  */
 public class AndPredicateTest {
 
-	private static final String XML = "<and xmlns=\"http://rice.kuali.org/core/v2_0\"><equal propertyPath=\"property.path\"><stringValue>abcdefg</stringValue></equal><greaterThan propertyPath=\"property.path2\"><decimalValue>100</decimalValue></greaterThan><or><greaterThan propertyPath=\"property.path3\"><integerValue>10000</integerValue></greaterThan><like propertyPath=\"property.path4\"><stringValue>wildcard*</stringValue></like></or></and>"; 
+	private static final String XML = "<and xmlns=\"http://rice.kuali.org/core/v2_0\"><equal propertyPath=\"property.path\"><stringValue>abcdefg</stringValue>" +
+            "</equal><greaterThan propertyPath=\"property.path2\"><decimalValue>100</decimalValue></greaterThan><or><greaterThan propertyPath=\"property.path3\">" +
+            "<integerValue>10000</integerValue></greaterThan><like propertyPath=\"property.path4\"><stringValue>wildcard*</stringValue></like></or></and>";
 		
 	/**
 	 * Test method for {@link AndPredicate#AndPredicate(java.util.Set)}.

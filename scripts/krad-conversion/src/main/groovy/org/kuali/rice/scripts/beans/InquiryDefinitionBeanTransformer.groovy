@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,15 +48,15 @@ class InquiryDefinitionBeanTransformer extends SpringBeanTransformer {
         def translatedBeanId = getTranslatedBeanId(beanNode.@id, inquiryDefinitionBeanType, inquiryViewBeanType);
         def translatedParentId = getTranslatedBeanId(beanNode.@parent, inquiryDefinitionBeanType, inquiryViewBeanType);
 
-        // these attributes are being converted and should not be copied when carryoverAttributes is enabled
+        // these attributes are being converted and should not be copied when useCarryoverAttributes is enabled
         List ignoreAttributes = [];
 
-        // these properties are being converted and should not be copied when carryoverProperties is enabled
+        // these properties are being converted and should not be copied when useCarryoverProperties is enabled
         List ignoreOnCopyProperties = ["title", "inquirableClass", "authorizerClass", "presentationControllerClass", "inquirySections"];
 
-        def beanAttributes = convertBeanAttributes(beanNode, inquiryDefinitionBeanType, inquiryViewBeanType, ignoreAttributes);
+        def beanAttributes = convertBeanAttributes(beanNode, inquiryDefinitionBeanType, inquiryViewBeanType, [],[:], ignoreAttributes);
 
-        if (carryoverProperties) {
+        if (useCarryoverProperties) {
             copiedProperties = beanNode.property.collect { it.@name };
             copiedProperties.removeAll(ignoreOnCopyProperties);
         } else {
@@ -72,7 +72,6 @@ class InquiryDefinitionBeanTransformer extends SpringBeanTransformer {
             beanNode.replaceNode {
                 addCommentIfNotExists(beanNode.parent(), "Inquiry View")
                 bean(beanAttributes) {
-                    addViewNameProperty(delegate, inquiryTitle)
                     if (inquiryTitle) {
                         property(name: "headerText", value: inquiryTitle)
                     }
@@ -130,7 +129,8 @@ class InquiryDefinitionBeanTransformer extends SpringBeanTransformer {
      */
     def transformInquirySectionDefinitionBean(NodeBuilder builder, Node beanNode) {
         // if it contains a inquiry collection add a uif stack collection, else replace with a Uif-Disclosure-GridSection
-        if (!beanNode.property.list.bean.find { it.@parent == "InquiryCollectionDefinition" }) {
+        def inquiryFieldsBeans = beanNode?.property?.find { "inquiryFields".equals(it.@name) }?.list?.bean;
+        if (!inquiryFieldsBeans?.find { it.@parent == "InquiryCollectionDefinition" }) {
             transformInquirySectionDefinitionFields(builder, beanNode);
         } else {
             transformInquiryCollectionDefinitionBean(builder, beanNode);
@@ -176,6 +176,7 @@ class InquiryDefinitionBeanTransformer extends SpringBeanTransformer {
         def attributes = gatherIdAttribute(beanNode) + [parent: 'Uif-StackedCollectionSection'];
         builder.bean(attributes) {
             renameProperties(builder, beanNode, ["title": "headerText", "defaultOpen": "disclosure.defaultOpen"]);
+            //transformNumberOfColumns(builder, beanNode);
             def inquiryFieldsPropertyNode = beanNode.property.find { it.@name == "inquiryFields" }
             if (inquiryFieldsPropertyNode != null) {
                 inquiryFieldsPropertyNode.list.'*'.each { beanOrRefNode ->
@@ -234,7 +235,7 @@ class InquiryDefinitionBeanTransformer extends SpringBeanTransformer {
      * Convert the noInquiry attribute to inquiry.render.  The boolean value needs to be inverted as well.
      */
     def gatherNoInquiryAttribute = { Node beanNode ->
-        def noInquiry = beanNode.attributes().find { matchesAttr("*noInquiry", it.key.toString()) };
+        def noInquiry = beanNode?.attributes()?.clone().find { matchesAttr("*noInquiry", it.key.toString()) };
         if (noInquiry?.value == "true") {
             return ["p:inquiry.render": "false"];
         } else if (noInquiry?.value == "false") {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,6 +75,38 @@ class OutputAwareMvnExecutor extends MvnExecutor {
             return getActualExecutable();
         } else {
             return mavenHome + File.separator + "bin" + File.separatorChar + getActualExecutable();
+        }
+    }
+
+    @Override
+    protected void addMavenOpts(MvnContext context, Commandline cl) {
+        if (isAddMavenOpts(context)) {
+            if (context.getOverrideMavenOpts() != null ) {
+                cl.addEnvironment(MvnContext.MAVEN_OPTS, context.getOverrideMavenOpts());
+            } else {
+                String mavenOpts = System.getenv(MvnContext.MAVEN_OPTS);
+                cl.addEnvironment(MvnContext.MAVEN_OPTS, mavenOpts);
+            }
+        }
+    }
+
+    @Override
+    protected void showConfig(MvnContext context, Commandline cl) {
+        if (!context.isSilent()) {
+            log.info("Maven POM - " + toEmpty(context.getPom()));
+        }
+        String args = getMavenArgs(cl);
+        if (!context.isSilent()) {
+            log.info("Maven Args - " + args);
+        }
+        if (isAddMavenOpts(context)) {
+            if (!context.isSilent() && !context.isQuiet()) {
+                if (context.getOverrideMavenOpts() != null ) {
+                    log.info(MvnContext.MAVEN_OPTS + '=' + context.getOverrideMavenOpts());
+                } else {
+                    log.info(MvnContext.MAVEN_OPTS + '=' + System.getenv(MvnContext.MAVEN_OPTS));
+                }
+            }
         }
     }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package org.kuali.rice.ken.services.impl;
 
 import org.junit.Ignore;
 import org.junit.Test;
-import org.kuali.rice.core.framework.persistence.dao.GenericDao;
+import org.kuali.rice.core.api.criteria.QueryByCriteria;
 import org.kuali.rice.kcb.service.GlobalKCBServiceLocator;
 import org.kuali.rice.kcb.service.MessageService;
 import org.kuali.rice.ken.bo.NotificationBo;
@@ -30,17 +30,20 @@ import org.kuali.rice.ken.service.UserPreferenceService;
 import org.kuali.rice.ken.service.impl.NotificationMessageDeliveryResolverServiceImpl;
 import org.kuali.rice.ken.test.KENTestCase;
 import org.kuali.rice.ken.util.NotificationConstants;
+import org.kuali.rice.krad.data.DataObjectService;
+import org.kuali.rice.krad.service.KRADServiceLocator;
 import org.kuali.rice.test.data.PerTestUnitTestData;
 import org.kuali.rice.test.data.UnitTestData;
 import org.kuali.rice.test.data.UnitTestSql;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static org.junit.Assert.*;
+
+import static org.kuali.rice.core.api.criteria.PredicateFactory.equal;
 
 //import org.kuali.rice.core.jpa.criteria.Criteria;
 
@@ -48,7 +51,6 @@ import static org.junit.Assert.*;
  * Tests NotificationMessageDeliveryResolverServiceImpl
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-// deadlocks are detected during clear database lifecycle (even when select for update is commented out...)
 // Make sure KCB has some deliverers configured for the test users, so message deliveries get created and the messages aren't removed
 @PerTestUnitTestData(
 		@UnitTestData(
@@ -63,7 +65,7 @@ import static org.junit.Assert.*;
 				}
 		)
 )
-@Ignore
+@Ignore // deadlocks are detected during clear database lifecycle (even when select for update is commented out...)
 public class NotificationMessageDeliveryResolverServiceImplTest extends KENTestCase {
     // NOTE: this value is HIGHLY dependent on the test data, make sure that it reflects the results
     // expected from the test data
@@ -76,8 +78,8 @@ public class NotificationMessageDeliveryResolverServiceImplTest extends KENTestC
 
     private static class TestNotificationMessageDeliveryResolverService extends NotificationMessageDeliveryResolverServiceImpl {
         public TestNotificationMessageDeliveryResolverService(NotificationService notificationService, NotificationRecipientService notificationRecipientService,
-                GenericDao businessObjectDao, PlatformTransactionManager txManager, ExecutorService executor, UserPreferenceService userPreferenceService) {
-            super(notificationService, notificationRecipientService, businessObjectDao, txManager, executor, userPreferenceService);
+                DataObjectService dataObjectService, PlatformTransactionManager txManager, ExecutorService executor) {
+            super(notificationService, notificationRecipientService, dataObjectService, txManager, executor);
         }
 
         @Override
@@ -92,21 +94,22 @@ public class NotificationMessageDeliveryResolverServiceImplTest extends KENTestC
     }
 
     protected TestNotificationMessageDeliveryResolverService getResolverService() {
-        return new TestNotificationMessageDeliveryResolverService(services.getNotificationService(), services.getNotificationRecipientService(), services.getGenericDao(), transactionManager,
-        	Executors.newFixedThreadPool(5), services.getUserPreferenceService());
+        return new TestNotificationMessageDeliveryResolverService(services.getNotificationService(), services.getNotificationRecipientService(),
+                KRADServiceLocator.getDataObjectService(), transactionManager,
+        	Executors.newFixedThreadPool(5));
     }
 
     //this is the one need to tweek on Criteria
     protected void assertProcessResults() {
         // one error should have occurred and the delivery should have been marked unlocked again
-    	Collection<NotificationMessageDelivery> lockedDeliveries = services.getNotificationMessegDeliveryDao().getLockedDeliveries(NotificationBo.class, services.getGenericDao());
-         
+    	Collection<NotificationMessageDelivery> lockedDeliveries = services.getNotificationMessegDeliveryDao().getLockedDeliveries(NotificationBo.class, KRADServiceLocator.getDataObjectService());
     	assertEquals(0, lockedDeliveries.size());
 
         // should be 1 unprocessed delivery (the one that had an error)
-        HashMap<String, String> queryCriteria = new HashMap<String, String>();
-        queryCriteria.put(NotificationConstants.BO_PROPERTY_NAMES.PROCESSING_FLAG, NotificationConstants.PROCESSING_FLAGS.UNRESOLVED);
-        Collection<NotificationBo> unprocessedDeliveries = services.getGenericDao().findMatching(NotificationBo.class, queryCriteria);
+        QueryByCriteria.Builder criteria = QueryByCriteria.Builder.create();
+        criteria.setPredicates(equal(NotificationConstants.BO_PROPERTY_NAMES.PROCESSING_FLAG, NotificationConstants.PROCESSING_FLAGS.UNRESOLVED));
+        Collection<NotificationBo> unprocessedDeliveries = KRADServiceLocator.getDataObjectService().findMatching(NotificationBo.class, criteria.build()).getResults();
+
         assertEquals(1, unprocessedDeliveries.size());
         NotificationBo n = unprocessedDeliveries.iterator().next();
         // #3 is the bad one

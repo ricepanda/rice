@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,13 @@
  */
 package org.kuali.rice.krad.data.provider;
 
-import org.kuali.rice.core.api.criteria.LookupCustomizer;
 import org.kuali.rice.core.api.criteria.QueryByCriteria;
 import org.kuali.rice.core.api.criteria.QueryResults;
 import org.kuali.rice.krad.data.PersistenceOption;
 
 /**
  * Defines persistence SPI for data providers.  PersistenceProviders are responsible for creating, updating, querying,
- * and deleting data objects.  DataObjectTypes the PersistenceProvider supports must be queried through
+ * copying and deleting data objects.  DataObjectTypes the PersistenceProvider supports must be queried through
  * {@link #handles(Class)} before interaction with the PersistenceProvider.
  *
  * @author Kuali Rice Team (rice.collab@kuali.org)
@@ -85,26 +84,6 @@ public interface PersistenceProvider extends Provider {
     <T> QueryResults<T> findMatching(Class<T> type, QueryByCriteria queryByCriteria);
 
     /**
-     * Executes a query for the given data object. If the given QueryByCriteria is empty or null, then
-     * all data objects for the given type will be returned. Depending on the given criteria and the
-     * implementation for the query execution, not all matching results may be returned. The QueryResults
-     * will contain information on whether or not there are additional results which can be used for paging
-     * and similar functionality.
-     *
-     * @param type the type of the data objects to query
-     * @param queryByCriteria query object, can contain sorting and page request configuration
-     * @param lookupCustomizer predication transformation
-     * @param <T> the data object class type
-     *
-     * @return the results of the query, will never return null but may return empty results
-     *
-     * @throws IllegalArgumentException if {@code type} does not denote a data object type
-     * @throws org.springframework.dao.DataAccessException if data access fails
-     */
-    <T> QueryResults<T> findMatching(Class<T> type, QueryByCriteria queryByCriteria, LookupCustomizer<T> lookupCustomizer);
-
-
-    /**
      * Deletes a given data object.
      *
      * @param dataObject the data object to delete
@@ -113,6 +92,19 @@ public interface PersistenceProvider extends Provider {
      * @throws org.springframework.dao.DataAccessException if data access fails
      */
     void delete(Object dataObject);
+
+    /**
+     * Returns a copy of the given data object instance.
+     *
+     * <p>The method of copying is provider dependent, and will handle instances (including nested) using whatever
+     * measures might be required to deal with the quirks of said provider (e.g. fetching lazy loaded relations).
+     * </p>
+     *
+     * @param dataObject the data object to copy
+     * @param <T> the type of the data object
+     * @return a copy of the given data object
+     */
+    <T> T copyInstance(T dataObject);
 
     /**
      * Indicates whether or not this provider handles persistence for the given data object type.

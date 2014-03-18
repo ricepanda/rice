@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,7 @@ package org.kuali.rice.kim.bo.ui;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.IdClass;
 import javax.persistence.Table;
-
 
 /**
  * This is a description of what this class does - shyu don't forget to fill this in.
@@ -28,18 +26,19 @@ import javax.persistence.Table;
  *
  */
 @Entity
-@IdClass(KimDocumentAttributeDataBusinessObjectBaseId.class)
-@Table(name="KRIM_PND_GRP_ATTR_DATA_T")
+@Table(name = "KRIM_PND_GRP_ATTR_DATA_T")
 public class GroupDocumentQualifier extends KimDocumentAttributeDataBusinessObjectBase {
-	private static final long serialVersionUID = -8229585479940487688L;
-	@Column(name="GRP_ID")
-	private String groupId;
 
-	public String getGroupId() {
-		return groupId;
-	}
+    private static final long serialVersionUID = -8229585479940487688L;
 
-	public void setGroupId(String groupId) {
-		this.groupId = groupId;
-	}
+    @Column(name = "GRP_ID")
+    private String groupId;
+
+    public String getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(String groupId) {
+        this.groupId = groupId;
+    }
 }

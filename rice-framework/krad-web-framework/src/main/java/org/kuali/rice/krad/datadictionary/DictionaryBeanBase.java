@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,15 +93,11 @@ public abstract class DictionaryBeanBase implements DictionaryBean, Copyable {
     }
 
     /**
-     * Copies properties for copy()
-     *
-     * @param dictionaryBeanBase base bean
+     * {@inheritDoc}
      */
-    protected <T> void copyProperties(T dictionaryBeanBase) {
-        DictionaryBeanBase dictionaryBeanBaseCopy = (DictionaryBeanBase) dictionaryBeanBase;
-
-        dictionaryBeanBaseCopy.setComponentCode(this.componentCode);
-        dictionaryBeanBaseCopy.setNamespaceCode(this.namespaceCode);
+    @Override
+    public Copyable unwrap() {
+        return this;
     }
 
     @Override

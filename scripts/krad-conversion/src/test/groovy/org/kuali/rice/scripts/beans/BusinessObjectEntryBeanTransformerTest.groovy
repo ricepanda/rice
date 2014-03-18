@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,10 +76,29 @@ class BusinessObjectEntryBeanTransformerTest extends BeanTransformerTestBase {
 
             log.finer("resulting node is " + getNodeString(beanNode));
             def constraintProperty = beanNode.property.find { "validCharactersConstraint".equals(it.@name) };
-            checkBeanParentExists(constraintProperty, "NumericPatternConstraint");
+            checkBeanExistsByParentId(constraintProperty, "NumericPatternConstraint");
         } catch (Exception e) {
             e.printStackTrace();
             Assert.fail("exception occurred in testing");
         }
     }
+
+    @Test
+    void testTransformRegexValidationPatternBeanProperty() {
+        def ddRootNode = getFileRootNode(defaultTestFilePath);
+        def beanNode = ddRootNode.bean.find { "TravelerDetail-zipCode-parentBean".equals(it.@id) };
+        try {
+            businessObjectEntryBeanTransformer.transformValidationPatternProperty(beanNode, true);
+            checkBeanPropertyExists(beanNode, "validCharactersConstraint");
+            def constraintProperty = beanNode.property.find { "validCharactersConstraint".equals(it.@name) };
+            checkBeanExistsByParentId(constraintProperty, "JavaClassPatternConstraint");
+            def constraintBean = constraintProperty.bean.find { "JavaClassPatternConstraint".equals(it.@parent) };
+            checkBeanPropertyExists(constraintBean, "value");
+            checkBeanPropertyExists(constraintBean, "messageKey");
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.fail("exception occurred in testing");
+        }
+    }
+
 }

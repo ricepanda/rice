@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ public interface InactivationBlockingMetadata {
      * The property name of the reference on the blocked object which points to the blocking object.
      *
      * @return the name of the blocking reference
-     * @deprecated use {@link #getBlockingAttributeName()} instead
+     * @deprecated use {@link #getBlockedAttributeName()} instead
      */
     @Deprecated
     String getBlockedReferencePropertyName();
@@ -87,7 +87,7 @@ public interface InactivationBlockingMetadata {
     /**
      * Returns the human-meaningful name of the relationship
      *
-     * @return
+     * @return relationship label
      */
     String getRelationshipLabel();
 }

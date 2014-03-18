@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,20 @@
  */
 package org.kuali.rice.kim.impl.identity.employment;
 
-import org.kuali.rice.kim.api.identity.CodedAttribute;
-import org.kuali.rice.kim.framework.identity.employment.EntityEmploymentStatusEbo;
-import org.kuali.rice.kim.impl.identity.CodedAttributeBo;
-
 import javax.persistence.AttributeOverride;
 import javax.persistence.AttributeOverrides;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
+import org.kuali.rice.kim.api.identity.CodedAttribute;
+import org.kuali.rice.kim.framework.identity.employment.EntityEmploymentStatusEbo;
+import org.kuali.rice.kim.impl.identity.CodedAttributeBo;
 
+@AttributeOverrides({ @AttributeOverride(name = "code", column = @Column(name = "EMP_STAT_CD")) })
 @Entity
-@AttributeOverrides({
-        @AttributeOverride(name="code",column=@Column(name="EMP_STAT_CD"))
-})
 @Table(name = "KRIM_EMP_STAT_T")
 public class EntityEmploymentStatusBo extends CodedAttributeBo implements EntityEmploymentStatusEbo {
+
     private static final long serialVersionUID = 103798378630101884L;
 
     public static EntityEmploymentStatusBo from(CodedAttribute immutable) {

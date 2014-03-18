@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,17 +60,4 @@ public class DataFieldSecurity extends FieldSecurity {
         this.attributeSecurity = attributeSecurity;
     }
 
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T componentSecurity) {
-        super.copyProperties(componentSecurity);
-
-        DataFieldSecurity dataFieldCopy = (DataFieldSecurity) componentSecurity;
-
-        if (this.attributeSecurity != null) {
-            dataFieldCopy.setAttributeSecurity((AttributeSecurity)this.attributeSecurity.copy());
-        }
-    }
 }

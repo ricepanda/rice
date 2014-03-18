@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,14 @@
  */
 package org.kuali.rice.ksb.messaging;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import javax.xml.namespace.QName;
-
 import org.apache.commons.httpclient.URI;
 import org.apache.cxf.aegis.databinding.AegisDatabinding;
 import org.apache.cxf.binding.soap.SoapFault;
 import org.apache.cxf.endpoint.Client;
-import org.apache.cxf.endpoint.dynamic.DynamicClientFactory;
 import org.apache.cxf.frontend.ClientProxyFactoryBean;
 import org.apache.cxf.interceptor.LoggingInInterceptor;
 import org.apache.cxf.interceptor.LoggingOutInterceptor;
+import org.apache.cxf.jaxws.endpoint.dynamic.JaxWsDynamicClientFactory;
 import org.junit.Test;
 import org.kuali.rice.core.api.config.property.ConfigContext;
 import org.kuali.rice.core.api.resourceloader.GlobalResourceLoader;
@@ -38,6 +32,9 @@ import org.kuali.rice.ksb.messaging.remotedservices.SOAPService;
 import org.kuali.rice.ksb.service.KSBServiceLocator;
 import org.kuali.rice.ksb.test.KSBTestCase;
 
+import javax.xml.namespace.QName;
+
+import static org.junit.Assert.*;
 
 /**
  *
@@ -66,28 +63,26 @@ public class SOAPServiceTest extends KSBTestCase {
 	}
 
 	
-	@Test public void testSimpleSOAPService() throws Exception{
- 
-		
-		EchoService echoService = (EchoService)GlobalResourceLoader.getService(new QName("TestCl1", "soap-echoService"));
+	@Test
+    public void testSimpleSOAPService() throws Exception{
+		EchoService echoService = GlobalResourceLoader.getService(new QName("TestCl1", "soap-echoService"));
 		String result = echoService.trueEcho("Yo yo yo");
 		assertNotNull(result);
-		
+
 		QName serviceName = new QName("testNameSpace", "soap-repeatTopic");
-		SOAPService soapService = (SOAPService) GlobalResourceLoader.getService(serviceName);
+		SOAPService soapService = GlobalResourceLoader.getService(serviceName);
 		soapService.doTheThing("hello");
 	}
-	
+
 	@Test
-	public void testJaxWsSOAPService(){	
-		
-		JaxWsEchoService jaxwsEchoService = (JaxWsEchoService) GlobalResourceLoader.getService(new QName("TestCl1", "jaxwsEchoService"));
+	public void testJaxWsSOAPService(){
+		JaxWsEchoService jaxwsEchoService = GlobalResourceLoader.getService(new QName("TestCl1", "jaxwsEchoService"));
 		String result = jaxwsEchoService.doEcho("Fi Fi Fo Fum");
 		assertTrue(("Fi Fi Fo Fum").equals(result));
 	}
-	
-	@Test 
-	public void testBusSecureSoapService() throws Exception{
+
+	@Test
+	public void testBusSecureSOAPService() throws Exception{
 		//Create non-secure client to access secure service
 		ClientProxyFactoryBean clientFactory;		
 		clientFactory = new ClientProxyFactoryBean();
@@ -111,24 +106,35 @@ public class SOAPServiceTest extends KSBTestCase {
 		}
 		
 		//Now try a secure client
-		echoService = (EchoService)GlobalResourceLoader.getService(new QName("urn:TestCl1", "soap-echoServiceSecure"));
+		echoService = GlobalResourceLoader.getService(new QName("urn:TestCl1", "soap-echoServiceSecure"));
 		String result = echoService.echo("I can echo");
 		assertTrue("I can echo".equals(result));		
 	}
 
+    /**
+     * Tests WSDL generation from a URL.
+     *
+     * This is similar to another KEW test but it is good to have it as part of the KSB tests.  Note that the
+     * {@link Client} modifies the current thread's class loader.
+     *
+     * @throws Exception for any errors connecting to the client
+     */
 	@Test
 	public void testWsdlGeneration() throws Exception {
-		//This is similar to a KEW test, but good to have it as part of KSB tests.
-		
-		DynamicClientFactory dcf = DynamicClientFactory.newInstance(KSBServiceLocator.getCXFBus());
-		
-		Client client = dcf.createClient(new URI(getWsdlUrl(), false).toString());
-		client.getInInterceptors().add(new LoggingInInterceptor());
-		client.getOutInterceptors().add(new LoggingOutInterceptor());
-		Object[] results = client.invoke("trueEcho", new Object[] { "testing" });
-		assertNotNull(results);
-		assertTrue(results.length > 0);
-		
+		ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
+
+        try {
+            JaxWsDynamicClientFactory dcf = JaxWsDynamicClientFactory.newInstance();
+            Client client = dcf.createClient(new URI(getWsdlUrl(), false).toString());
+            client.getInInterceptors().add(new LoggingInInterceptor());
+            client.getOutInterceptors().add(new LoggingOutInterceptor());
+            Object[] results = client.invoke("echo", "testing");
+            assertNotNull(results);
+            assertEquals(1, results.length);
+            assertEquals("testing", results[0]);
+        } finally {
+            Thread.currentThread().setContextClassLoader(originalClassLoader);
+        }
 	}
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.kuali.rice.testtools.common.Failable;
+import org.kuali.rice.testtools.common.JiraAwareFailable;
 import org.openqa.selenium.Alert;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -36,8 +36,9 @@ import java.util.concurrent.TimeUnit;
  * Base class for Selenium Webdriver integration tests
  *
  * @author Kuali Rice Team (rice.collab@kuali.org)
+ * @deprecated
  */
-public abstract class WebDriverITBase implements Failable {
+public abstract class WebDriverITBase {
 
     public WebDriver driver;
     static ChromeDriverService chromeDriverService;
@@ -59,12 +60,11 @@ public abstract class WebDriverITBase implements Failable {
 
     @BeforeClass
     public static void createAndStartService() throws Exception {
-        chromeDriverService = WebDriverUtil.chromeDriverCreateCheck();
+        chromeDriverService = WebDriverUtils.chromeDriverCreateCheck();
         if (chromeDriverService != null) chromeDriverService.start();
     }
 
 
-    @Override
     public void fail(String message) {
         SeleneseTestBase.fail(message);
     }
@@ -76,11 +76,26 @@ public abstract class WebDriverITBase implements Failable {
      */
     @Before
     public void setUp() throws Exception {
-        driver = WebDriverUtil.setUp(getUserName(), WebDriverUtil.getBaseUrlString() + "/" + getTestUrl());
-        WebDriverUtil.loginKradOrKns(driver, getUserName(), new Failable() {
+        driver = WebDriverUtils.setUp(getUserName(), WebDriverUtils.getBaseUrlString() + "/" + getTestUrl());
+        WebDriverLegacyITBase.loginKradOrKns(driver, getUserName(), new JiraAwareFailable() {
             @Override
             public void fail(String message) {
                 SeleneseTestBase.fail(message);
+            }
+
+            @Override
+            public void jiraAwareFail(String message) {
+                SeleneseTestBase.fail(message);
+            }
+
+            @Override
+            public void jiraAwareFail(String contents, String message) {
+                SeleneseTestBase.fail(contents + " " + message);
+            }
+
+            @Override
+            public void jiraAwareFail(String contents, String message, Throwable throwable) {
+                SeleneseTestBase.fail(contents + " " + message + " " + throwable.getMessage());
             }
         });
     }
@@ -92,7 +107,7 @@ public abstract class WebDriverITBase implements Failable {
      */
     @After
     public void tearDown() throws Exception {
-        if (WebDriverUtil.dontTearDownPropertyNotSet()) {
+        if (WebDriverUtils.dontTearDownPropertyNotSet()) {
             driver.quit(); // TODO not tested with chrome, the service stop might need this check too
         }
     }
@@ -139,9 +154,9 @@ public abstract class WebDriverITBase implements Failable {
      * @return true if the element is present, false otherwise
      */
     public boolean isElementPresentQuick(By by) {
-        driver.manage().timeouts().implicitlyWait(WebDriverUtil.IMPLICIT_WAIT_TIME_LOOP_MS, TimeUnit.MILLISECONDS);
+        driver.manage().timeouts().implicitlyWait(WebDriverUtils.IMPLICIT_WAIT_TIME_LOOP_MS, TimeUnit.MILLISECONDS);
         boolean result = isElementPresent(by);
-        driver.manage().timeouts().implicitlyWait(WebDriverUtil.IMPLICIT_WAIT_TIME_SECONDS_DEFAULT, TimeUnit.SECONDS);
+        driver.manage().timeouts().implicitlyWait(WebDriverUtils.IMPLICIT_WAIT_TIME_SECONDS_DEFAULT, TimeUnit.SECONDS);
         return result;
     }
 
@@ -171,7 +186,7 @@ public abstract class WebDriverITBase implements Failable {
     }
 
     /**
-     * TODO Investigate using WebDriverUtil.waitFor
+     * TODO Investigate using WebDriverUtils.waitFor
      *
      * @param by The locating mechanism of the element
      * @param message User defined message to display
@@ -436,16 +451,16 @@ public abstract class WebDriverITBase implements Failable {
         waitFor(By.name(name));
     }
     
-    protected void checkForIncidentReport(Failable failable) {
+    protected void checkForIncidentReport(JiraAwareFailable failable) {
         checkForIncidentReport("", failable, "");
     }
 
-    protected void checkForIncidentReport(String locator, Failable failable) {
+    protected void checkForIncidentReport(String locator, JiraAwareFailable failable) {
         checkForIncidentReport(locator, failable, "");
     }
     
-    protected void checkForIncidentReport(String locator, Failable failable, String message) {
-        ITUtil.checkForIncidentReport(driver.getPageSource(), locator, failable, message);
+    protected void checkForIncidentReport(String locator, JiraAwareFailable failable, String message) {
+        AutomatedFunctionalTestUtils.checkForIncidentReport(driver.getPageSource(), locator, message, failable);
     }
 
 

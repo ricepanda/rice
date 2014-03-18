@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,20 @@
  */
 package org.kuali.rice.krad.uif.element;
 
+import java.util.ArrayList;
+
+import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
 import org.kuali.rice.krad.datadictionary.parse.BeanTags;
 import org.kuali.rice.krad.datadictionary.validator.ErrorReport;
-import org.kuali.rice.krad.datadictionary.validator.Validator;
 import org.kuali.rice.krad.datadictionary.validator.ValidationTrace;
+import org.kuali.rice.krad.datadictionary.validator.Validator;
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.util.ComponentFactory;
-import org.kuali.rice.krad.uif.view.View;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.widget.LightBox;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Content element that renders a link
@@ -43,12 +43,16 @@ public class Link extends ContentElementBase {
     private String target;
     private String href;
 
+    private String iconClass;
+    private String linkIconPlacement;
+
     private boolean openInLightbox;
 
     private LightBox lightBox;
 
     public Link() {
         super();
+        linkIconPlacement = UifConstants.Position.LEFT.name();
     }
 
     /**
@@ -58,11 +62,10 @@ public class Link extends ContentElementBase {
      * <li>Initialize the nested lightBox widget if open in lightbox is true</li>
      * </ul>
      *
-     * @see org.kuali.rice.krad.uif.component.Component#performApplyModel(org.kuali.rice.krad.uif.view.View, java.lang.Object,
-     *      org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performApplyModel(Object model, Component parent) {
+    public void performApplyModel(Object model, LifecycleElement parent) {
         super.performApplyModel(model, parent);
 
         if (openInLightbox && (lightBox == null)) {
@@ -74,26 +77,24 @@ public class Link extends ContentElementBase {
      * Special handling for lightbox links to add and onclick data attribute to be handled by a global handler
      */
     @Override
-    public void performFinalize(Object model, Component parent) {
+    public void performFinalize(Object model, LifecycleElement parent) {
         super.performFinalize(model, parent);
 
         if (lightBox != null && lightBox.isRender()){
             this.addDataAttribute(UifConstants.DataAttributes.ONCLICK, "handleLightboxOpen(jQuery(this), " +
                     lightBox.getTemplateOptionsJSString() + ", " + lightBox.isAddAppParms() + ", e);");
+            this.addDataAttribute(UifConstants.DataAttributes.ROLE, UifConstants.RoleTypes.ACTION);
             lightBox.setRender(false);
         }
-    }
 
-    /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#getComponentsForLifecycle()
-     */
-    @Override
-    public List<Component> getComponentsForLifecycle() {
-        List<Component> components = super.getComponentsForLifecycle();
+        // when icon only is set, add the icon class to the action
+        if (StringUtils.isNotBlank(iconClass) && (UifConstants.ICON_ONLY_PLACEMENT.equals(linkIconPlacement)
+                || StringUtils.isBlank(linkText))) {
+            getCssClasses().add(iconClass);
 
-        components.add(lightBox);
-
-        return components;
+            // force icon only placement
+            linkIconPlacement = UifConstants.ICON_ONLY_PLACEMENT;
+        }
     }
 
     /**
@@ -195,27 +196,51 @@ public class Link extends ContentElementBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
+     * Icon Class for the link
+     *
+     * <p>
+     * Bootstrap Icon Class to be rendered on this Link
+     * </p>
+     *
+     * @return label for action
      */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        Link linkCopy = (Link) component;
-
-        linkCopy.setHref(this.href);
-
-        if (this.lightBox != null) {
-            linkCopy.setLightBox((LightBox)this.lightBox.copy());
-        }
-
-        linkCopy.setLinkText(this.linkText);
-        linkCopy.setOpenInLightbox(this.openInLightbox);
-        linkCopy.setTarget(this.target);
+    @BeanTagAttribute(name = "iconClass")
+    public String getIconClass() {
+        return iconClass;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#completeValidation
+     * Setter for the Icon Class
+     *
+     * @param iconClass
+     */
+    public void setIconClass(String iconClass) {
+        this.iconClass = iconClass;
+    }
+
+    /**
+     * Set to LEFT, RIGHT to position image at that location within the button. When set to blank/null/ICON_ONLY, the icon
+     * itself will be the Action, if no value is set the default is ALWAYS LEFT, you must explicitly set
+     * blank/null/ICON_ONLY to use ONLY the image as the Action.
+     *
+     * @return Action Icon Placement
+     */
+    @BeanTagAttribute(name = "linkIconPlacement")
+    public String getLinkIconPlacement() {
+        return linkIconPlacement;
+    }
+
+    /**
+     * Setter for the Link Icon Placement
+     *
+     * @param linkIconPlacement
+     */
+    public void setLinkIconPlacement(String linkIconPlacement) {
+        this.linkIconPlacement = linkIconPlacement;
+    }
+
+    /**
+     * {@inheritDoc}
      */
     @Override
     public void completeValidation(ValidationTrace tracer){

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.field.InputField;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 
 /**
  * Represents a HTML password text control, rendered as a input field of type
@@ -48,11 +49,10 @@ public class PasswordControl extends ControlBase implements SizedControl {
      * <li>Defaults maxLength, minLength (if not set) to maxLength of parent field</li>
      * </ul>
      *
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#performFinalize(org.kuali.rice.krad.uif.view.View,
-     *      Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performFinalize(Object model, Component parent) {
+    public void performFinalize(Object model, LifecycleElement parent) {
         super.performFinalize(model, parent);
 
         if (parent instanceof InputField) {
@@ -153,20 +153,5 @@ public class PasswordControl extends ControlBase implements SizedControl {
         }
 
         this.watermarkText = watermarkText;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        PasswordControl passwordControlCopy = (PasswordControl) component;
-
-        passwordControlCopy.setSize(this.size);
-        passwordControlCopy.setMaxLength(this.maxLength);
-        passwordControlCopy.setMinLength(this.minLength);
-        passwordControlCopy.setWatermarkText(this.watermarkText);
     }
 }

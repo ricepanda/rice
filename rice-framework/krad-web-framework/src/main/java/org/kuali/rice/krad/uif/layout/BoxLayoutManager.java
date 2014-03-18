@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.kuali.rice.krad.uif.CssConstants.Padding;
 import org.kuali.rice.krad.uif.UifConstants.Orientation;
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.container.Container;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 
 /**
  * Layout manager that organizes components in a single row (horizontal) or
@@ -66,11 +67,10 @@ public class BoxLayoutManager extends LayoutManagerBase {
     /**
      * Sets the item span style
      *
-     * @see org.kuali.rice.krad.uif.layout.LayoutManagerBase#performFinalize(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object, org.kuali.rice.krad.uif.container.Container)
+     * {@inheritDoc}
      */
     @Override
-    public void performFinalize(Object model, Component container) {
+    public void performFinalize(Object model, LifecycleElement container) {
         super.performFinalize(model, container);
 
         if (StringUtils.isBlank(itemStyle)) {
@@ -88,13 +88,12 @@ public class BoxLayoutManager extends LayoutManagerBase {
             }
         }
 
-        // classes to identify this layout in jQuery and to clear the float correctly in all browsers
-        this.addStyleClass("clearfix");
-
         for (Component c : ((Container) container).getItems()) {
             if (c != null) {
                 if (orientation.equals(Orientation.HORIZONTAL)) {
                     c.addStyleClass("uif-boxLayoutHorizontalItem");
+
+                    ((Component) container).addStyleClass("clearfix");
                     
                     for (String styleClass : this.getItemStyleClasses()) {
                         c.addStyleClass(styleClass);
@@ -218,21 +217,4 @@ public class BoxLayoutManager extends LayoutManagerBase {
         return "";
     }
 
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T layout) {
-        super.copyProperties(layout);
-
-        BoxLayoutManager boxLayoutManagerCopy = (BoxLayoutManager) layout;
-
-        boxLayoutManagerCopy.setPadding(this.padding);
-        boxLayoutManagerCopy.setItemStyle(this.itemStyle);
-        boxLayoutManagerCopy.setOrientation(this.orientation);
-
-        if (itemStyleClasses != null) {
-            boxLayoutManagerCopy.setItemStyleClasses(new ArrayList<String>(itemStyleClasses));
-        }
-    }
 }

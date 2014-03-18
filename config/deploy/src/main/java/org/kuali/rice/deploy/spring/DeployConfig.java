@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,14 @@ package org.kuali.rice.deploy.spring;
 import org.kuali.common.deploy.spring.DefaultDeployConfig;
 import org.kuali.common.util.execute.Executable;
 import org.kuali.common.util.execute.spring.ExecutableConfig;
-import org.kuali.rice.sql.spring.SourceDbConfig;
+import org.kuali.rice.sql.spring.SourceSqlConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @Configuration
-@Import({ DefaultDeployConfig.class, SourceDbConfig.class })
+@Import({ DefaultDeployConfig.class, SourceSqlConfig.class })
 public class DeployConfig implements ExecutableConfig {
 
 	@Autowired

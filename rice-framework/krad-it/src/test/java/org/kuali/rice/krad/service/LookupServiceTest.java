@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.kuali.rice.krad.service;
 import org.junit.Test;
 import org.kuali.rice.krad.data.jpa.testbo.TestDataObject;
 import org.kuali.rice.krad.test.document.bo.Account;
-import org.kuali.rice.krad.test.document.bo.AccountManager;
 import org.kuali.rice.test.BaselineTestCase;
 import org.kuali.rice.test.data.PerTestUnitTestData;
 import org.kuali.rice.test.data.UnitTestData;
@@ -46,20 +45,19 @@ import static org.junit.Assert.assertTrue;
         value = @UnitTestData(
                 order = {UnitTestData.Type.SQL_STATEMENTS, UnitTestData.Type.SQL_FILES},
                 sqlStatements = {
-                        @UnitTestSql("delete from trv_acct where acct_fo_id between 101 and 301")
-                        ,@UnitTestSql("delete from trv_acct_fo where acct_fo_id between 101 and 301")
+                        @UnitTestSql("delete from trv_acct where acct_fo_id = '1'")
+                        ,@UnitTestSql("delete from trv_acct_type")
                         ,@UnitTestSql("delete from krtst_test_table_t")
                 },
                 sqlFiles = {
-                        @UnitTestFile(filename = "classpath:testAccountManagers.sql", delimiter = ";")
-                        , @UnitTestFile(filename = "classpath:testAccounts.sql", delimiter = ";")
-                        , @UnitTestFile(filename = "classpath:testDataObjects.sql", delimiter = ";")
+                        @UnitTestFile(filename = "classpath:testAccountType.sql", delimiter = ";")
+                        ,@UnitTestFile(filename = "classpath:testAccounts.sql", delimiter = ";")
+                        ,@UnitTestFile(filename = "classpath:testDataObjects.sql", delimiter = ";")
                 }
         ),
         tearDown = @UnitTestData(
                 sqlStatements = {
-                        @UnitTestSql("delete from trv_acct where acct_fo_id between 101 and 301")
-                        ,@UnitTestSql("delete from trv_acct_fo where acct_fo_id between 101 and 301")
+                        @UnitTestSql("delete from trv_acct where acct_fo_id = '1'")
                         ,@UnitTestSql("delete from krtst_test_table_t")
                 }
        )
@@ -85,16 +83,21 @@ public class LookupServiceTest extends KRADTestCase {
      *
      * @throws Exception
      */
-    @Test
-    public void testLookupReturnLimits_AccountManager() throws Exception {
+     @Test
+     public void testLookupReturnLimits_Account() throws Exception {
         Map formProps = new HashMap();
-        Collection accountManagers = findCollectionBySearchHelper(AccountManager.class, formProps, false);
-        assertEquals(90, accountManagers.size());
+        Collection travelAccounts = findCollectionBySearchHelper(Account.class, formProps, false);
+        assertEquals(200, travelAccounts.size());
 
-        accountManagers = findCollectionBySearch(AccountManager.class, formProps);
-        assertEquals(90, accountManagers.size());
-    }
+        travelAccounts = findCollectionBySearch(Account.class, formProps);
+        assertEquals(200, travelAccounts.size());
+     }
 
+    /**
+     * tests lookup return limits
+     *
+     * @throws Exception
+     */
     @Test
     public void testLookupReturnLimits_TestDataObject() throws Exception {
         Map formProps = new HashMap();
@@ -126,24 +129,6 @@ public class LookupServiceTest extends KRADTestCase {
      * @throws Exception
      */
     @Test
-    public void testLookupReturnDefaultUnbounded_AccountManager() throws Exception {
-        Map formProps = new HashMap();
-        Collection accountManagers = findCollectionBySearchHelper(AccountManager.class, formProps, true);
-        int size = accountManagers.size();
-        assertTrue("# of Fiscal Officers should be > 200", size > 200);
-
-        accountManagers = findCollectionBySearchUnbounded(AccountManager.class, formProps);
-        size = accountManagers.size();
-        assertTrue("# of Fiscal Officers should be > 200", size > 200);
-    }
-
-
-    /**
-     * tests an unbounded lookup
-     *
-     * @throws Exception
-     */
-    @Test
     public void testLookupReturnDefaultUnbounded_Account() throws Exception {
         Map formProps = new HashMap();
         Collection travelAccounts = findCollectionBySearchHelper(Account.class, formProps, true);
@@ -155,6 +140,11 @@ public class LookupServiceTest extends KRADTestCase {
         assertTrue("# of Travel Accounts should be > 200", size > 200);
     }
 
+    /**
+     * tests an unbounded lookup
+     *
+     * @throws Exception
+     */
     @Test
     public void testLookupReturnDefaultUnbounded_TestDataObject() throws Exception {
         Map formProps = new HashMap();

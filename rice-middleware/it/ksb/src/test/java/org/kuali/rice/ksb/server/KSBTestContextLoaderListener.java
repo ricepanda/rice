@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,12 +23,12 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 import javax.servlet.ServletContextEvent;
 
 public class KSBTestContextLoaderListener extends ContextLoaderListener {
-	
-	 
+
 	public void contextInitialized(ServletContextEvent event) {
 		super.contextInitialized(event);
 		String testClientName = event.getServletContext().getInitParameter("test.client.spring.context.name");
 		ApplicationContext appContext = WebApplicationContextUtils.getWebApplicationContext(event.getServletContext());
 		ConfigContext.getCurrentContextConfig().putObject(testClientName, appContext);
 	}
+
 }

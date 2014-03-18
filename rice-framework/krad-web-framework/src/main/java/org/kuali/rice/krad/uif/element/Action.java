@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,11 @@ import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.core.api.exception.RiceRuntimeException;
-import org.kuali.rice.krad.data.DataObjectUtils;
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
 import org.kuali.rice.krad.datadictionary.parse.BeanTags;
 import org.kuali.rice.krad.datadictionary.validator.ValidationTrace;
+import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.UifParameters;
 import org.kuali.rice.krad.uif.UifPropertyPaths;
@@ -34,8 +34,9 @@ import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.component.ComponentSecurity;
 import org.kuali.rice.krad.uif.field.DataField;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
-import org.kuali.rice.krad.uif.util.ExpressionUtils;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.util.ScriptUtils;
+import org.kuali.rice.krad.uif.util.UrlInfo;
 import org.kuali.rice.krad.uif.view.ExpressionEvaluator;
 import org.kuali.rice.krad.uif.view.FormView;
 import org.kuali.rice.krad.uif.view.View;
@@ -43,7 +44,7 @@ import org.kuali.rice.krad.util.KRADUtils;
 
 /**
  * Field that presents an action that can be taken on the UI such as submitting
- * the form or invoking a script
+ * the form or invoking a script.
  *
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
@@ -85,10 +86,16 @@ public class Action extends ContentElementBase {
     private String navigateToPageId;
 
     private String actionScript;
+    private UrlInfo actionUrl;
 
     private String actionLabel;
+    private boolean renderInnerTextSpan;
+
     private Image actionImage;
     private String actionImagePlacement;
+
+    private String iconClass;
+    private String actionIconPlacement;
 
     private String jumpToIdAfterSubmit;
     private String jumpToNameAfterSubmit;
@@ -126,10 +133,14 @@ public class Action extends ContentElementBase {
     private List<String> disabledWhenChangedPropertyNames;
     private List<String> enabledWhenChangedPropertyNames;
 
+    /**
+     * Sets initial field values and initializes collections.
+     */
     public Action() {
         super();
 
         actionImagePlacement = UifConstants.Position.LEFT.name();
+        actionIconPlacement = UifConstants.Position.LEFT.name();
 
         ajaxSubmit = true;
 
@@ -146,22 +157,27 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Sets the disabledExpression, if any, evaluates it and sets the disabled property
+     * Sets the disabledExpression, if any, evaluates it and sets the disabled property.
      *
-     * @param view view instance to which the component belongs
      * @param model top level object containing the data (could be the form or a
-     * @param parent
+     * @param parent parent component
      */
-    public void performApplyModel(Object model, Component parent) {
+    public void performApplyModel(Object model, LifecycleElement parent) {
         super.performApplyModel(model, parent);
 
         disabledExpression = this.getPropertyExpression("disabled");
         if (disabledExpression != null) {
-            ViewLifecycle viewLifecycle = ViewLifecycle.getActiveLifecycle();
-            ExpressionEvaluator expressionEvaluator = viewLifecycle.getHelper().getExpressionEvaluator();
+            ExpressionEvaluator expressionEvaluator = ViewLifecycle.getExpressionEvaluator();
 
-            disabledExpression = expressionEvaluator.replaceBindingPrefixes(viewLifecycle.getView(), this, disabledExpression);
+            disabledExpression = expressionEvaluator.replaceBindingPrefixes(ViewLifecycle.getView(), this,
+                    disabledExpression);
             disabled = (Boolean) expressionEvaluator.evaluateExpression(this.getContext(), disabledExpression);
+        }
+
+        if (actionUrl != null) {
+            ViewLifecycle.getExpressionEvaluator().populatePropertyExpressionsFromGraph(actionUrl, false);
+            ViewLifecycle.getExpressionEvaluator().evaluateExpressionsOnConfigurable(ViewLifecycle.getView(),
+                    actionUrl, this.getContext());
         }
     }
 
@@ -177,23 +193,21 @@ public class Action extends ContentElementBase {
      * changed property names</li>
      * </ul>
      *
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#performFinalize(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performFinalize(Object model, Component parent) {
+    public void performFinalize(Object model, LifecycleElement parent) {
         super.performFinalize(model, parent);
-        
-        ViewLifecycle viewLifecycle = ViewLifecycle.getActiveLifecycle();
-        View view = viewLifecycle.getView();
 
-        ExpressionEvaluator expressionEvaluator = viewLifecycle.getHelper().getExpressionEvaluator();
+        View view = ViewLifecycle.getView();
+        ExpressionEvaluator expressionEvaluator = ViewLifecycle.getExpressionEvaluator();
 
         if (StringUtils.isNotEmpty(disabledExpression)
                 && !disabledExpression.equalsIgnoreCase("true")
                 && !disabledExpression.equalsIgnoreCase("false")) {
             disabledConditionControlNames = new ArrayList<String>();
-            disabledConditionJs = ExpressionUtils.parseExpression(disabledExpression, disabledConditionControlNames);
+            disabledConditionJs = ViewLifecycle.getExpressionEvaluator().parseExpression(disabledExpression,
+                    disabledConditionControlNames, this.getContext());
         }
 
         List<String> adjustedDisablePropertyNames = new ArrayList<String>();
@@ -214,6 +228,15 @@ public class Action extends ContentElementBase {
             actionImage.setAltText("");
         }
 
+        // when icon only is set, add the icon class to the action
+        if (StringUtils.isNotBlank(iconClass) && (UifConstants.ICON_ONLY_PLACEMENT.equals(actionIconPlacement)
+                || StringUtils.isBlank(actionLabel))) {
+            getCssClasses().add(iconClass);
+
+            // force icon only placement
+            actionIconPlacement = UifConstants.ICON_ONLY_PLACEMENT;
+        }
+
         if (!actionParameters.containsKey(UifConstants.UrlParams.ACTION_EVENT) && StringUtils.isNotBlank(actionEvent)) {
             actionParameters.put(UifConstants.UrlParams.ACTION_EVENT, actionEvent);
         }
@@ -232,38 +255,24 @@ public class Action extends ContentElementBase {
 
         setupRefreshAction(view);
 
+        // Apply dirty check if it is enabled for the view and the action requires it
+        if (view instanceof FormView) {
+            performDirtyValidation = performDirtyValidation && ((FormView) view).isApplyDirtyCheck();
+        }
+
+        if (StringUtils.isBlank(getActionScript()) && (actionUrl != null) && actionUrl.isFullyConfigured()) {
+            String actionScript = ScriptUtils.buildFunctionCall(UifConstants.JsFunctions.REDIRECT, actionUrl.getHref());
+
+            setActionScript(actionScript);
+        }
+
         buildActionData(view, model, parent);
 
-        // build final onclick script
-        String onClickScript = this.getOnClickScript();
-        if (StringUtils.isNotBlank(actionScript)) {
-            onClickScript = ScriptUtils.appendScript(onClickScript, actionScript);
-        } else {
-            onClickScript = ScriptUtils.appendScript(onClickScript, "actionInvokeHandler(this);");
-        }
-
-        // add dirty check if it is enabled for the view and the action requires it
-        if (view instanceof FormView) {
-            if (((FormView) view).isApplyDirtyCheck() && performDirtyValidation) {
-                onClickScript = "if (dirtyFormState.checkDirty(e) == false) { " + onClickScript + " ; } ";
-            }
-        }
-
-        //stop action if the action is disabled
-        if (disabled) {
-            this.addStyleClass("disabled");
-            this.setSkipInTabOrder(true);
-        }
-        onClickScript = "if(jQuery(this).hasClass('disabled')){ return false; }" + onClickScript;
-
-        //on click script becomes a data attribute for use in a global handler on the client
-        this.addDataAttribute(UifConstants.DataAttributes.ONCLICK, KRADUtils.convertToHTMLAttributeSafeString(
-                "e.preventDefault();" + onClickScript));
     }
 
     /**
      * When the action is updating a component sets up the refresh script for the component (found by the
-     * given refresh id or refresh property name)
+     * given refresh id or refresh property name.
      *
      * @param view view instance the action belongs to
      */
@@ -299,14 +308,6 @@ public class Action extends ContentElementBase {
 
         if (refreshComponent != null) {
             refreshComponent.setRefreshedByAction(true);
-
-            // update initial state
-            Component initialComponent = view.getViewIndex().getInitialComponentStates().get(
-                    refreshComponent.getBaseId());
-            if (initialComponent != null) {
-                initialComponent.setRefreshedByAction(true);
-                view.getViewIndex().getInitialComponentStates().put(refreshComponent.getBaseId(), initialComponent);
-            }
         }
     }
 
@@ -323,19 +324,39 @@ public class Action extends ContentElementBase {
      * @param model model object containing the view data
      * @param parent component the holds the action
      */
-    protected void buildActionData(View view, Object model, Component parent) {
+    protected void buildActionData(View view, Object model, LifecycleElement parent) {
+        HashMap<String, String> actionDataAttributes = new HashMap<String, String>();
+
+        Map<String, String> dataDefaults =
+                (Map<String, String>) (KRADServiceLocatorWeb.getDataDictionaryService().getDictionaryBean(
+                        UifConstants.ACTION_DEFAULTS_MAP_ID));
+
         // map properties to data attributes
-        addDataAttribute("ajaxsubmit", Boolean.toString(ajaxSubmit));
-        addDataAttributeIfNonEmpty("successcallback", this.successCallback);
-        addDataAttributeIfNonEmpty("errorcallback", this.errorCallback);
-        addDataAttributeIfNonEmpty("presubmitcall", this.preSubmitCall);
-        addDataAttributeIfNonEmpty("loadingmessage", this.loadingMessageText);
-        addDataAttributeIfNonEmpty("disableblocking", Boolean.toString(this.disableBlocking));
-        addDataAttributeIfNonEmpty("ajaxreturntype", this.ajaxReturnType);
-        addDataAttributeIfNonEmpty("refreshid", this.refreshId);
-        addDataAttribute("validate", Boolean.toString(this.performClientSideValidation));
-        addDataAttribute("dirtyOnAction", Boolean.toString(this.dirtyOnAction));
-        addDataAttribute("clearDirtyOnAction", Boolean.toString(this.clearDirtyOnAction));
+        addActionDataSettingsValue(actionDataAttributes, dataDefaults, UifConstants.ActionDataAttributes.AJAX_SUBMIT,
+                Boolean.toString(ajaxSubmit));
+        addActionDataSettingsValue(actionDataAttributes, dataDefaults,
+                UifConstants.ActionDataAttributes.SUCCESS_CALLBACK, this.successCallback);
+        addActionDataSettingsValue(actionDataAttributes, dataDefaults, UifConstants.ActionDataAttributes.ERROR_CALLBACK,
+                this.errorCallback);
+        addActionDataSettingsValue(actionDataAttributes, dataDefaults,
+                UifConstants.ActionDataAttributes.PRE_SUBMIT_CALL, this.preSubmitCall);
+        addActionDataSettingsValue(actionDataAttributes, dataDefaults,
+                UifConstants.ActionDataAttributes.LOADING_MESSAGE, this.loadingMessageText);
+        addActionDataSettingsValue(actionDataAttributes, dataDefaults,
+                UifConstants.ActionDataAttributes.DISABLE_BLOCKING, Boolean.toString(this.disableBlocking));
+        addActionDataSettingsValue(actionDataAttributes, dataDefaults,
+                UifConstants.ActionDataAttributes.AJAX_RETURN_TYPE, this.ajaxReturnType);
+        addActionDataSettingsValue(actionDataAttributes, dataDefaults, UifConstants.ActionDataAttributes.REFRESH_ID,
+                this.refreshId);
+        addActionDataSettingsValue(actionDataAttributes, dataDefaults, UifConstants.ActionDataAttributes.VALIDATE,
+                Boolean.toString(this.performClientSideValidation));
+        addActionDataSettingsValue(actionDataAttributes, dataDefaults,
+                UifConstants.ActionDataAttributes.DIRTY_ON_ACTION, Boolean.toString(this.dirtyOnAction));
+        addActionDataSettingsValue(actionDataAttributes, dataDefaults, UifConstants.ActionDataAttributes.CLEAR_DIRTY,
+                Boolean.toString(this.clearDirtyOnAction));
+        addActionDataSettingsValue(actionDataAttributes, dataDefaults,
+                UifConstants.ActionDataAttributes.PERFORM_DIRTY_VALIDATION, Boolean.toString(
+                this.performDirtyValidation));
 
         // all action parameters should be submitted with action
         Map<String, String> submitData = new HashMap<String, String>();
@@ -352,39 +373,69 @@ public class Action extends ContentElementBase {
         }
 
         // if focus id not set default to focus on action
-        if ((focusOnIdAfterSubmit == null) || focusOnIdAfterSubmit.equalsIgnoreCase(
-                UifConstants.Order.SELF.toString())) {
-            focusOnIdAfterSubmit = this.getId();
-        } else if (focusOnIdAfterSubmit.equalsIgnoreCase(UifConstants.Order.NEXT_INPUT.toString())) {
+        if (focusOnIdAfterSubmit.equalsIgnoreCase(UifConstants.Order.NEXT_INPUT.toString())) {
             focusOnIdAfterSubmit = UifConstants.Order.NEXT_INPUT.toString() + ":" + this.getId();
         }
 
-        submitData.put("focusId", focusOnIdAfterSubmit);
-
-        // if jump to not set default to jump to location of the action
-        if (StringUtils.isBlank(jumpToIdAfterSubmit) && StringUtils.isBlank(jumpToNameAfterSubmit)) {
-            jumpToIdAfterSubmit = this.getId();
-        }
+        addActionDataSettingsValue(actionDataAttributes, dataDefaults, UifConstants.ActionDataAttributes.FOCUS_ID,
+                focusOnIdAfterSubmit);
 
         if (StringUtils.isNotBlank(jumpToIdAfterSubmit)) {
-            submitData.put("jumpToId", jumpToIdAfterSubmit);
-        } else {
-            submitData.put("jumpToName", jumpToNameAfterSubmit);
+            addActionDataSettingsValue(actionDataAttributes, dataDefaults, UifConstants.ActionDataAttributes.JUMP_TO_ID,
+                    jumpToIdAfterSubmit);
+        } else if (StringUtils.isNotBlank(jumpToNameAfterSubmit)) {
+            addActionDataSettingsValue(actionDataAttributes, dataDefaults,
+                    UifConstants.ActionDataAttributes.JUMP_TO_NAME, jumpToNameAfterSubmit);
         }
 
-        addDataAttribute(UifConstants.DataAttributes.SUBMIT_DATA, ScriptUtils.toJSON(submitData));
+        addActionDataSettingsValue(actionDataAttributes, dataDefaults, UifConstants.DataAttributes.SUBMIT_DATA,
+                ScriptUtils.toJSON(submitData));
+
+        // build final onclick script
+        String onClickScript = this.getOnClickScript();
+        if (StringUtils.isNotBlank(actionScript)) {
+            onClickScript = ScriptUtils.appendScript(onClickScript, actionScript);
+        } else {
+            onClickScript = ScriptUtils.appendScript(onClickScript, "actionInvokeHandler(this);");
+        }
+
+        //stop action if the action is disabled
+        if (disabled) {
+            this.addStyleClass("disabled");
+            this.setSkipInTabOrder(true);
+        }
+
+        // on click script becomes a data attribute for use in a global handler on the client
+        addActionDataSettingsValue(actionDataAttributes, dataDefaults, UifConstants.DataAttributes.ONCLICK,
+                KRADUtils.convertToHTMLAttributeSafeString(onClickScript));
+
+        if (!actionDataAttributes.isEmpty()) {
+            this.getDataAttributes().putAll(actionDataAttributes);
+        }
+
+        this.addDataAttribute(UifConstants.DataAttributes.ROLE, UifConstants.RoleTypes.ACTION);
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#getComponentsForLifecycle()
+     * Adds the value passed to the valueMap with the key specified, if the value does not match the
+     * value which already exists in defaults (to avoid having to write out extra data that can later
+     * be derived from the defaults in the js client-side).
+     *
+     * @param valueMap the data map being constructed
+     * @param defaults defaults for validation messages
+     * @param key the variable name being added
+     * @param value the value set on this object as a String equivalent
      */
-    @Override
-    public List<Component> getComponentsForLifecycle() {
-        List<Component> components = super.getComponentsForLifecycle();
+    protected void addActionDataSettingsValue(Map<String, String> valueMap, Map<String, String> defaults, String key,
+            String value) {
+        if (StringUtils.isBlank(value)) {
+            return;
+        }
 
-        components.add(actionImage);
-
-        return components;
+        String defaultValue = defaults.get(key);
+        if (defaultValue == null || !value.equals(defaultValue)) {
+            valueMap.put(key, value);
+        }
     }
 
     /**
@@ -405,9 +456,9 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Setter for the actions method to call
+     * Setter for the actions method to call.
      *
-     * @param methodToCall
+     * @param methodToCall method to call
      */
     public void setMethodToCall(String methodToCall) {
         this.methodToCall = methodToCall;
@@ -430,12 +481,31 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Setter for the actions label
+     * Setter for the actions label.
      *
-     * @param actionLabel
+     * @param actionLabel action label
      */
     public void setActionLabel(String actionLabel) {
         this.actionLabel = actionLabel;
+    }
+
+    /**
+     * When true, a span will be rendered around the actionLabel text.
+     *
+     * @return true if rendering a span around actionLabel, false otherwise
+     */
+    @BeanTagAttribute(name = "renderInnerTextSpan")
+    public boolean isRenderInnerTextSpan() {
+        return renderInnerTextSpan;
+    }
+
+    /**
+     * Setter for {@link org.kuali.rice.krad.uif.element.Action#isRenderInnerTextSpan()}.
+     *
+     * @param renderInnerTextSpan property value
+     */
+    public void setRenderInnerTextSpan(boolean renderInnerTextSpan) {
+        this.renderInnerTextSpan = renderInnerTextSpan;
     }
 
     /**
@@ -456,23 +526,42 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Setter for the action image field
+     * Setter for the action image field.
      *
-     * @param actionImage
+     * @param actionImage action image
      */
     public void setActionImage(Image actionImage) {
         this.actionImage = actionImage;
     }
 
     /**
+     * The css class (some which exist in bootstrap css) to use to render an icon for this action.
+     *
+     * @return the icon css class
+     */
+    @BeanTagAttribute(name = "iconClass")
+    public String getIconClass() {
+        return iconClass;
+    }
+
+    /**
+     * Setter for {@link org.kuali.rice.krad.uif.element.Action#getIconClass()}.
+     *
+     * @param iconClass property value
+     */
+    public void setIconClass(String iconClass) {
+        this.iconClass = iconClass;
+    }
+
+    /**
      * For an <code>Action</code> that is part of a
      * <code>NavigationGroup</code>, the navigate to page id can be set to
      * configure the page that should be navigated to when the action is
-     * selected
+     * selected.
      *
      * <p>
      * Support exists in the <code>UifControllerBase</code> for handling
-     * navigation between pages
+     * navigation between pages.
      * </p>
      *
      * @return id of page that should be rendered when the action item is
@@ -484,9 +573,9 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Setter for the navigate to page id
+     * Setter for {@link #getNavigateToPageId()}.
      *
-     * @param navigateToPageId
+     * @param navigateToPageId property value
      */
     public void setNavigateToPageId(String navigateToPageId) {
         this.navigateToPageId = navigateToPageId;
@@ -509,16 +598,16 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Setter for the action event
+     * Setter for {@link #getActionEvent()}.
      *
-     * @param actionEvent
+     * @param actionEvent property value
      */
     public void setActionEvent(String actionEvent) {
         this.actionEvent = actionEvent;
     }
 
     /**
-     * Map of additional data that will be posted when the action is invoked
+     * Map of additional data that will be posted when the action is invoked.
      *
      * <p>
      * Each entry in this map will be sent as a request parameter when the action is chosen. Note this in
@@ -531,7 +620,7 @@ public class Action extends ContentElementBase {
      * <p>
      * The additionalSubmitData map is different from the actionParameters map. All name/value pairs given as
      * actionParameters populated the form map actionParameters. While name/value pair given in additionalSubmitData
-     * populate different form (model) properties
+     * populate different form (model) properties.
      * </p>
      *
      * @return additional key/value pairs to submit
@@ -542,9 +631,9 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Setter for map holding additional data to post
+     * Setter for map holding additional data to post.
      *
-     * @param additionalSubmitData
+     * @param additionalSubmitData property value
      */
     public void setAdditionalSubmitData(Map<String, String> additionalSubmitData) {
         this.additionalSubmitData = additionalSubmitData;
@@ -572,16 +661,16 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Setter for the action parameters
+     * Setter for {@link #getActionParameters()}.
      *
-     * @param actionParameters
+     * @param actionParameters property value
      */
     public void setActionParameters(Map<String, String> actionParameters) {
         this.actionParameters = actionParameters;
     }
 
     /**
-     * Convenience method to add a parameter to the action parameters Map
+     * Convenience method to add a parameter to the action parameters Map.
      *
      * @param parameterName name of parameter to add
      * @param parameterValue value of parameter to add
@@ -595,14 +684,17 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Get an actionParameter by name
+     * Gets an action parameter by name.
+     *
+     * @param parameterName parameter name
+     * @return action parameter
      */
     public String getActionParameter(String parameterName) {
         return this.actionParameters.get(parameterName);
     }
 
     /**
-     * Action Security object that indicates what authorization (permissions) exist for the action
+     * Action Security object that indicates what authorization (permissions) exist for the action.
      *
      * @return ActionSecurity instance
      */
@@ -611,7 +703,7 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Override to assert a {@link ActionSecurity} instance is set
+     * Override to assert a {@link ActionSecurity} instance is set.
      *
      * @param componentSecurity instance of ActionSecurity
      */
@@ -625,17 +717,19 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#initializeComponentSecurity()
+     * {@inheritDoc}
      */
     @Override
     protected void initializeComponentSecurity() {
         if (getComponentSecurity() == null) {
-            setComponentSecurity(DataObjectUtils.newInstance(ActionSecurity.class));
+            setComponentSecurity(KRADUtils.createNewObjectFromClass(ActionSecurity.class));
         }
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.element.ActionSecurity#isPerformActionAuthz()
+     * Indicates whether or not to perform action auth.
+     *
+     * @return true to perform action auth
      */
     public boolean isPerformActionAuthz() {
         initializeComponentSecurity();
@@ -644,7 +738,9 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.element.ActionSecurity#setPerformActionAuthz(boolean)
+     * Setter for {@link #isPerformActionAuthz()}.
+     *
+     * @param performActionAuthz property value
      */
     public void setPerformActionAuthz(boolean performActionAuthz) {
         initializeComponentSecurity();
@@ -653,7 +749,9 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.element.ActionSecurity#isPerformLineActionAuthz()
+     * Indicates whether or not to perform line action auth.
+     *
+     * @return true to perform line action auth
      */
     public boolean isPerformLineActionAuthz() {
         initializeComponentSecurity();
@@ -662,7 +760,9 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.element.ActionSecurity#setPerformLineActionAuthz(boolean)
+     * Setter for {@link #isPerformActionAuthz()}.
+     *
+     * @param performLineActionAuthz property value
      */
     public void setPerformLineActionAuthz(boolean performLineActionAuthz) {
         initializeComponentSecurity();
@@ -671,6 +771,8 @@ public class Action extends ContentElementBase {
     }
 
     /**
+     * Gets the id to jump to after submit.
+     *
      * @return the jumpToIdAfterSubmit
      */
     @BeanTagAttribute(name = "jumpToIdAfterSubmit")
@@ -709,6 +811,8 @@ public class Action extends ContentElementBase {
     }
 
     /**
+     * Setter for {@link #getJumpToIdAfterSubmit()}.
+     *
      * @param jumpToNameAfterSubmit the jumpToNameAfterSubmit to set
      */
     public void setJumpToNameAfterSubmit(String jumpToNameAfterSubmit) {
@@ -738,6 +842,8 @@ public class Action extends ContentElementBase {
     }
 
     /**
+     * Setter for {@link #getFocusOnIdAfterSubmit()}.
+     *
      * @param focusOnIdAfterSubmit the focusOnAfterSubmit to set
      */
     public void setFocusOnIdAfterSubmit(String focusOnIdAfterSubmit) {
@@ -745,9 +851,9 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Indicates whether the form data should be validated on the client side
+     * Indicates whether the form data should be validated on the client side.
      *
-     * return true if validation should occur, false otherwise
+     * @return true if validation should occur, false otherwise
      */
     @BeanTagAttribute(name = "performClientSideValidation")
     public boolean isPerformClientSideValidation() {
@@ -755,16 +861,16 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Setter for the client side validation flag
+     * Setter for the client side validation flag.
      *
-     * @param performClientSideValidation
+     * @param performClientSideValidation property value
      */
     public void setPerformClientSideValidation(boolean performClientSideValidation) {
         this.performClientSideValidation = performClientSideValidation;
     }
 
     /**
-     * Client side javascript to be executed when this actionField is clicked
+     * Client side javascript to be executed when this actionField is clicked.
      *
      * <p>
      * This overrides the default action for this Action so the method
@@ -783,6 +889,8 @@ public class Action extends ContentElementBase {
     }
 
     /**
+     * Setter for {@link #getActionScript()}.
+     *
      * @param actionScript the actionScript to set
      */
     public void setActionScript(String actionScript) {
@@ -794,6 +902,32 @@ public class Action extends ContentElementBase {
     }
 
     /**
+     * Url to open when the action item is selected
+     *
+     * <p>
+     * This makes the action behave like a standard link. Instead of posting the form, the configured URL will
+     * simply be opened (using window.open). For using standard post actions these does not need to be configured.
+     * </p>
+     *
+     * @return Url info instance for the configuration action link
+     */
+    @BeanTagAttribute(name = "actionUrl")
+    public UrlInfo getActionUrl() {
+        return actionUrl;
+    }
+
+    /**
+     * Setter for {@link #getActionUrl()}.
+     *
+     * @param actionUrl property value
+     */
+    public void setActionUrl(UrlInfo actionUrl) {
+        this.actionUrl = actionUrl;
+    }
+
+    /**
+     * Setter for {@link #isPerformDirtyValidation()}.
+     *
      * @param performDirtyValidation the blockValidateDirty to set
      */
     public void setPerformDirtyValidation(boolean performDirtyValidation) {
@@ -801,7 +935,9 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * @return the blockValidateDirty
+     * Indicates whether or not to perform dirty validation.
+     *
+     * @return true to perform dirty validation
      */
     @BeanTagAttribute(name = "performDirtyValidation")
     public boolean isPerformDirtyValidation() {
@@ -809,7 +945,7 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * True to make this action clear the dirty flag before submitting
+     * True to make this action clear the dirty flag before submitting.
      *
      * <p>This will clear both the dirtyForm flag on the form and the count of fields considered dirty on the
      * client-side.  This will only be performed if this action is a request based action.</p>
@@ -822,9 +958,9 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Set clearDirtyOnAction
+     * Setter for {@link #isClearDirtyOnAction()}.
      *
-     * @param clearDirtyOnAction
+     * @param clearDirtyOnAction property value
      */
     public void setClearDirtyOnAction(boolean clearDirtyOnAction) {
         this.clearDirtyOnAction = clearDirtyOnAction;
@@ -845,16 +981,16 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Set to true, if this action is considered one that changes the form's data (makes the form dirty)
+     * Set to true, if this action is considered one that changes the form's data (makes the form dirty).
      *
-     * @param dirtyOnAction
+     * @param dirtyOnAction property value
      */
     public void setDirtyOnAction(boolean dirtyOnAction) {
         this.dirtyOnAction = dirtyOnAction;
     }
 
     /**
-     * Indicates whether the action (input or button) is disabled (doesn't allow interaction)
+     * Indicates whether the action (input or button) is disabled (doesn't allow interaction).
      *
      * @return true if the action field is disabled, false if not
      */
@@ -864,9 +1000,9 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Setter for the disabled indicator
+     * Setter for the disabled indicator.
      *
-     * @param disabled
+     * @param disabled property value
      */
     public void setDisabled(boolean disabled) {
         this.disabled = disabled;
@@ -874,7 +1010,7 @@ public class Action extends ContentElementBase {
 
     /**
      * If the action field is disabled, gives a reason for why which will be displayed as a tooltip
-     * on the action field (button)
+     * on the action field (button).
      *
      * @return disabled reason text
      * @see #isDisabled()
@@ -885,14 +1021,19 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Setter for the disabled reason text
+     * Setter for the disabled reason text.
      *
-     * @param disabledReason
+     * @param disabledReason property value
      */
     public void setDisabledReason(String disabledReason) {
         this.disabledReason = disabledReason;
     }
 
+    /**
+     * Gets the action image placement.
+     *
+     * @return action image placement
+     */
     @BeanTagAttribute(name = "actionImagePlacement")
     public String getActionImagePlacement() {
         return actionImagePlacement;
@@ -904,10 +1045,29 @@ public class Action extends ContentElementBase {
      * itself will be the Action, if no value is set the default is ALWAYS LEFT, you must explicitly set
      * blank/null/IMAGE_ONLY to use ONLY the image as the Action.
      *
-     * @return
+     * @param actionImagePlacement action image placement indicator
      */
     public void setActionImagePlacement(String actionImagePlacement) {
         this.actionImagePlacement = actionImagePlacement;
+    }
+
+    /**
+     * Gets the action icon placement.
+     *
+     * @return action icon placement
+     */
+    @BeanTagAttribute(name = "actionIconPlacement")
+    public String getActionIconPlacement() {
+        return actionIconPlacement;
+    }
+
+    /**
+     * Setter for {@link #getActionIconPlacement()}.
+     *
+     * @param actionIconPlacement property value
+     */
+    public void setActionIconPlacement(String actionIconPlacement) {
+        this.actionIconPlacement = actionIconPlacement;
     }
 
     /**
@@ -937,9 +1097,9 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Setter for preSubmitCall
+     * Setter for {@link #getPreSubmitCall()}.
      *
-     * @param preSubmitCall
+     * @param preSubmitCall property value
      */
     public void setPreSubmitCall(String preSubmitCall) {
         this.preSubmitCall = preSubmitCall;
@@ -957,9 +1117,9 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Setter for ajaxSubmit
+     * Setter for {@link #isAjaxSubmit()}.
      *
-     * @param ajaxSubmit
+     * @param ajaxSubmit property value
      */
     public void setAjaxSubmit(boolean ajaxSubmit) {
         this.ajaxSubmit = ajaxSubmit;
@@ -982,16 +1142,16 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Setter for the type of ajax return
+     * Setter for the type of ajax return.
      *
-     * @param ajaxReturnType
+     * @param ajaxReturnType property value
      */
     public void setAjaxReturnType(String ajaxReturnType) {
         this.ajaxReturnType = ajaxReturnType;
     }
 
     /**
-     * Indicates if the action response should be displayed in a lightbox
+     * Indicates if the action response should be displayed in a lightbox.
      *
      * @return true if response should be rendered in a lightbox, false if not
      */
@@ -1001,9 +1161,9 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Setter for indicating the response should be rendered in a lightbox
+     * Setter for indicating the response should be rendered in a lightbox.
      *
-     * @param displayResponseInLightBox
+     * @param displayResponseInLightBox property value
      */
     public void setDisplayResponseInLightBox(boolean displayResponseInLightBox) {
         if (displayResponseInLightBox) {
@@ -1040,9 +1200,9 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Setter for successCallback
+     * Setter for successCallback.
      *
-     * @param successCallback
+     * @param successCallback property value
      */
     public void setSuccessCallback(String successCallback) {
         this.successCallback = successCallback;
@@ -1074,9 +1234,9 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Setter for errorCallback
+     * Setter for {@link #getErrorCallback()}.
      *
-     * @param errorCallback
+     * @param errorCallback property value
      */
     public void setErrorCallback(String errorCallback) {
         this.errorCallback = errorCallback;
@@ -1098,9 +1258,9 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Setter for the component refresh id
+     * Setter for the {@link #getRefreshId()}.
      *
-     * @param refreshId
+     * @param refreshId property value
      */
     public void setRefreshId(String refreshId) {
         this.refreshId = refreshId;
@@ -1128,18 +1288,18 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Setter for the property name of the DataField that should be refreshed
+     * Setter for the property name of the DataField that should be refreshed.
      *
-     * @param refreshPropertyName
+     * @param refreshPropertyName property value
      */
     public void setRefreshPropertyName(String refreshPropertyName) {
         this.refreshPropertyName = refreshPropertyName;
     }
 
     /**
-     * Gets the loading message used by action's blockUI
+     * Gets the loading message used by action's blockUI.
      *
-     * @returns String if String is not null, used in place of loading message
+     * @return String if String is not null, used in place of loading message
      */
     @BeanTagAttribute(name = "loadingMessageText")
     public String getLoadingMessageText() {
@@ -1147,9 +1307,9 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * When this property is set, it is used in place of the loading message text used by the blockUI
+     * When this property is set, it is used in place of the loading message text used by the blockUI.
      *
-     * @param loadingMessageText
+     * @param loadingMessageText property value
      */
     public void setLoadingMessageText(String loadingMessageText) {
         this.loadingMessageText = loadingMessageText;
@@ -1176,16 +1336,16 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Setter for disabling blocking when the action is invoked
+     * Setter for disabling blocking when the action is invoked.
      *
-     * @param disableBlocking
+     * @param disableBlocking property value
      */
     public void setDisableBlocking(boolean disableBlocking) {
         this.disableBlocking = disableBlocking;
     }
 
     /**
-     * Evaluate the disable condition on controls which disable it on each key up event
+     * Evaluate the disable condition on controls which disable it on each key up event.
      *
      * @return true if evaluate on key up, false otherwise
      */
@@ -1195,9 +1355,9 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Set evaluateDisableOnKeyUp
+     * Setter for {@link #isEvaluateDisabledOnKeyUp()}.
      *
-     * @param evaluateDisabledOnKeyUp
+     * @param evaluateDisabledOnKeyUp property value
      */
     public void setEvaluateDisabledOnKeyUp(boolean evaluateDisabledOnKeyUp) {
         this.evaluateDisabledOnKeyUp = evaluateDisabledOnKeyUp;
@@ -1213,16 +1373,16 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Sets the disabled condition javascript
+     * Sets the disabled condition javascript.
      *
-     * @param disabledConditionJs
+     * @param disabledConditionJs property value
      */
     protected void setDisabledConditionJs(String disabledConditionJs) {
         this.disabledConditionJs = disabledConditionJs;
     }
 
     /**
-     * Control names to add handlers to for disable functionality, cannot be set
+     * Gets a list of control names to add handlers to for disable functionality, cannot be set.
      *
      * @return control names to add handlers to for disable
      */
@@ -1231,16 +1391,16 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Set disabled condition control names
+     * Set disabled condition control names.
      *
-     * @param disabledConditionControlNames
+     * @param disabledConditionControlNames property value
      */
     public void setDisabledConditionControlNames(List<String> disabledConditionControlNames) {
         this.disabledConditionControlNames = disabledConditionControlNames;
     }
 
     /**
-     * Gets the property names of fields that when changed, will disable this component
+     * Gets the property names of fields that when changed, will disable this component.
      *
      * @return the property names to monitor for change to disable this component
      */
@@ -1250,16 +1410,16 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Sets the property names of fields that when changed, will disable this component
+     * Sets the property names of fields that when changed, will disable this component.
      *
-     * @param disabledWhenChangedPropertyNames
+     * @param disabledWhenChangedPropertyNames property value
      */
     public void setDisabledWhenChangedPropertyNames(List<String> disabledWhenChangedPropertyNames) {
         this.disabledWhenChangedPropertyNames = disabledWhenChangedPropertyNames;
     }
 
     /**
-     * Gets the property names of fields that when changed, will enable this component
+     * Gets the property names of fields that when changed, will enable this component.
      *
      * @return the property names to monitor for change to enable this component
      */
@@ -1269,102 +1429,29 @@ public class Action extends ContentElementBase {
     }
 
     /**
-     * Sets the property names of fields that when changed, will enable this component
+     * Sets the property names of fields that when changed, will enable this component.
      *
-     * @param enabledWhenChangedPropertyNames
+     * @param enabledWhenChangedPropertyNames property value
      */
     public void setEnabledWhenChangedPropertyNames(List<String> enabledWhenChangedPropertyNames) {
         this.enabledWhenChangedPropertyNames = enabledWhenChangedPropertyNames;
     }
 
     /**
-     * Sets the disabled expression
+     * Sets the disabled expression.
      *
-     * @param disabledExpression
+     * @param disabledExpression property value
      */
     protected void setDisabledExpression(String disabledExpression) {
         this.disabledExpression = disabledExpression;
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        Action actionCopy = (Action) component;
-
-        actionCopy.setActionEvent(this.actionEvent);
-
-        if (this.actionImage != null) {
-            actionCopy.setActionImage((Image) this.actionImage.copy());
-        }
-
-        actionCopy.setActionImagePlacement(this.actionImagePlacement);
-        actionCopy.setActionLabel(this.actionLabel);
-
-        if (this.actionParameters != null) {
-            actionCopy.setActionParameters(new HashMap<String, String>(this.actionParameters));
-        }
-
-        if (this.additionalSubmitData != null) {
-            actionCopy.setAdditionalSubmitData(new HashMap<String, String>(this.additionalSubmitData));
-        }
-
-        actionCopy.setActionScript(this.actionScript);
-        actionCopy.setAjaxReturnType(this.ajaxReturnType);
-        actionCopy.setAjaxSubmit(this.ajaxSubmit);
-        actionCopy.setClearDirtyOnAction(this.clearDirtyOnAction);
-        actionCopy.setDirtyOnAction(this.dirtyOnAction);
-        actionCopy.setDisableBlocking(this.disableBlocking);
-        actionCopy.setDisabled(this.disabled);
-        actionCopy.setDisabledConditionJs(this.disabledConditionJs);
-
-        if (this.disabledConditionControlNames != null) {
-            actionCopy.setDisabledConditionControlNames(new ArrayList<String>(this.disabledConditionControlNames));
-        }
-
-        actionCopy.setDisabledExpression(this.disabledExpression);
-        actionCopy.setDisabledReason(this.disabledReason);
-
-        if (this.disabledWhenChangedPropertyNames != null) {
-            actionCopy.setDisabledWhenChangedPropertyNames(new ArrayList<String>(
-                    this.disabledWhenChangedPropertyNames));
-        }
-
-        if (this.enabledWhenChangedPropertyNames != null) {
-            actionCopy.setEnabledWhenChangedPropertyNames(new ArrayList<String>(this.enabledWhenChangedPropertyNames));
-        }
-
-        actionCopy.setErrorCallback(this.errorCallback);
-        actionCopy.setEvaluateDisabledOnKeyUp(this.evaluateDisabledOnKeyUp);
-        actionCopy.setFocusOnIdAfterSubmit(this.focusOnIdAfterSubmit);
-        actionCopy.setJumpToIdAfterSubmit(this.jumpToIdAfterSubmit);
-        actionCopy.setJumpToNameAfterSubmit(this.jumpToNameAfterSubmit);
-        actionCopy.setLoadingMessageText(this.loadingMessageText);
-        actionCopy.setMethodToCall(this.methodToCall);
-        actionCopy.setNavigateToPageId(this.navigateToPageId);
-        actionCopy.setPerformClientSideValidation(this.performClientSideValidation);
-        actionCopy.setPerformDirtyValidation(this.performDirtyValidation);
-        actionCopy.setPreSubmitCall(this.preSubmitCall);
-        actionCopy.setRefreshId(this.refreshId);
-        actionCopy.setRefreshPropertyName(this.refreshPropertyName);
-        actionCopy.setSuccessCallback(this.successCallback);
-    }
-
-    /**
-     * @see org.kuali.rice.krad.uif.component.Component#completeValidation
+     * {@inheritDoc}
      */
     @Override
     public void completeValidation(ValidationTrace tracer) {
         tracer.addBean(this);
-
-        // Checks that a label or image ui is presence
-        if (getActionLabel() == null && getActionImage() == null) {
-            String currentValues[] = {"actionLabel =" + getActionLabel(), "actionImage =" + getActionImage()};
-            tracer.createError("ActionLabel and/or actionImage must be set", currentValues);
-        }
 
         // Checks that an action is set
         if (getJumpToIdAfterSubmit() != null && getJumpToNameAfterSubmit() != null) {

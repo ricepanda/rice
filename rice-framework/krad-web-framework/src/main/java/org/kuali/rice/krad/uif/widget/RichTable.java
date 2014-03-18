@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ import org.kuali.rice.krad.uif.field.MessageField;
 import org.kuali.rice.krad.uif.layout.LayoutManager;
 import org.kuali.rice.krad.uif.layout.TableLayoutManager;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.util.ObjectPropertyUtils;
 import org.kuali.rice.krad.uif.view.View;
 import org.kuali.rice.krad.util.KRADConstants;
@@ -116,8 +117,8 @@ public class RichTable extends WidgetBase {
      * </ul>
      */
     @Override
-    public void performFinalize(Object model, Component component) {
-        super.performFinalize(model, component);
+    public void performFinalize(Object model, LifecycleElement parent) {
+        super.performFinalize(model, parent);
 
         UifFormBase formBase = (UifFormBase) model;
 
@@ -158,8 +159,8 @@ public class RichTable extends WidgetBase {
             templateOptions.put(UifConstants.TableToolsKeys.AASORTING, "[]");
         }
 
-        if ((component instanceof CollectionGroup)) {
-            CollectionGroup collectionGroup = (CollectionGroup) component;
+        if ((parent instanceof CollectionGroup)) {
+            CollectionGroup collectionGroup = (CollectionGroup) parent;
             LayoutManager layoutManager = collectionGroup.getLayoutManager();
 
             //if useServerPaging is true, add the css cell styling to the template options so it can still be used
@@ -184,60 +185,47 @@ public class RichTable extends WidgetBase {
         String kradUrl = getConfigurationService().getPropertyValueAsString(UifConstants.ConfigProperties.KRAD_URL);
         if (StringUtils.isNotBlank(ajaxSource)) {
             templateOptions.put(UifConstants.TableToolsKeys.SAJAX_SOURCE, ajaxSource);
-        } else if (component instanceof CollectionGroup && ((CollectionGroup) component).isUseServerPaging()) {
+        } else if (parent instanceof CollectionGroup && ((CollectionGroup) parent).isUseServerPaging()) {
             // enable required dataTables options for server side paging
             templateOptions.put(UifConstants.TableToolsKeys.BPROCESSING, "true");
             templateOptions.put(UifConstants.TableToolsKeys.BSERVER_SIDE, "true");
 
-            //build sAjaxSource url to call
-            templateOptions.put(UifConstants.TableToolsKeys.SAJAX_SOURCE, kradUrl
-                    + ((UifFormBase) model).getControllerMapping()
-                    + "?"
-                    + UifConstants.CONTROLLER_METHOD_DISPATCH_PARAMETER_NAME
-                    + "="
-                    + UifConstants.MethodToCallNames.TABLE_JSON
-                    + "&"
-                    + UifParameters.TABLE_ID
-                    + "="
-                    + component.getId()
-                    + "&"
-                    + UifParameters.FORM_KEY
-                    + "="
-                    + ((UifFormBase) model).getFormKey()
-                    + "&"
-                    + UifParameters.AJAX_RETURN_TYPE
-                    + "="
-                    + UifConstants.AjaxReturnTypes.UPDATENONE.getKey()
-                    + "&"
-                    + UifParameters.AJAX_REQUEST
-                    + "="
-                    + "true");
+            // build sAjaxSource url to call
+            templateOptions.put(UifConstants.TableToolsKeys.SAJAX_SOURCE,
+                    kradUrl + ((UifFormBase) model).getControllerMapping() + "?" +
+                            UifConstants.CONTROLLER_METHOD_DISPATCH_PARAMETER_NAME + "=" +
+                            UifConstants.MethodToCallNames.TABLE_JSON + "&" + UifParameters.UPDATE_COMPONENT_ID + "=" +
+                            parent.getId() + "&" + UifParameters.FORM_KEY + "=" + ((UifFormBase) model).getFormKey() +
+                            "&" + UifParameters.AJAX_RETURN_TYPE + "=" +
+                            UifConstants.AjaxReturnTypes.UPDATECOMPONENT.getKey() + "&" + UifParameters.AJAX_REQUEST +
+                            "=" + "true");
+
+
+            //TODO: Figure out where to move this script file constant?
+            String pushLookupSelect = "function (aoData) { " +
+                "if(jQuery('table.dataTable').length > 0) {    "  +
+                "    var table = jQuery('table.dataTable');    " +
+                "    jQuery( table.find(':input:checked')).each( function (index) {     " +
+                "        aoData.push({'name': (jQuery(this)).attr('name'),'value': (jQuery(this)).attr('value')});  " +
+                    "    console.log(jQuery(this).attr('name') + ':' + jQuery(this).attr('value')); "   +
+                "    });  " +
+                "}  " +
+            "}";
+
+            templateOptions.put(UifConstants.TableToolsKeys.SERVER_PARAMS,pushLookupSelect);
 
             // store col defs so columns can be built on paging request
-            ViewLifecycle.getActiveLifecycle().getView().getViewIndex()
-                .addPostContextEntry(component.getId(), UifConstants.TableToolsKeys.AO_COLUMN_DEFS,
-                    templateOptions.get(UifConstants.TableToolsKeys.AO_COLUMN_DEFS));
+            ViewLifecycle.getViewPostMetadata().addComponentPostData(parent.getId(),
+                    UifConstants.TableToolsKeys.AO_COLUMN_DEFS, templateOptions.get(
+                    UifConstants.TableToolsKeys.AO_COLUMN_DEFS));
         }
 
-        //build sAjaxSource url to call
-        templateOptions.put(UifConstants.TableToolsKeys.SDOWNLOAD_SOURCE, kradUrl
-                + ((UifFormBase) model).getControllerMapping()
-                + "?"
-                + UifParameters.TABLE_ID
-                + "="
-                + component.getId()
-                + "&"
-                + UifParameters.FORM_KEY
-                + "="
-                + ((UifFormBase) model).getFormKey()
-                + "&"
-                + UifParameters.AJAX_RETURN_TYPE
-                + "="
-                + UifConstants.AjaxReturnTypes.UPDATENONE.getKey()
-                + "&"
-                + UifParameters.AJAX_REQUEST
-                + "="
-                + "true");
+        // build export url to call
+        templateOptions.put(UifConstants.TableToolsKeys.SDOWNLOAD_SOURCE,
+                kradUrl + "/" + UifConstants.ControllerMappings.EXPORT + "?" + UifParameters.UPDATE_COMPONENT_ID + "=" +
+                        parent.getId() + "&" + UifParameters.FORM_KEY + "=" + ((UifFormBase) model).getFormKey() + "&" +
+                        UifParameters.AJAX_RETURN_TYPE + "=" + UifConstants.AjaxReturnTypes.UPDATECOMPONENT.getKey() +
+                        "&" + UifParameters.AJAX_REQUEST + "=" + "true");
     }
 
     /**
@@ -249,8 +237,10 @@ public class RichTable extends WidgetBase {
         if (!CollectionUtils.isEmpty(manager.getAllRowFields())) {
             for (int index = 0; index < manager.getNumberOfColumns(); index++) {
                 String cellStyleClasses = ((ComponentBase) manager.getAllRowFields().get(index))
-                        .getCellStyleClassesAsString();
-                cellCssClasses.add(cellStyleClasses);
+                        .getWrapperCssClassesAsString();
+                if (StringUtils.isNotBlank (cellStyleClasses)) {
+                    cellCssClasses.add(cellStyleClasses);
+                }
             }
         }
     }
@@ -614,6 +604,7 @@ public class RichTable extends WidgetBase {
     /**
      * Construct the column options for a data field
      * 
+     * @param target column index
      * @param collectionGroup the collectionGroup in which the data field is defined
      * @param field the field to construction options for
      * @return options as valid for datatable
@@ -888,7 +879,7 @@ public class RichTable extends WidgetBase {
     /**
      * Get groupingOption
      * 
-     * @return
+     * @return grouping options as a JS string
      */
     public String getGroupingOptionsJSString() {
         return groupingOptionsJSString;
@@ -1002,7 +993,7 @@ public class RichTable extends WidgetBase {
      * forceLocalJsonData. This setter is required for copyProperties()
      * </p>
      * 
-     * @return the generated aaData
+     * @param aaData the generated aaData
      */
     protected void setAaData(String aaData) {
         this.aaData = aaData;
@@ -1088,40 +1079,5 @@ public class RichTable extends WidgetBase {
 
     protected ConfigurationService getConfigurationService() {
         return CoreApiServiceLocator.getKualiConfigurationService();
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        RichTable richTableCopy = (RichTable) component;
-
-        richTableCopy.setEmptyTableMessage(this.emptyTableMessage);
-        richTableCopy.setDisableTableSort(this.disableTableSort);
-        richTableCopy.setForceAoColumnDefsOverride(this.forceAoColumnDefsOverride);
-        richTableCopy.setForceLocalJsonData(this.forceLocalJsonData);
-        richTableCopy.setNestedLevel(this.nestedLevel);
-        richTableCopy.setAaData(this.aaData);
-
-        if (hiddenColumns != null) {
-            richTableCopy.setHiddenColumns(new HashSet<String>(hiddenColumns));
-        }
-
-        if (sortableColumns != null) {
-            richTableCopy.setSortableColumns(new HashSet<String>(sortableColumns));
-        }
-
-        if (cellCssClasses != null) {
-            richTableCopy.setCssClasses(new ArrayList<String>(this.cellCssClasses));
-        }
-
-        richTableCopy.setAjaxSource(this.ajaxSource);
-        richTableCopy.setShowSearchAndExportOptions(this.showSearchAndExportOptions);
-        richTableCopy.setShowSearchOption(this.showSearchOption);
-        richTableCopy.setShowExportOption(this.showExportOption);
-        richTableCopy.setGroupingOptionsJSString(this.groupingOptionsJSString);
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,10 @@ import org.junit.Test;
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.control.Control;
-import org.kuali.rice.krad.uif.control.SelectControl;
+import org.kuali.rice.krad.uif.control.SelectControlBase;
 import org.kuali.rice.krad.uif.control.TextAreaControl;
 import org.kuali.rice.krad.uif.field.InputField;
+import org.kuali.rice.krad.uif.field.InputFieldBase;
 
 /**
  * various tests for CollectionGroup
@@ -39,10 +40,10 @@ public class CollectionGroupTest {
 
     @Before
     public void setup() {
-        group = new CollectionGroup();
+        group = new CollectionGroupBase();
         List<Component> items = new ArrayList<Component>();
-        InputField field = new InputField();
-        field.setControl(new SelectControl());
+        InputField field = new InputFieldBase();
+        field.setControl(new SelectControlBase());
         items.add(field);
         items.add(new TextAreaControl());
         group.setItems(items);

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -357,7 +357,8 @@ public class KualiMaintainableImpl extends MaintainableImpl implements Maintaina
 		refreshReferences(referencesToRefresh);
 	}
 
-	protected void refreshReferences(String referencesToRefresh) {
+	@Override
+	public void refreshReferences(String referencesToRefresh) {
 		PersistenceStructureService persistenceStructureService = getPersistenceStructureService();
 		if (StringUtils.isNotBlank(referencesToRefresh)) {
 			String[] references = StringUtils.split(referencesToRefresh, KRADConstants.REFERENCES_TO_REFRESH_SEPARATOR);

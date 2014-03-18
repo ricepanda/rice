@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@ class RuleValidationContextTest {
  	}
 
     @Test
-    @Ignore
+    @Ignore // groovy.lang.MissingMethodException: No signature of method: static org.kuali.rice.kew.api.rule.Rule$Builder.create() is applicable for argument types: (java.lang.String) values: [ruleName]
  	void test_Xml_Marshal_Unmarshal() {
         Rule rule = Rule.Builder.create("ruleName").build()
         RuleDelegation ruleDelegation = RuleDelegation.Builder.create().build()
@@ -101,7 +101,7 @@ class RuleValidationContextTest {
  	}
 
     @Test
-    @Ignore
+    @Ignore // groovy.lang.MissingMethodException: No signature of method: static org.kuali.rice.kew.api.rule.Rule$Builder.create() is applicable for argument types: (java.lang.String) values: [ruleName]
  	void test_Xml_Marshal_Unmarshal_just_rule() {
         Rule rule = Rule.Builder.create("ruleName").build()
         def ctx = RuleValidationContext.Builder.create(rule, null, null).build()

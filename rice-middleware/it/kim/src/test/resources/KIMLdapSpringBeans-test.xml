@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -230,9 +230,7 @@
       </property>
     </bean>
 
-    <bean id="kimLDAPIdentityDelegateService" class="org.kuali.rice.kim.service.impl.LdapIdentityDelegateServiceImpl"
-    	p:businessObjectService-ref="rice.kim.import.businessObjectService"
-        p:criteriaLookupService-ref="rice.kim.import.criteriaLookupService">
+    <bean id="kimLDAPIdentityDelegateService" class="org.kuali.rice.kim.service.impl.LdapIdentityDelegateServiceImpl">
       <property name="principalDao" ref="ldapPrincipalDao" />
     </bean>
 

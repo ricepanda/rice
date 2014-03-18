@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.apache.log4j.Logger;
 import org.kuali.rice.core.api.criteria.Predicate;
 import org.kuali.rice.core.api.criteria.PredicateFactory;
 import org.kuali.rice.core.api.criteria.QueryByCriteria;
+import org.kuali.rice.core.api.util.RiceKeyConstants;
 import org.kuali.rice.core.api.util.io.SerializationUtils;
 import org.kuali.rice.core.framework.persistence.jta.TransactionalNoValidationExceptionRollback;
 import org.kuali.rice.kew.api.exception.WorkflowException;
@@ -126,14 +127,27 @@ public class MaintenanceDocumentServiceImpl implements MaintenanceDocumentServic
         document.getNewMaintainableObject().setMaintenanceAction(maintenanceAction);
         document.getOldMaintainableObject().setMaintenanceAction(maintenanceAction);
 
+        // if action is delete, check that object can be deleted
+        if (KRADConstants.MAINTENANCE_DELETE_ACTION.equals(maintenanceAction))
+        {
+            checkMaintenanceActionAuthorization(document, document.getOldMaintainableObject(),
+                    maintenanceAction, requestParameters);
+        }
+
         // if action is edit or copy first need to retrieve the old record
         if (!KRADConstants.MAINTENANCE_NEW_ACTION.equals(maintenanceAction) &&
                 !KRADConstants.MAINTENANCE_NEWWITHEXISTING_ACTION.equals(maintenanceAction)) {
             Object oldDataObject = retrieveObjectForMaintenance(document, requestParameters);
 
+            Object newDataObject = null;
+
             // TODO should we be using ObjectUtils? also, this needs dictionary
             // enhancement to indicate fields to/not to copy
-            Object newDataObject = SerializationUtils.deepCopy((Serializable) oldDataObject);
+            if (dataObjectService.supports(oldDataObject.getClass())) {
+                newDataObject = dataObjectService.copyInstance(oldDataObject);
+            } else {
+                newDataObject = SerializationUtils.deepCopy((Serializable) oldDataObject);
+            }
 
             // set object instance for editing
             document.getOldMaintainableObject().setDataObject(oldDataObject);
@@ -209,6 +223,7 @@ public class MaintenanceDocumentServiceImpl implements MaintenanceDocumentServic
             boolean allowsDelete = getDataObjectAuthorizationService()
                     .canMaintain(oldBusinessObject, GlobalVariables.getUserSession().getPerson(),
                             document.getDocumentHeader().getWorkflowDocument().getDocumentTypeName());
+
             if (!allowsDelete) {
                 LOG.error("Document type " + document.getDocumentHeader().getWorkflowDocument().getDocumentTypeName() +
                         " does not allow delete actions.");
@@ -216,6 +231,19 @@ public class MaintenanceDocumentServiceImpl implements MaintenanceDocumentServic
                         GlobalVariables.getUserSession().getPerson().getPrincipalId(), "delete",
                         document.getDocumentHeader().getWorkflowDocument().getDocumentTypeName());
             }
+
+            boolean dataObjectAllowsDelete = getDocumentDictionaryService().getAllowsRecordDeletion(
+                    document.getOldMaintainableObject().getDataObject().getClass());
+
+            if (!dataObjectAllowsDelete) {
+                LOG.error("Document type " + document.getDocumentHeader().getWorkflowDocument().getDocumentTypeName() +
+                        " does not allow delete actions.");
+                GlobalVariables.getMessageMap().removeAllWarningMessagesForProperty(KRADConstants.GLOBAL_MESSAGES);
+                GlobalVariables.getMessageMap().putError(KRADConstants.DOCUMENT_ERRORS,
+                        RiceKeyConstants.MESSAGE_DELETE_ACTION_NOT_SUPPORTED);
+
+            }
+
         }
     }
 

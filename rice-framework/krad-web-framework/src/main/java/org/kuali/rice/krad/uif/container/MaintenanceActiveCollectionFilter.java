@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ public class MaintenanceActiveCollectionFilter implements CollectionFilter, Copy
      * is not allowed to hide
      * </p>
      *
-     * @see CollectionFilter#filter(org.kuali.rice.krad.uif.view.View, Object, org.kuali.rice.krad.uif.container.CollectionGroup)
+     * {@inheritDoc}
      */
     @Override
     public List<Integer> filter(View view, Object model, CollectionGroup collectionGroup) {
@@ -121,7 +121,7 @@ public class MaintenanceActiveCollectionFilter implements CollectionFilter, Copy
 
     /**
      * @see Copyable#copy()
-     * @see CloneUtils#copy(Copyable)
+     * @see CopyUtils#copy(Copyable)
      */
     public final <T> T copy() {
         return CopyUtils.copy(this);
@@ -136,13 +136,11 @@ public class MaintenanceActiveCollectionFilter implements CollectionFilter, Copy
     public void preventModification() {}
 
    /**
-     * Copies the properties over for the copy method.
-     *
-     * @param maintenanceActiveCollectionFilter MaintenanceActiveCollectionFilter instance to copy properties to
+     * {@inheritDoc}
      */
-    protected <T> void copyProperties(T maintenanceActiveCollectionFilter) {
-        MaintenanceActiveCollectionFilter maintenanceActiveCollectionFilterCopy = (MaintenanceActiveCollectionFilter) maintenanceActiveCollectionFilter;
-
-        maintenanceActiveCollectionFilterCopy.setOldBindingObjectPath(this.oldBindingObjectPath);
+    @Override
+    public Copyable unwrap() {
+        return this;
     }
+
 }

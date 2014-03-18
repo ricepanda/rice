@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import org.kuali.rice.krad.document.Document;
 public interface PropertySerializabilityEvaluator {
 
     /**
-     * Initializes the evaluator so that calls to {@link #isPropertySerializable(DocumentSerializationState, Object, String, Object)} and
+     * Initializes the evaluator so that calls to {@link #isPropertySerializable(SerializationState, Object, String, Object)} and
      * {@link #determinePropertyType(Object)} will function properly
      *
      * @param document the document instance

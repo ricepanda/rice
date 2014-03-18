@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
 import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
 import org.kuali.rice.krad.uif.UifConstants;
-import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.control.CheckboxControl;
 import org.kuali.rice.krad.uif.control.Control;
 import org.kuali.rice.krad.uif.control.FilterableLookupCriteriaControl;
@@ -33,9 +32,11 @@ import org.kuali.rice.krad.uif.control.RadioGroupControl;
 import org.kuali.rice.krad.uif.control.TextAreaControl;
 import org.kuali.rice.krad.uif.element.Message;
 import org.kuali.rice.krad.uif.field.InputField;
+import org.kuali.rice.krad.uif.field.InputFieldBase;
 import org.kuali.rice.krad.uif.util.ComponentFactory;
 import org.kuali.rice.krad.uif.util.ComponentUtils;
 import org.kuali.rice.krad.uif.util.KeyMessage;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.util.KRADConstants;
 import org.kuali.rice.krad.util.KRADPropertyConstants;
 
@@ -45,7 +46,7 @@ import org.kuali.rice.krad.util.KRADPropertyConstants;
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 @BeanTag(name = "lookupCriteriaInputField-bean", parent = "Uif-LookupCriteriaInputField")
-public class LookupInputField extends InputField {
+public class LookupInputField extends InputFieldBase {
     private static final long serialVersionUID = -8294275596836322699L;
 
     private boolean disableWildcardsAndOperators;
@@ -66,7 +67,7 @@ public class LookupInputField extends InputField {
      * {@inheritDoc}
      */
     @Override
-    public void performFinalize(Object model, Component parent) {
+    public void performFinalize(Object model, LifecycleElement parent) {
         super.performFinalize(model, parent);
 
         // if enabled add option to select all values
@@ -82,7 +83,7 @@ public class LookupInputField extends InputField {
             if (multiValueControl.getRichOptions() != null) {
                 Message message = ComponentFactory.getMessage();
                 message.setMessageText(allOptionText);
-                message.setGenerateSpan(false);
+                message.setRenderWrapperTag(false);
 
                 multiValueControl.getRichOptions().add(0, new KeyMessage("", allOptionText, message));
             }
@@ -133,7 +134,7 @@ public class LookupInputField extends InputField {
         setMaxLength(100);
 
         // set default value for active field to true
-        if (StringUtils.isEmpty(getDefaultValue())) {
+        if (getDefaultValue() == null || (getDefaultValue() instanceof String && StringUtils.isEmpty((String)getDefaultValue()))) {
             if ((StringUtils.equals(getPropertyName(), KRADPropertyConstants.ACTIVE))) {
                 setDefaultValue(KRADConstants.YES_INDICATOR_VALUE);
             }
@@ -243,19 +244,5 @@ public class LookupInputField extends InputField {
      */
     public void setRanged(boolean ranged) {
         this.ranged = ranged;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        LookupInputField lookupInputFieldCopy = (LookupInputField) component;
-
-        lookupInputFieldCopy.setDisableWildcardsAndOperators(this.disableWildcardsAndOperators);
-        lookupInputFieldCopy.setAddControlSelectAllOption(this.addControlSelectAllOption);
-        lookupInputFieldCopy.setRanged(this.ranged);
     }
 }

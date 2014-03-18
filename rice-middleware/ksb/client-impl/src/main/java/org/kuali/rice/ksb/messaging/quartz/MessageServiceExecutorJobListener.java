@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ public class MessageServiceExecutorJobListener implements JobListener {
 	if (context.getJobInstance() instanceof MessageServiceExecutorJob && exception != null) {
 	    PersistedMessageBO message = (PersistedMessageBO)context.getJobDetail().getJobDataMap().get(MessageServiceExecutorJob.MESSAGE_KEY);
 	    message.setQueueStatus(KSBConstants.ROUTE_QUEUE_EXCEPTION);
-	    KSBServiceLocator.getMessageQueueService().save(message);
+	    message = KSBServiceLocator.getMessageQueueService().save(message);
 	}
 
     }

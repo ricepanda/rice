@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.kuali.rice.ken.bo;
 import org.kuali.rice.ken.api.notification.NotificationChannelReviewer;
 import org.kuali.rice.ken.api.notification.NotificationChannelReviewerContract;
 import org.kuali.rice.krad.bo.PersistableBusinessObjectBase;
+import org.kuali.rice.krad.data.jpa.PortableSequenceGenerator;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -27,7 +28,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
-import javax.persistence.Parameter;
 import javax.persistence.Table;
 
 /**
@@ -39,6 +39,7 @@ import javax.persistence.Table;
 public class NotificationChannelReviewerBo extends PersistableBusinessObjectBase implements NotificationChannelReviewerContract {
     @Id
     @GeneratedValue(generator="KREN_RVWER_S")
+    @PortableSequenceGenerator(name="KREN_RVWER_S")
 	@Column(name="RVWER_ID")
 	private Long id;
     @OneToOne(fetch=FetchType.EAGER, cascade={CascadeType.REFRESH, CascadeType.DETACH })

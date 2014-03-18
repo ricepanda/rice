@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,9 @@ import org.kuali.rice.core.framework.persistence.jdbc.sql.SQLUtils;
 import org.kuali.rice.krad.datadictionary.exception.AttributeValidationException;
 import org.kuali.rice.krad.util.DataTypeUtil;
 
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -37,8 +40,17 @@ public abstract class BaseAttributeValueReader implements AttributeValueReader {
     public List<String> getCleanSearchableValues(String attributeKey) throws AttributeValidationException {
         Class<?> attributeType = getType(attributeKey);
         Object rawValue = getValue(attributeKey);
+        String attributeInValue = "";
 
-        String attributeInValue = rawValue != null ? rawValue.toString() : "";
+        if (rawValue != null) {
+            //if a date force the format
+            if (rawValue instanceof Date && !(rawValue instanceof Timestamp)) {
+                attributeInValue = new SimpleDateFormat("MM-dd-yyyy").format(rawValue);
+            } else {
+                attributeInValue = rawValue.toString();
+            }
+        }
+
         String attributeDataType = DataTypeUtil.determineDataType(attributeType);
         return SQLUtils.getCleanedSearchableValues(attributeInValue, attributeDataType);
     }

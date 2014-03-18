@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package org.kuali.rice.krad.data.jpa;
 
 import org.kuali.rice.core.api.criteria.GenericQueryResults;
-import org.kuali.rice.core.api.criteria.LookupCustomizer;
 import org.kuali.rice.core.api.criteria.QueryByCriteria;
 
 /**
@@ -33,16 +32,4 @@ interface CriteriaQuery {
      * @throws IllegalArgumentException if the criteria is null
      */
     <T> GenericQueryResults<T> lookup(final Class<T> queryClass, final QueryByCriteria criteria);
-
-    /**
-     * Looks up a type based on a query criteria.
-     *
-     * @param queryClass the class to lookup
-     * @param criteria the criteria to lookup against. cannot be null.
-     * @param lookupCustomizer predicate transformation
-     * @param <T> the type that is being looked up.
-     * @return the results. will never be null.
-     * @throws IllegalArgumentException if the criteria is null
-     */
-    <T> GenericQueryResults<T> lookup(final Class<T> queryClass, final QueryByCriteria criteria, LookupCustomizer<T> lookupCustomizer);
 }

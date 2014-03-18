@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,6 +104,9 @@ abstract public class ValidationPattern implements Serializable {
     abstract protected String getRegexString();
 
     /**
+     * Determines if an input string matches the pattern.
+     * 
+     * @param input input string
      * @return true if the given String matches this pattern
      */
     public boolean matches(String input) {
@@ -115,7 +118,10 @@ abstract public class ValidationPattern implements Serializable {
     }
 
     /**
-     * @return ExportMap describing the subclass instance
+     * Builds an export map describing the subclass instance. 
+     * @param exportKey
+     * 
+     * @return export map
      */
     abstract public ExportMap buildExportMap(String exportKey);
 
@@ -127,6 +133,7 @@ abstract public class ValidationPattern implements Serializable {
 
     /**
      * This method throws an exception if it is not configured properly
+     * @throws ValidationPatternException 
      */
     public void completeValidation() throws ValidationPatternException {
     }

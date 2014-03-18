@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import org.kuali.rice.krad.uif.view.View;
         {@BeanTag(name = "tooltip-bean", parent = "Uif-Tooltip"), @BeanTag(name = "tooltipHelp-bean", parent = "Uif-TooltipHelp"),
                 @BeanTag(name = "tooltipFocus-bean", parent = "Uif-TooltipFocus")})
 public class Tooltip extends WidgetBase {
+    private static final long serialVersionUID = -7641043761619191329L;
 
     private String tooltipContent;
 
@@ -104,19 +105,5 @@ public class Tooltip extends WidgetBase {
      */
     public void setOnMouseHover(boolean onMouseHover) {
         this.onMouseHover = onMouseHover;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        Tooltip tooltipCopy = (Tooltip) component;
-
-        tooltipCopy.setTooltipContent(this.tooltipContent);
-        tooltipCopy.setOnFocus(this.onFocus);
-        tooltipCopy.setOnMouseHover(this.onMouseHover);
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,9 +55,10 @@ import org.kuali.rice.kim.api.group.Group;
 import org.kuali.rice.kim.api.group.GroupService;
 import org.kuali.rice.kim.api.services.KimApiServiceLocator;
 import org.kuali.rice.krad.bo.PersistableBusinessObjectBase;
-import org.kuali.rice.krad.data.DataObjectUtils;
+import org.kuali.rice.krad.data.DataObjectWrapper;
+import org.kuali.rice.krad.data.KradDataServiceLocator;
 import org.kuali.rice.krad.data.jpa.converters.Boolean01Converter;
-import org.kuali.rice.krad.data.jpa.eclipselink.PortableSequenceGenerator;
+import org.kuali.rice.krad.data.jpa.PortableSequenceGenerator;
 import org.kuali.rice.krad.util.KRADUtils;
 
 import javax.persistence.Basic;
@@ -112,7 +113,12 @@ import static org.kuali.rice.kew.api.doctype.DocumentTypePolicy.*;
         @NamedQuery(name = "DocumentType.GetDocumentTypeByDocumentId", query = "SELECT DT FROM DocumentType DT, "
                 + "DocumentRouteHeaderValue DH WHERE DH.documentTypeId=DT.documentTypeId AND DH.documentId = :documentId"),
         @NamedQuery(name = "DocumentType.GetDocumentTypeByName", query = "SELECT d FROM DocumentType d "
-                + "WHERE d.currentInd = true AND d.name = :name")
+                + "WHERE d.currentInd = true AND d.name = :name"),
+        @NamedQuery(name = "DocumentType.QuickLinks.FindInitiatedDocumentTypesListByInitiatorWorkflowId", query =
+                "SELECT DISTINCT dt.name, dt.label FROM DocumentType dt, DocumentRouteHeaderValue drhv " +
+                "WHERE drhv.initiatorWorkflowId = :initiatorWorkflowId AND drhv.documentTypeId = dt.documentTypeId "
+                + "AND dt.active = true AND dt.currentInd = true " +
+                "ORDER BY UPPER(dt.label)")
 })
 public class DocumentType extends PersistableBusinessObjectBase implements MutableInactivatable, DocumentTypeEBO, DocumentTypeContract {
     private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(DocumentType.class);
@@ -252,14 +258,15 @@ public class DocumentType extends PersistableBusinessObjectBase implements Mutab
     }
 
     public void populateDataDictionaryEditableFields(Set<String> propertyNamesEditableViaUI, DocumentType dataDictionaryEditedType) {
+        DataObjectWrapper<DocumentType> wrapper = KradDataServiceLocator.getDataObjectService().wrap(dataDictionaryEditedType);
+
         String currentPropertyName = "";
         try {
             for (String propertyName : propertyNamesEditableViaUI) {
                 currentPropertyName = propertyName;
                 if (KEWPropertyConstants.PARENT_DOC_TYPE_NAME.equals(propertyName)) {
                     // this is trying to set the parent document type name so lets set the entire parent document
-                    String parentDocumentTypeName = (String) DataObjectUtils.getPropertyValue(dataDictionaryEditedType,
-                            propertyName);
+                    String parentDocumentTypeName = (String) wrapper.getPropertyValueNullSafe(propertyName);
                     if (StringUtils.isNotBlank(parentDocumentTypeName)) {
                         DocumentType parentDocType = KEWServiceLocator.getDocumentTypeService().findByName(parentDocumentTypeName);
                         if (parentDocType == null) {
@@ -271,8 +278,7 @@ public class DocumentType extends PersistableBusinessObjectBase implements Mutab
 //                else if (!FIELD_PROPERTY_NAME_DOCUMENT_TYPE_ID.equals(propertyName)) {
                 else {
                     LOG.info("*** COPYING PROPERTY NAME FROM OLD BO TO NEW BO: " + propertyName);
-                    KRADUtils.setObjectProperty(this, propertyName, DataObjectUtils.getPropertyValue(
-                            dataDictionaryEditedType, propertyName));
+                    KRADUtils.setObjectProperty(this, propertyName, wrapper.getPropertyValueNullSafe(propertyName));
                 }
             }
         } catch (FormatException e) {
@@ -1801,4 +1807,9 @@ public class DocumentType extends PersistableBusinessObjectBase implements Mutab
         this.workgroupId = workgroupId;
     }
 
+    @Override
+    public void refresh() {
+        // do nothing - this is an EBO - and this method is not safe to call on EBO-extending JPA-bytecode-weaved objects
+        // See org.kuali.rice.krad.service.impl.PersistenceServiceImpl.retrieveNonKeyFields(Object)
+    }
 }

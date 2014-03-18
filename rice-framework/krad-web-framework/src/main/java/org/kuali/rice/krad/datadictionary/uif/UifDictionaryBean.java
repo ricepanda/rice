@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 package org.kuali.rice.krad.datadictionary.uif;
 
 import org.kuali.rice.krad.datadictionary.DictionaryBean;
+import org.kuali.rice.krad.uif.lifecycle.initialize.PopulateComponentFromExpressionGraphTask;
+import org.kuali.rice.krad.uif.lifecycle.initialize.PopulateReplacersAndModifiersFromExpressionGraphTask;
 
 import java.util.Map;
 
@@ -33,24 +35,23 @@ public interface UifDictionaryBean extends DictionaryBean {
 
     /**
      * Map of expressions that were configured for the object's graph
-     *
+     * 
      * <p>
-     * During processing of the UIF configuration, expressions are pulled out and placed into this map for the
-     * component graph. A component graph contains the component and all one to one nested components (but not those
-     * that are contained in collections, each of these begins another graph). The expressions are placed at the root
-     * component level instead of the actual nested component for handling of nested property configuration and
-     * overridding
+     * During processing of the UIF configuration, expressions are pulled out and placed into this
+     * map for the component graph. A component graph contains the component and all one to one
+     * nested components (but not those that are contained in collections, each of these begins
+     * another graph). The expressions are placed at the root component level instead of the actual
+     * nested component for handling of nested property configuration and overridding
      * </p>
-     *
+     * 
      * <p>
-     * The expression graph map key gives the property name (possibly nested) the expression was configured on, and the
-     * map value gives the expression. During the view lifecycle,
-     * see {@link org.kuali.rice.krad.uif.service.impl.ViewHelperServiceImpl#performComponentApplyModel(org.kuali.rice.krad.uif.view.View,
-     * org.kuali.rice.krad.uif.component.Component, java.lang.Object)},
-     * the expressions are moved to the {@link #getPropertyExpressions()} map for the configurable they should be
-     * evaluated on
+     * The expression graph map key gives the property name (possibly nested) the expression was
+     * configured on, and the map value gives the expression. During the view lifecycle, see
+     * {@link PopulateComponentFromExpressionGraphTask} and
+     * {@link PopulateReplacersAndModifiersFromExpressionGraphTask}, the expressions are moved to
+     * the {@link #getPropertyExpressions()} map for the configurable they should be evaluated on
      * </p>
-     *
+     * 
      * @return Map<String, String> map of expressions contained on the configurable graph
      */
     public Map<String, String> getExpressionGraph();
@@ -61,25 +62,6 @@ public interface UifDictionaryBean extends DictionaryBean {
      * @param expressionGraph
      */
     public void setExpressionGraph(Map<String, String> expressionGraph);
-
-    /**
-     * Map of expressions that should apply when the component is refresh
-     *
-     * <p>
-     * Expressions may exist on a parent component that impact the component state when it is being refreshed. These
-     * expressions are pulled out and placed into this map for evaluation during the refresh process
-     * </p>
-     *
-     * @return Map<String, String> key is property name to set and value is the expression to evaluate
-     */
-    public Map<String, String> getRefreshExpressionGraph();
-
-    /**
-     * Setter for the component's refresh expression graph
-     *
-     * @param refreshExpressionGraph
-     */
-    public void setRefreshExpressionGraph(Map<String, String> refreshExpressionGraph);
 
     /**
      * Map of expressions that should be evaluated to conditionally set a property on the component
@@ -109,6 +91,7 @@ public interface UifDictionaryBean extends DictionaryBean {
 
     /**
      * Returns the expression configured for the property with the given name
+     * @param propertyName property name
      *
      * @return String expression for property or null if expression is not configured
      * @see org.kuali.rice.krad.uif.component.Component#getPropertyExpressions()

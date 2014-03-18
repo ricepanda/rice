@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -168,8 +168,8 @@ public class LookupableImpl extends ViewHelperServiceImpl implements Lookupable 
      */
     protected Map<String, String> processSearchCriteria(LookupForm lookupForm, Map<String, String> searchCriteria) {
         Map<String, InputField> criteriaFields = new HashMap<String, InputField>();
-        if (lookupForm.getActiveView() != null) {
-            criteriaFields = getCriteriaFieldsForValidation((LookupView) lookupForm.getActiveView(), lookupForm);
+        if (lookupForm.getView() != null) {
+            criteriaFields = getCriteriaFieldsForValidation((LookupView) lookupForm.getView(), lookupForm);
         }
 
         // combine date range criteria
@@ -227,8 +227,8 @@ public class LookupableImpl extends ViewHelperServiceImpl implements Lookupable 
         List<String> wildcardAsLiteralPropertyNames = new ArrayList<String>();
 
         Map<String, InputField> criteriaFields = new HashMap<String, InputField>();
-        if (lookupForm.getActiveView() != null) {
-            criteriaFields = getCriteriaFieldsForValidation((LookupView) lookupForm.getActiveView(), lookupForm);
+        if (lookupForm.getView() != null) {
+            criteriaFields = getCriteriaFieldsForValidation((LookupView) lookupForm.getView(), lookupForm);
         }
 
         for (String fieldName : searchCriteria.keySet()) {
@@ -258,13 +258,7 @@ public class LookupableImpl extends ViewHelperServiceImpl implements Lookupable 
     protected boolean validateSearchParameters(LookupForm form, Map<String, String> searchCriteria) {
         boolean valid = true;
 
-        // if postedView is null then we are executing the search from get request, in which case we
-        // can't validate the criteria
-        if (form.getActiveView() == null) {
-            return valid;
-        }
-
-        Map<String, InputField> criteriaFields = getCriteriaFieldsForValidation((LookupView) form.getActiveView(),
+        Map<String, InputField> criteriaFields = getCriteriaFieldsForValidation((LookupView) form.getView(),
                 form);
 
         // TODO: this should be an error condition but we have an issue when the search is performed from
@@ -288,14 +282,16 @@ public class LookupableImpl extends ViewHelperServiceImpl implements Lookupable 
             InputField inputField = criteriaFields.get(searchPropertyName);
 
             String adjustedSearchPropertyPath = UifPropertyPaths.LOOKUP_CRITERIA + "[" + searchPropertyName + "]";
-            if (inputField == null && hiddenCriteria.contains(adjustedSearchPropertyPath)) {
+            //TODO: Currently the validation is called before the performLifeCycle is completed on the view and
+            // hence any additionalHiddenPropertyNames will not be set on the InputFields. For now if the
+            // inputField is not found for the criteria, it is treated as "Valid"
+            if (inputField == null || hiddenCriteria.contains(adjustedSearchPropertyPath)) {
                 return valid;
             }
 
-            // if there is not an input field, then this is invalid search criteria
-            if (inputField == null) {
-                throw new RuntimeException("Invalid search value sent for property name: " + searchPropertyName);
-            }
+            //            if (inputField == null) {
+            //                throw new RuntimeException("Invalid search value sent for property name: " + searchPropertyName);
+            //            }
 
             if (StringUtils.isBlank(searchPropertyValue) && inputField.getRequired()) {
                 GlobalVariables.getMessageMap().putError(inputField.getPropertyName(), RiceKeyConstants.ERROR_REQUIRED,
@@ -368,6 +364,7 @@ public class LookupableImpl extends ViewHelperServiceImpl implements Lookupable 
      * @param searchCriteria map of search criteria that was used for the search
      * @param searchResults list of result data objects from the search
      * @param bounded whether the search was bounded
+     * @param searchResultsLimit maximum number of search results to return
      */
     protected void generateLookupResultsMessages(Map<String, String> searchCriteria, Collection<?> searchResults,
             boolean bounded, Integer searchResultsLimit) {
@@ -434,9 +431,9 @@ public class LookupableImpl extends ViewHelperServiceImpl implements Lookupable 
         List<String> defaultSortColumns = null;
         boolean defaultSortAscending = true;
 
-        if (form.getActiveView() != null) {
-            defaultSortColumns = ((LookupView) form.getActiveView()).getDefaultSortAttributeNames();
-            defaultSortAscending = ((LookupView) form.getActiveView()).isDefaultSortAscending();
+        if (form.getView() != null) {
+            defaultSortColumns = ((LookupView) form.getView()).getDefaultSortAttributeNames();
+            defaultSortAscending = ((LookupView) form.getView()).isDefaultSortAscending();
         }
 
         boolean hasExpression = false;
@@ -485,8 +482,11 @@ public class LookupableImpl extends ViewHelperServiceImpl implements Lookupable 
             }
         }
 
+        Map<String, Object> translatedValues  = KRADUtils.coerceRequestParameterTypes(
+                (Class<? extends ExternalizableBusinessObject>) getDataObjectClass(), filteredFieldValues);
+
         List<?> searchResults = eboModuleService.getExternalizableBusinessObjectsListForLookup(
-                (Class<? extends ExternalizableBusinessObject>) getDataObjectClass(), (Map) filteredFieldValues,
+                (Class<? extends ExternalizableBusinessObject>) getDataObjectClass(), (Map) translatedValues,
                 unbounded);
 
         return searchResults;
@@ -500,8 +500,8 @@ public class LookupableImpl extends ViewHelperServiceImpl implements Lookupable 
         Map<String, String> clearedLookupCriteria = new HashMap<String, String>();
 
         Map<String, InputField> criteriaFieldMap = new HashMap<String, InputField>();
-        if (form.getActiveView() != null) {
-            criteriaFieldMap = getCriteriaFieldsForValidation((LookupView) form.getActiveView(), form);
+        if (form.getView() != null) {
+            criteriaFieldMap = getCriteriaFieldsForValidation((LookupView) form.getView(), form);
         }
 
         // fields marked as read only through the initial request should not be cleared
@@ -514,8 +514,8 @@ public class LookupableImpl extends ViewHelperServiceImpl implements Lookupable 
             InputField inputField = criteriaFieldMap.get(searchPropertyName);
 
             if (readOnlyFieldsList == null || !readOnlyFieldsList.contains(searchPropertyName)) {
-                if (inputField != null) {
-                    searchPropertyValue = inputField.getDefaultValue();
+                if (inputField != null && inputField.getDefaultValue() != null  ) {
+                    searchPropertyValue = inputField.getDefaultValue().toString();
                 } else {
                     searchPropertyValue = "";
                 }
@@ -557,14 +557,18 @@ public class LookupableImpl extends ViewHelperServiceImpl implements Lookupable 
         } else if (StringUtils.isBlank(returnLink.getHref())) {
             String href = getReturnUrl(lookupView, lookupForm, dataObject);
 
-            if (StringUtils.isBlank(href)) {
+            if (StringUtils.isNotBlank(href)) {
+                returnLink.setHref(href);
+            } else {
                 returnLink.setRender(false);
-
                 return;
             }
 
-            returnLink.setHref(href);
-            returnLink.setTarget(lookupForm.getReturnTarget());
+            String target = lookupForm.getReturnTarget();
+
+            if (StringUtils.isNotBlank(target)) {
+                returnLink.setTarget(target);
+            }
         }
 
         // add data attribute for attaching event handlers on the return links
@@ -700,7 +704,9 @@ public class LookupableImpl extends ViewHelperServiceImpl implements Lookupable 
             returnKeys = getLegacyDataAdapter().listPrimaryKeyFieldNames(getDataObjectClass());
         }
 
-        return KRADUtils.getPropertyKeyValuesFromDataObject(returnKeys, dataObject);
+        List<String> secureReturnKeys = lookupView.getAdditionalSecurePropertyNames();
+
+        return KRADUtils.getPropertyKeyValuesFromDataObject(returnKeys, secureReturnKeys, dataObject);
     }
 
     /**
@@ -749,16 +755,18 @@ public class LookupableImpl extends ViewHelperServiceImpl implements Lookupable 
      *
      * <p>Will build a URL containing keys of the data object to invoke the given maintenance action method
      * within the maintenance controller</p>
-     *
+     * 
+     * @param lookupForm lookup form
      * @param dataObject data object instance for the line to build the maintenance action link for
      * @param methodToCall method name on the maintenance controller that should be invoked
      * @param pkNames list of primary key field names for the data object whose key/value pairs will be added to
      * the maintenance link
+     *
      * @return String URL link for the maintenance action
      */
     protected String getMaintenanceActionUrl(LookupForm lookupForm, Object dataObject, String methodToCall,
             List<String> pkNames) {
-        LookupView lookupView = (LookupView) lookupForm.getActiveView();
+        LookupView lookupView = (LookupView) lookupForm.getView();
 
         Properties props = new Properties();
         props.put(KRADConstants.DISPATCH_REQUEST_PARAMETER, methodToCall);
@@ -845,6 +853,7 @@ public class LookupableImpl extends ViewHelperServiceImpl implements Lookupable 
     /**
      * Determines if given data object has associated maintenance document that allows edit maintenance
      * actions.
+     * @param dataObject data object
      *
      * @return boolean true if the maintenance edit action is allowed for the data object instance, false otherwise
      */
@@ -863,6 +872,7 @@ public class LookupableImpl extends ViewHelperServiceImpl implements Lookupable 
     /**
      * Determines if given data object has associated maintenance document that allows delete maintenance
      * actions.
+     * @param dataObject data object
      *
      * @return boolean true if the maintenance delete action is allowed for the data object instance, false otherwise
      */
@@ -905,8 +915,16 @@ public class LookupableImpl extends ViewHelperServiceImpl implements Lookupable 
             return criteriaFieldMap;
         }
 
-        List<InputField> fields = ComponentUtils.getNestedContainerComponents(lookupView.getCriteriaGroup(),
-                InputField.class);
+        List<InputField> fields = null;
+        if (lookupView.getCriteriaGroup().getItems().size() > 0) {
+            fields = ComponentUtils.getNestedContainerComponents(lookupView.getCriteriaGroup(), InputField.class);
+        } else if (lookupView.getCriteriaFields().size() > 0) {
+            // If criteriaGroup items are empty look to see if criteriaFields has any input components.
+            // This is to ensure that if initializeGroup hasn't been called on the view, the validations will still happen on criteriaFields
+            fields = ComponentUtils.getComponentsOfType(lookupView.getCriteriaFields(), InputField.class);
+        } else {
+            fields = new ArrayList<InputField>();
+        }
         for (InputField field : fields) {
             criteriaFieldMap.put(field.getPropertyName(), field);
         }
@@ -972,5 +990,60 @@ public class LookupableImpl extends ViewHelperServiceImpl implements Lookupable 
 
     public void setEncryptionService(EncryptionService encryptionService) {
         this.encryptionService = encryptionService;
+    }
+
+    /**
+     * Creates a copy of this {@code LookupableImpl}.
+     *
+     * @return a copy of this {@code LookupableImpl}
+     */
+    public LookupableImpl copy() {
+        LookupableImpl lookupableImplCopy = KRADUtils.createNewObjectFromClass(getClass());
+
+        if (this.getDataObjectClass() != null) {
+            lookupableImplCopy.setDataObjectClass(this.getDataObjectClass());
+        }
+
+        if (this.getConfigurationService() != null) {
+            lookupableImplCopy.setConfigurationService(this.getConfigurationService());
+        }
+
+        if (this.getDataDictionaryService() != null) {
+            lookupableImplCopy.setDataDictionaryService(this.getDataDictionaryService());
+        }
+
+        if (this.getDataObjectAuthorizationService() != null) {
+            lookupableImplCopy.setDataObjectAuthorizationService(this.getDataObjectAuthorizationService());
+        }
+
+        if (this.getDataObjectService() != null) {
+            lookupableImplCopy.setDataObjectService(this.getDataObjectService());
+        }
+
+        if (this.getDocumentDictionaryService() != null) {
+            lookupableImplCopy.setDocumentDictionaryService(this.getDocumentDictionaryService());
+        }
+
+        if (this.getEncryptionService() != null) {
+            lookupableImplCopy.setEncryptionService(this.getEncryptionService());
+        }
+
+        if (this.getExpressionEvaluatorFactory() != null) {
+            lookupableImplCopy.setExpressionEvaluatorFactory(this.getExpressionEvaluatorFactory());
+        }
+
+        if (this.getLegacyDataAdapter() != null) {
+            lookupableImplCopy.setLegacyDataAdapter(this.getLegacyDataAdapter());
+        }
+
+        if (this.getLookupService() != null) {
+            lookupableImplCopy.setLookupService(this.getLookupService());
+        }
+
+        if (this.getViewDictionaryService() != null) {
+            lookupableImplCopy.setViewDictionaryService(this.getViewDictionaryService());
+        }
+
+        return lookupableImplCopy;
     }
 }

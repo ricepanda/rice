@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,14 @@
  */
 package org.kuali.rice.kim.impl.role;
 
-import org.apache.commons.lang.StringUtils;
-import org.kuali.rice.kim.impl.common.attribute.KimAttributeDataBo;
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import org.apache.commons.lang.StringUtils;
+import org.kuali.rice.kim.impl.common.attribute.KimAttributeDataBo;
+import org.kuali.rice.krad.data.jpa.PortableSequenceGenerator;
 
 /**
  * /**
@@ -33,9 +33,10 @@ import javax.persistence.Table;
 @Table(name = "KRIM_ROLE_MBR_ATTR_DATA_T")
 public class RoleMemberAttributeDataBo extends KimAttributeDataBo {
 
-    @Id
+    @PortableSequenceGenerator(name = "KRIM_ATTR_DATA_ID_S")
     @GeneratedValue(generator = "KRIM_ATTR_DATA_ID_S")
-    @Column(name="ATTR_DATA_ID")
+    @Id
+    @Column(name = "ATTR_DATA_ID")
     private String id;
 
     @Column(name = "ROLE_MBR_ID")
@@ -65,16 +66,12 @@ public class RoleMemberAttributeDataBo extends KimAttributeDataBo {
         if (!StringUtils.equals(roleMemberAttributeDataBo.getKimTypeId(), getKimTypeId())) {
             return false;
         }
-
         if (!StringUtils.equals(roleMemberAttributeDataBo.getKimAttributeId(), getKimAttributeId())) {
             return false;
         }
-
         if (!StringUtils.equals(roleMemberAttributeDataBo.getAttributeValue(), getAttributeValue())) {
             return false;
         }
-
         return true;
     }
-
 }

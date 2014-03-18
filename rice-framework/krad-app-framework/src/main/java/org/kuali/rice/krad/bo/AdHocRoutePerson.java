@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import org.kuali.rice.kim.api.services.KimApiServiceLocator;
  *
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-//@IdClass(AdHocRoutePersonId.class)
 @Entity
 @Table(name = "KRNS_ADHOC_RTE_ACTN_RECIP_T")
 public class AdHocRoutePerson extends AdHocRouteRecipient {
@@ -39,12 +38,6 @@ public class AdHocRoutePerson extends AdHocRouteRecipient {
 
     public AdHocRoutePerson() {
         setType(PERSON_TYPE);
-
-        try {
-            person = (Person) KimApiServiceLocator.getPersonService().getPersonImplementationClass().newInstance();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override

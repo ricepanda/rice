@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ public class MaintenanceDocumentView extends DocumentView {
      * <li>Set the abstractTypeClasses map for the maintenance object path</li>
      * </ul>
      *
-     * @see org.kuali.rice.krad.uif.container.ContainerBase#performInitialization(org.kuali.rice.krad.uif.view.View, java.lang.Object)
+     * {@inheritDoc}
      */
     @Override
     public void performInitialization(Object model) {
@@ -172,19 +172,5 @@ public class MaintenanceDocumentView extends DocumentView {
      */
     public void setMaintenanceAction(String maintenanceAction) {
         this.maintenanceAction = maintenanceAction;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        MaintenanceDocumentView maintenanceDocumentViewCopy = (MaintenanceDocumentView) component;
-
-        maintenanceDocumentViewCopy.setDataObjectClassName(this.dataObjectClassName);
-        maintenanceDocumentViewCopy.setOldObjectBindingPath(this.oldObjectBindingPath);
-        maintenanceDocumentViewCopy.setMaintenanceAction(this.maintenanceAction);
     }
 }

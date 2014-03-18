@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,18 @@
  */
 package org.kuali.rice.krad.uif.lifecycle.model;
 
-import org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask;
+import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.lifecycle.ApplyModelComponentPhase;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleTaskBase;
 
 /**
  * Perform default apply model behavior defined for the component.
  * 
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-public class ComponentDefaultApplyModelTask extends AbstractViewLifecycleTask {
+public class ComponentDefaultApplyModelTask extends ViewLifecycleTaskBase<Component> {
 
     /**
      * Create a task to assign component IDs during the apply model phase.
@@ -32,25 +34,25 @@ public class ComponentDefaultApplyModelTask extends AbstractViewLifecycleTask {
      * @param phase The apply model phase for the component.
      */
     public ComponentDefaultApplyModelTask(ViewLifecyclePhase phase) {
-        super(phase);
+        super(phase, Component.class);
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask#getPhase()
+     * {@inheritDoc}
      */
     @Override
-    public ApplyModelComponentPhase getPhase() {
-        return (ApplyModelComponentPhase) super.getPhase();
+    public ApplyModelComponentPhase getElementState() {
+        return (ApplyModelComponentPhase) super.getElementState();
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask#performLifecycleTask()
+     * {@inheritDoc}
      */
     @SuppressWarnings("deprecation")
     @Override
     protected void performLifecycleTask() {
-        ApplyModelComponentPhase phase = getPhase();
-        phase.getComponent().performApplyModel(phase.getModel(), phase.getParent());
+        ApplyModelComponentPhase phase = getElementState();
+        phase.getElement().performApplyModel(ViewLifecycle.getModel(), phase.getParent());
     }
 
 }

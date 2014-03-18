@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,31 +43,19 @@ public class UifDictionaryBeanBase extends DictionaryBeanBase implements UifDict
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.uif.UifDictionaryBean#getExpressionGraph()
+     * {@inheritDoc}
      */
+    @Override
     public Map<String, String> getExpressionGraph() {
         return expressionGraph;
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.uif.UifDictionaryBean#setExpressionGraph(java.util.Map<java.lang.String,java.lang.String>)
+     * {@inheritDoc}
      */
+    @Override
     public void setExpressionGraph(Map<String, String> expressionGraph) {
         this.expressionGraph = expressionGraph;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.uif.UifDictionaryBean#getRefreshExpressionGraph()
-     */
-    public Map<String, String> getRefreshExpressionGraph() {
-        return refreshExpressionGraph;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.uif.UifDictionaryBean#setRefreshExpressionGraph(java.util.Map<java.lang.String,java.lang.String>)
-     */
-    public void setRefreshExpressionGraph(Map<String, String> refreshExpressionGraph) {
-        this.refreshExpressionGraph = refreshExpressionGraph;
     }
 
     /**
@@ -93,28 +81,5 @@ public class UifDictionaryBeanBase extends DictionaryBeanBase implements UifDict
         }
 
         return null;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T dictionaryBaseBean) {
-        super.copyProperties(dictionaryBaseBean);
-
-        UifDictionaryBeanBase uifDictionaryBeanBaseCopy = (UifDictionaryBeanBase) dictionaryBaseBean;
-
-        if (expressionGraph != null) {
-            uifDictionaryBeanBaseCopy.setExpressionGraph(new HashMap<String, String>(this.expressionGraph));
-        }
-
-        if (refreshExpressionGraph != null) {
-            uifDictionaryBeanBaseCopy.setRefreshExpressionGraph(new HashMap<String, String>(
-                    this.refreshExpressionGraph));
-        }
-
-        if (propertyExpressions != null) {
-            uifDictionaryBeanBaseCopy.setPropertyExpressions(new HashMap<String, String>(this.propertyExpressions));
-        }
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,9 @@
  */
 package org.kuali.rice.krad.uif.control;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
@@ -23,18 +26,14 @@ import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.element.ContentElementBase;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.view.ExpressionEvaluator;
-import org.kuali.rice.krad.uif.util.ExpressionUtils;
 import org.kuali.rice.krad.uif.view.View;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * Base class for all <code>Control</code> implementations
+ * Base class for all {@link Control} implementations.
  *
  * @author Kuali Rice Team (rice.collab@kuali.org)
- * @see org.kuali.rice.krad.uif.control.Control
  */
 @BeanTag(name = "controlBase-bean", parent = "Uif-ControlBase")
 public abstract class ControlBase extends ContentElementBase implements Control {
@@ -64,22 +63,20 @@ public abstract class ControlBase extends ContentElementBase implements Control 
     /**
      * Sets the disabledExpression, if any, evaluates it and sets the disabled property
      *
-     * @param view view instance to which the component belongs
      * @param model top level object containing the data (could be the form or a
      * top level business object, dto)
      * @param parent
      */
     @Override
-    public void performApplyModel(Object model, Component parent) {
+    public void performApplyModel(Object model, LifecycleElement parent) {
         super.performApplyModel(model, parent);
 
         disabledExpression = this.getPropertyExpression("disabled");
-        if(disabledExpression != null){
-            ExpressionEvaluator expressionEvaluator =
-                    ViewLifecycle.getActiveLifecycle().getHelper().getExpressionEvaluator();
+        if (disabledExpression != null) {
+            ExpressionEvaluator expressionEvaluator = ViewLifecycle.getExpressionEvaluator();
 
-            disabledExpression = expressionEvaluator.replaceBindingPrefixes(
-                    ViewLifecycle.getActiveLifecycle().getView(), this, disabledExpression);
+            disabledExpression = expressionEvaluator.replaceBindingPrefixes(ViewLifecycle.getView(), this,
+                    disabledExpression);
             disabled = (Boolean) expressionEvaluator.evaluateExpression(this.getContext(), disabledExpression);
         }
     }
@@ -88,35 +85,33 @@ public abstract class ControlBase extends ContentElementBase implements Control 
      * Parses the disabled expressions, if any, to equivalent javascript and evaluates the disable/enable when
      * changed property names.
      *
-     * @param view view instance that should be finalized for rendering
      * @param model top level object containing the data
      * @param parent parent component
      */
-    public void performFinalize(Object model, Component parent) {
+    @Override
+    public void performFinalize(Object model, LifecycleElement parent) {
         super.performFinalize(model, parent);
 
-        ExpressionEvaluator expressionEvaluator =
-                ViewLifecycle.getActiveLifecycle().getHelper().getExpressionEvaluator();
+        ExpressionEvaluator expressionEvaluator = ViewLifecycle.getExpressionEvaluator();
 
-        if (StringUtils.isNotEmpty(disabledExpression) && !disabledExpression.equalsIgnoreCase("true")
+        if (StringUtils.isNotEmpty(disabledExpression)
+                && !disabledExpression.equalsIgnoreCase("true")
                 && !disabledExpression.equalsIgnoreCase("false")) {
             disabledConditionControlNames = new ArrayList<String>();
-            disabledConditionJs = ExpressionUtils.parseExpression(disabledExpression,
-                    disabledConditionControlNames);
+            disabledConditionJs = expressionEvaluator.parseExpression(disabledExpression, disabledConditionControlNames,
+                    this.getContext());
         }
-        
-        View view = ViewLifecycle.getActiveLifecycle().getView();
+
+        View view = ViewLifecycle.getView();
         List<String> adjustedDisablePropertyNames = new ArrayList<String>();
         for (String propertyName : disabledWhenChangedPropertyNames) {
-            adjustedDisablePropertyNames.add(expressionEvaluator.replaceBindingPrefixes(view, this,
-                    propertyName));
+            adjustedDisablePropertyNames.add(expressionEvaluator.replaceBindingPrefixes(view, this, propertyName));
         }
         disabledWhenChangedPropertyNames = adjustedDisablePropertyNames;
 
         List<String> adjustedEnablePropertyNames = new ArrayList<String>();
         for (String propertyName : enabledWhenChangedPropertyNames) {
-            adjustedEnablePropertyNames.add(expressionEvaluator.replaceBindingPrefixes(view, this,
-                    propertyName));
+            adjustedEnablePropertyNames.add(expressionEvaluator.replaceBindingPrefixes(view, this, propertyName));
         }
         enabledWhenChangedPropertyNames = adjustedEnablePropertyNames;
 
@@ -125,7 +120,7 @@ public abstract class ControlBase extends ContentElementBase implements Control 
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getComponentTypeName()
+     * {@inheritDoc}
      */
     @Override
     public final String getComponentTypeName() {
@@ -135,7 +130,7 @@ public abstract class ControlBase extends ContentElementBase implements Control 
     /**
      * @see org.kuali.rice.krad.uif.control.Control#getTabIndex()
      */
-    @BeanTagAttribute(name="tabIndex")
+    @BeanTagAttribute(name = "tabIndex")
     public int getTabIndex() {
         return this.tabIndex;
     }
@@ -150,7 +145,7 @@ public abstract class ControlBase extends ContentElementBase implements Control 
     /**
      * @see org.kuali.rice.krad.uif.control.Control#isDisabled()
      */
-    @BeanTagAttribute(name="disabled")
+    @BeanTagAttribute(name = "disabled")
     public boolean isDisabled() {
         return disabled;
     }
@@ -165,7 +160,7 @@ public abstract class ControlBase extends ContentElementBase implements Control 
     /**
      * @see org.kuali.rice.krad.uif.control.Control#getDisabledReason()
      */
-    @BeanTagAttribute(name="disabledReason")
+    @BeanTagAttribute(name = "disabledReason")
     public String getDisabledReason() {
         return disabledReason;
     }
@@ -182,7 +177,7 @@ public abstract class ControlBase extends ContentElementBase implements Control 
      *
      * @return true if evaluate on key up, false otherwise
      */
-    @BeanTagAttribute(name="evaluateDisabledOnKeyUp")
+    @BeanTagAttribute(name = "evaluateDisabledOnKeyUp")
     public boolean isEvaluateDisabledOnKeyUp() {
         return evaluateDisabledOnKeyUp;
     }
@@ -219,7 +214,7 @@ public abstract class ControlBase extends ContentElementBase implements Control 
      *
      * @return the property names to monitor for change to disable this component
      */
-    @BeanTagAttribute(name="disabledWhenChangedPropertyNames",type= BeanTagAttribute.AttributeType.LISTVALUE)
+    @BeanTagAttribute(name = "disabledWhenChangedPropertyNames", type = BeanTagAttribute.AttributeType.LISTVALUE)
     public List<String> getDisabledWhenChangedPropertyNames() {
         return disabledWhenChangedPropertyNames;
     }
@@ -238,7 +233,7 @@ public abstract class ControlBase extends ContentElementBase implements Control 
      *
      * @return the property names to monitor for change to enable this component
      */
-    @BeanTagAttribute(name="ensabledConditionControlNames",type= BeanTagAttribute.AttributeType.LISTVALUE)
+    @BeanTagAttribute(name = "ensabledConditionControlNames", type = BeanTagAttribute.AttributeType.LISTVALUE)
     public List<String> getEnabledWhenChangedPropertyNames() {
         return enabledWhenChangedPropertyNames;
     }
@@ -280,39 +275,10 @@ public abstract class ControlBase extends ContentElementBase implements Control 
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
+     * {@inheritDoc}
      */
     @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        ControlBase controlBaseCopy = (ControlBase) component;
-
-        controlBaseCopy.setTabIndex(this.tabIndex);
-        controlBaseCopy.setDisabled(this.disabled);
-        controlBaseCopy.setDisabledExpression(this.disabledExpression);
-        controlBaseCopy.setDisabledReason(this.disabledReason);
-        controlBaseCopy.setEvaluateDisabledOnKeyUp(this.evaluateDisabledOnKeyUp);
-        controlBaseCopy.setDisabledConditionJs(this.disabledConditionJs);
-
-        if (disabledConditionControlNames != null) {
-            controlBaseCopy.setDisabledConditionControlNames(new ArrayList<String>(this.disabledConditionControlNames));
-        }
-
-        if (disabledWhenChangedPropertyNames != null) {
-            controlBaseCopy.setDisabledWhenChangedPropertyNames(new ArrayList<String>(this.disabledWhenChangedPropertyNames));
-        }
-
-        if (enabledWhenChangedPropertyNames != null) {
-            controlBaseCopy.setEnabledWhenChangedPropertyNames(new ArrayList<String>(this.enabledWhenChangedPropertyNames));
-        }
-    }
-
-    /**
-     * @see org.kuali.rice.krad.uif.component.Component#completeValidation
-     */
-    @Override
-    public void completeValidation(ValidationTrace tracer){
+    public void completeValidation(ValidationTrace tracer) {
         tracer.addBean(this);
 
         super.completeValidation(tracer.getCopy());

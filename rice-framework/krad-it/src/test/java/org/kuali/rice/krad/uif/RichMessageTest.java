@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,11 @@ import org.kuali.rice.krad.uif.element.Link;
 import org.kuali.rice.krad.uif.element.Message;
 import org.kuali.rice.krad.uif.field.InputField;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleUtils;
 import org.kuali.rice.krad.uif.service.impl.ViewHelperServiceImpl;
 import org.kuali.rice.krad.uif.util.ComponentFactory;
 import org.kuali.rice.krad.uif.util.KeyMessage;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.view.View;
 import org.kuali.rice.krad.util.KRADConstants;
 import org.kuali.rice.krad.web.form.UifFormBase;
@@ -83,7 +85,7 @@ public class RichMessageTest extends KRADTestCase {
         Assert.assertNotNull(components);
         Assert.assertEquals(1, components.size());
         Assert.assertTrue(components.get(0) instanceof Message);
-        Assert.assertFalse(((Message) components.get(0)).isGenerateSpan());
+        Assert.assertFalse(((Message) components.get(0)).isRenderWrapperTag());
         Assert.assertEquals("<b>Message Content</b>", ((Message) components.get(0)).getMessageText());
 
         //nested tags
@@ -338,7 +340,7 @@ public class RichMessageTest extends KRADTestCase {
         Assert.assertEquals("field1", ((InputField) components.get(1)).getPropertyName());
         Assert.assertTrue(components.get(2) instanceof Message);
         Assert.assertEquals("&nbsp;Message&nbsp;<b>text&nbsp;", ((Message) components.get(2)).getMessageText());
-        Assert.assertFalse(((Message) components.get(2)).isGenerateSpan());
+        Assert.assertFalse(((Message) components.get(2)).isRenderWrapperTag());
         Assert.assertTrue(components.get(3) instanceof InputField);
         Assert.assertEquals("field2", ((InputField) components.get(3)).getPropertyName());
         Assert.assertTrue(components.get(4) instanceof Message);
@@ -481,8 +483,10 @@ public class RichMessageTest extends KRADTestCase {
 
         radioGroupControl.setOptions(options);
         performSimulatedLifecycle(radioGroupControl);
-        for (Component component : radioGroupControl.getComponentsForLifecycle()) {
-            performSimulatedLifecycle(component);
+        for (LifecycleElement component : ViewLifecycleUtils.getElementsForLifecycle(radioGroupControl).values()) {
+            if (component instanceof Component) {
+                performSimulatedLifecycle((Component) component);
+            }
         }
 
         List<KeyMessage> richOptions = radioGroupControl.getRichOptions();
@@ -517,7 +521,7 @@ public class RichMessageTest extends KRADTestCase {
         generateAndSetMessage("Message @{field1} text");
         components = message.getMessageComponentStructure();
         Assert.assertNull(components);
-        Assert.assertTrue(message.isGenerateSpan());
+        Assert.assertTrue(message.isRenderWrapperTag());
         Assert.assertEquals("Message value text", message.getMessageText());
 
         //rich message wrapping
@@ -526,7 +530,7 @@ public class RichMessageTest extends KRADTestCase {
         Assert.assertNotNull(components);
         Assert.assertEquals(1, components.size());
         Assert.assertTrue(components.get(0) instanceof Message);
-        Assert.assertFalse(((Message) components.get(0)).isGenerateSpan());
+        Assert.assertFalse(((Message) components.get(0)).isRenderWrapperTag());
         Assert.assertEquals("Message <b>value</b> text", ((Message) components.get(0)).getMessageText());
 
         //spel value contains rich content
@@ -535,7 +539,7 @@ public class RichMessageTest extends KRADTestCase {
         Assert.assertNotNull(components);
         Assert.assertEquals(1, components.size());
         Assert.assertTrue(components.get(0) instanceof Message);
-        Assert.assertFalse(((Message) components.get(0)).isGenerateSpan());
+        Assert.assertFalse(((Message) components.get(0)).isRenderWrapperTag());
         Assert.assertEquals("Message <a href='http://www.kuali.org' target='_blank'>value2</a> text",
                 ((Message) components.get(0)).getMessageText());
 
@@ -545,7 +549,7 @@ public class RichMessageTest extends KRADTestCase {
         Assert.assertNotNull(components);
         Assert.assertEquals(2, components.size());
         Assert.assertTrue(components.get(0) instanceof Message);
-        Assert.assertFalse(((Message) components.get(0)).isGenerateSpan());
+        Assert.assertFalse(((Message) components.get(0)).isRenderWrapperTag());
         Assert.assertEquals("Message text ", ((Message) components.get(0)).getMessageText());
         Assert.assertTrue(components.get(1) instanceof InputField);
         Assert.assertFalse(((InputField) components.get(1)).isRender());
@@ -564,7 +568,7 @@ public class RichMessageTest extends KRADTestCase {
         generateAndSetMessage("Message Content");
         components = message.getMessageComponentStructure();
         Assert.assertNull(components);
-        Assert.assertTrue(message.isGenerateSpan());
+        Assert.assertTrue(message.isRenderWrapperTag());
         Assert.assertEquals("Message Content", message.getMessageText());
     }
 
@@ -574,7 +578,11 @@ public class RichMessageTest extends KRADTestCase {
      * @param component
      */
     private void performSimulatedLifecycle(final Component component) {
-        ViewLifecycle.encapsulateLifecycle(view, component, null, null, new Runnable(){
+        if (model == null) {
+            model = new SampleForm();
+        }
+
+        ViewLifecycle.encapsulateLifecycle(view, model, null, null, new Runnable(){
             @Override
             public void run() {
                 component.performInitialization(model);

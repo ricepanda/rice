@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ import java.util.Set;
 @BeanTags({@BeanTag(name = "navigationGroup-bean", parent = "Uif-NavigationGroupBase"),
         @BeanTag(name = "menuNavigationGroup-bean", parent = "Uif-MenuNavigationGroup"),
         @BeanTag(name = "tabNavigationGroup-bean", parent = "Uif-TabNavigationGroup")})
-public class NavigationGroup extends Group {
+public class NavigationGroup extends GroupBase {
     private static final long serialVersionUID = -7263923392768546340L;
 
     private String navigationType;
@@ -49,7 +49,7 @@ public class NavigationGroup extends Group {
     }
 
     /**
-     * @see org.kuali.rice.krad.web.view.container.ContainerBase#getSupportedComponents()
+     * {@inheritDoc}
      */
     @Override
     public Set<Class<? extends Component>> getSupportedComponents() {
@@ -78,17 +78,5 @@ public class NavigationGroup extends Group {
      */
     public void setNavigationType(String navigationType) {
         this.navigationType = navigationType;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        NavigationGroup navigationGroupCopy = (NavigationGroup) component;
-
-        navigationGroupCopy.setNavigationType(this.navigationType);
     }
 }

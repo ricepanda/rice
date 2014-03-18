@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,17 @@
  */
 package org.kuali.rice.krad.uif.container;
 
-import org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleTaskBase;
+import org.kuali.rice.krad.uif.view.ViewModel;
 
 /**
  * Invoke custom initialization on the container from the view helper.
  * 
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-public class InitializeContainerFromHelperTask extends AbstractViewLifecycleTask {
+public class InitializeContainerFromHelperTask extends ViewLifecycleTaskBase<Container> {
 
     /**
      * Constructor.
@@ -32,20 +33,19 @@ public class InitializeContainerFromHelperTask extends AbstractViewLifecycleTask
      * @param phase The initialize phase for this container.
      */
     public InitializeContainerFromHelperTask(ViewLifecyclePhase phase) {
-        super(phase);
+        super(phase, Container.class);
     }
 
     /**
      * Invoke custom initialization based on the view helper.
      * 
-     * @see ViewHelperService#
-     * @see org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask#performLifecycleTask()
+     * {@inheritDoc}
      */
     @Override
     protected void performLifecycleTask() {
         // invoke hook point for adding components through code
-        ViewLifecycle.getHelper().addCustomContainerComponents(getPhase().getModel(),
-                (Container) getPhase().getComponent());
+        ViewLifecycle.getHelper().addCustomContainerComponents((ViewModel)ViewLifecycle.getModel(),
+                (Container) getElementState().getElement());
     }
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 package org.kuali.rice.kew.engine.node;
+
+import org.kuali.rice.kew.engine.node.dao.impl.RouteNodeDAOJpa;
 
 import javax.persistence.AttributeOverride;
 import javax.persistence.AttributeOverrides;
@@ -41,13 +43,12 @@ import java.util.Map;
 //HACK since this super attribute does not exist on the table
 @AttributeOverride(name="objectId", column=@Column(name="KEY_CD", updatable=false, insertable=false) )
 })
-        @NamedQueries({
-	@NamedQuery(name="NodeState.FindNodeState", query="select n from NodeState as n where n.nodeInstance.routeNodeInstanceId = :routeNodeInstanceId and n.key = :key"),
-	@NamedQuery(name="NodeState.FindNodeStateById", query="select n from NodeState as n where n.stateId = :nodeStateId")
-})
 public class NodeState extends State {
 
     private static final long serialVersionUID = -4382379569851955918L;
+
+    @Column(name= "RTE_NODE_INSTN_ID", insertable = false, updatable = false)
+    private String routeNodeInstanceId;
 
     @ManyToOne(fetch=FetchType.EAGER)
 	@JoinColumn(name="RTE_NODE_INSTN_ID")
@@ -101,5 +102,10 @@ public class NodeState extends State {
         }
         return copy;
     }
+
+    public String getRouteNodeInstanceId() {
+        return getNodeInstance() != null ? getNodeInstance().getRouteNodeInstanceId() : null;
+    }
+
 
 }

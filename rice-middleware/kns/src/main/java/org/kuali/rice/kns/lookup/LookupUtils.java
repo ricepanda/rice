@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -163,20 +163,6 @@ public class LookupUtils {
             if (StringUtils.isNotBlank(limitSql)) {
                 criteria.addSql(limitSql);
             }
-        }
-    }
-
-    /**
-     * Applies the search results limit to the search criteria for this BO (JPA)
-     *
-     * @param businessObjectClass BO class to search on / get limit for
-     * @param criteria search criteria
-     */
-    public static void applySearchResultsLimit(Class businessObjectClass,
-            org.kuali.rice.core.framework.persistence.jpa.criteria.Criteria criteria) {
-        Integer limit = getSearchResultsLimit(businessObjectClass);
-        if (limit != null) {
-            criteria.setSearchLimit(limit);
         }
     }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,21 @@
  */
 package org.kuali.rice.kim.impl.group;
 
-import org.apache.commons.collections.ListUtils;
-import org.apache.commons.lang.StringUtils;
-import org.kuali.rice.kew.api.KewApiServiceLocator;
-import org.kuali.rice.kew.api.KewApiConstants;
-import org.kuali.rice.kim.api.group.GroupService;
-import org.kuali.rice.kim.api.services.KimApiServiceLocator;
-import org.kuali.rice.krad.data.DataObjectService;
-import org.kuali.rice.krad.service.KRADServiceLocator;
-import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
-import org.kuali.rice.krad.service.LegacyDataAdapter;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import org.apache.commons.collections.ListUtils;
+import org.apache.commons.lang.StringUtils;
+import org.kuali.rice.kew.api.KewApiConstants;
+import org.kuali.rice.kew.api.KewApiServiceLocator;
+import org.kuali.rice.kim.api.group.GroupService;
+import org.kuali.rice.kim.api.services.KimApiServiceLocator;
+import org.kuali.rice.krad.data.DataObjectService;
+import org.kuali.rice.krad.data.PersistenceOption;
+import org.kuali.rice.krad.service.KRADServiceLocator;
 
 /**
  * Concrete Implementation of {@link GroupInternalService}
@@ -40,15 +39,11 @@ import java.util.Set;
  */
 public class GroupInternalServiceImpl implements GroupInternalService {
 
-    protected LegacyDataAdapter getLegacyDataAdapter() {
-        return KRADServiceLocatorWeb.getLegacyDataAdapter();
-    }
-
     protected DataObjectService getDataObjectService() {
         return KRADServiceLocator.getDataObjectService();
     }
 
-    public GroupService getGroupService(){
+    protected GroupService getGroupService(){
     	return KimApiServiceLocator.getGroupService();
     }
 
@@ -59,8 +54,7 @@ public class GroupInternalServiceImpl implements GroupInternalService {
     	if (StringUtils.isNotEmpty(group.getId())) {
             oldIds = ims.getMemberPrincipalIds(group.getId());
         }
-        //group = (GroupBo)getBusinessObjectService().save( group );
-        group = getDataObjectService().save(group);
+        group = getDataObjectService().save(group,PersistenceOption.FLUSH);
         List<String> newIds = ims.getMemberPrincipalIds(group.getId());
         updateForWorkgroupChange(group.getId(), oldIds, newIds);
         return group;
@@ -103,8 +97,12 @@ public class GroupInternalServiceImpl implements GroupInternalService {
 
     	// ListUtils does not check the null case.  Which can happen when adding a new group
     	// so, if they're null make them empty lists.
-    	if(oldMemberPrincipalIds == null) oldMemberPrincipalIds = new ArrayList<String>();
-    	if(newMemberPrincipalIds == null) newMemberPrincipalIds = new ArrayList<String>();
+    	if(oldMemberPrincipalIds == null) {
+            oldMemberPrincipalIds = new ArrayList<String>();
+        }
+    	if(newMemberPrincipalIds == null) {
+            newMemberPrincipalIds = new ArrayList<String>();
+        }
 
         Set<String> addedPrincipalIds = new HashSet<String>(ListUtils.subtract(newMemberPrincipalIds, oldMemberPrincipalIds));
         Set<String> removedPrincipalIds = new HashSet<String>(ListUtils.subtract(oldMemberPrincipalIds, newMemberPrincipalIds));

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,16 @@
  */
 package org.kuali.rice.krad.uif.view;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
 import org.kuali.rice.krad.datadictionary.parse.BeanTags;
-
-import java.util.HashMap;
-import java.util.Map;
+import org.kuali.rice.krad.uif.container.PageGroup;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
+import org.kuali.rice.krad.web.form.UifFormBase;
 
 /**
  * Provides configuration for {@link View} instances that render an HTML form.
@@ -86,6 +90,32 @@ public class FormView extends View {
     @BeanTagAttribute(name = "validateServerSide")
     public boolean isValidateServerSide() {
         return this.validateServerSide;
+    }
+
+    /**
+     * The following is performed:
+     *
+     * <ul>
+     * <li>Adds to its document ready script the setupValidator js function for setting
+     * up the validator for this view</li>
+     * </ul>
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    public void performFinalize(Object model, LifecycleElement parent) {
+        super.performFinalize(model, parent);
+
+        UifFormBase form = (UifFormBase) model;
+
+        PageGroup page = getCurrentPage();
+
+        if ((page != null) && StringUtils.isNotBlank(page.getFormPostUrl())) {
+            form.setFormPostUrl(page.getFormPostUrl());
+        }
+        else if (StringUtils.isNotBlank(formPostUrl)) {
+            form.setFormPostUrl(formPostUrl);
+        }
     }
 
     /**
@@ -157,24 +187,5 @@ public class FormView extends View {
      */
     public void setAdditionalHiddenValues(Map<String, String> additionalHiddenValues) {
         this.additionalHiddenValues = additionalHiddenValues;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        FormView formViewCopy = (FormView) component;
-
-        formViewCopy.setRenderForm(this.renderForm);
-        formViewCopy.setValidateServerSide(this.validateServerSide);
-        formViewCopy.setValidateClientSide(this.validateClientSide);
-        formViewCopy.setFormPostUrl(this.formPostUrl);
-
-        if (this.additionalHiddenValues != null) {
-            formViewCopy.setAdditionalHiddenValues(new HashMap<String, String>(this.additionalHiddenValues));
-        }
     }
 }

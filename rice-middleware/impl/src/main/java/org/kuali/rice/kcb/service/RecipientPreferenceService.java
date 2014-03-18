@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ public interface RecipientPreferenceService {
      * This method will save a specific user recipient preferences in the system.
      * @param pref the preferences
      */
-    public void saveRecipientPreference(RecipientPreference pref);
+    public RecipientPreference saveRecipientPreference(RecipientPreference pref);
     
     /**
      * This method will delete a specific user recipient preferences from the system.

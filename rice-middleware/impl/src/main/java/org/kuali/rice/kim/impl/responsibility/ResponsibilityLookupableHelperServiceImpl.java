@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,14 @@ import org.apache.log4j.Logger;
 import org.kuali.rice.core.api.membership.MemberType;
 import org.kuali.rice.kew.api.KewApiConstants;
 import org.kuali.rice.kim.api.KimConstants;
+import org.kuali.rice.kim.api.responsibility.ResponsibilityContract;
 import org.kuali.rice.kim.api.services.KimApiServiceLocator;
 import org.kuali.rice.kim.impl.role.RoleBo;
 import org.kuali.rice.kim.impl.role.RoleResponsibilityBo;
 import org.kuali.rice.kim.lookup.RoleMemberLookupableHelperServiceImpl;
 import org.kuali.rice.kns.lookup.HtmlData;
 import org.kuali.rice.krad.bo.BusinessObject;
+import org.kuali.rice.krad.data.KradDataServiceLocator;
 import org.kuali.rice.krad.lookup.CollectionIncomplete;
 import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
 import org.kuali.rice.krad.service.LookupService;
@@ -58,7 +60,7 @@ public class ResponsibilityLookupableHelperServiceImpl extends RoleMemberLookupa
     	// convert the UberResponsibilityBo class into a ReviewResponsibility object
         if ( (((UberResponsibilityBo)businessObject).getTemplate() != null)
                 && ((UberResponsibilityBo)businessObject).getTemplate().getName().equals( KewApiConstants.DEFAULT_RESPONSIBILITY_TEMPLATE_NAME ) ) {
-        	ReviewResponsibilityBo reviewResp = new ReviewResponsibilityBo( (UberResponsibilityBo)businessObject );
+        	ReviewResponsibilityBo reviewResp = new ReviewResponsibilityBo( (ResponsibilityContract)businessObject );
         	businessObject = reviewResp;
 	        if (allowsMaintenanceEditAction(businessObject)) {
 	        	htmlDataList.add(getUrlData(businessObject, KRADConstants.MAINTENANCE_EDIT_METHOD_TO_CALL, pkNames));
@@ -187,12 +189,11 @@ public class ResponsibilityLookupableHelperServiceImpl extends RoleMemberLookupa
 	}
 
 	private void populateAssignedToRoles(UberResponsibilityBo responsibility){
-		Map<String, String> criteria = new HashMap<String, String>();
 		if ( responsibility.getAssignedToRoles().isEmpty() ) {
 			for(RoleResponsibilityBo roleResponsibility: responsibility.getRoleResponsibilities()){
-				criteria.put(KimConstants.PrimaryKeyConstants.ID, roleResponsibility.getRoleId());
-				responsibility.getAssignedToRoles().add(getBusinessObjectService().findByPrimaryKey(RoleBo.class, criteria));
-			}
+				responsibility.getAssignedToRoles().add(KradDataServiceLocator.getDataObjectService().find(RoleBo.class,
+                        roleResponsibility.getRoleId()));
+            }
 		}
 	}
 

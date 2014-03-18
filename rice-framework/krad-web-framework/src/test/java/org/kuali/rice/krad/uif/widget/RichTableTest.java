@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -39,10 +40,14 @@ import org.kuali.rice.krad.lookup.LookupView;
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.container.CollectionGroup;
+import org.kuali.rice.krad.uif.container.CollectionGroupBase;
 import org.kuali.rice.krad.uif.container.Group;
+import org.kuali.rice.krad.uif.container.GroupBase;
 import org.kuali.rice.krad.uif.field.DataField;
-import org.kuali.rice.krad.uif.field.InputField;
+import org.kuali.rice.krad.uif.field.DataFieldBase;
+import org.kuali.rice.krad.uif.field.InputFieldBase;
 import org.kuali.rice.krad.uif.layout.TableLayoutManager;
+import org.kuali.rice.krad.uif.layout.TableLayoutManagerBase;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.service.ViewHelperService;
 import org.kuali.rice.krad.uif.util.UifUnitTestUtils;
@@ -93,20 +98,20 @@ public class RichTableTest {
         ConfigurationService configurationService = mock(ConfigurationService.class);
         doReturn(configurationService).when(richTable).getConfigurationService();
 
-        group = new CollectionGroup();
+        group = new CollectionGroupBase();
         group.setCollectionObjectClass(Employee.class);
 
-        TableLayoutManager layoutManager = new TableLayoutManager();
+        TableLayoutManager layoutManager = new TableLayoutManagerBase();
         layoutManager.setRenderSequenceField(true);
 
         List<Component> items = new ArrayList<Component>(1);
-        DataField name = new DataField();
+        DataField name = new DataFieldBase();
         name.setPropertyName("employeeId");
         items.add(name);
-        DataField number = new DataField();
+        DataField number = new DataFieldBase();
         number.setPropertyName("positionTitle");
         items.add(number);
-        DataField contactEmail = new DataField();
+        DataField contactEmail = new DataFieldBase();
         contactEmail.setPropertyName("contactEmail");
         items.add(contactEmail);
 
@@ -238,8 +243,8 @@ public class RichTableTest {
         when(mockView.isDefaultSortAscending()).thenReturn(false);
         when(mockView.getDefaultSortAttributeNames()).thenReturn(Lists.newArrayList("employeeId", "contactEmail"));
 
-        Group rowDetailsGroup = new Group();
-        rowDetailsGroup.setItems(Lists.newArrayList(new InputField()));
+        Group rowDetailsGroup = new GroupBase();
+        rowDetailsGroup.setItems(Lists.newArrayList(new InputFieldBase()));
         ((TableLayoutManager) group.getLayoutManager()).setRowDetailsGroup(rowDetailsGroup);
 
         String expected = "[[2, 'desc'], [4, 'desc']]";
@@ -287,8 +292,8 @@ public class RichTableTest {
         when(mockView.isDefaultSortAscending()).thenReturn(false);
         when(mockView.getDefaultSortAttributeNames()).thenReturn(Lists.newArrayList("employeeId", "contactEmail"));
 
-        Group rowDetailsGroup = new Group();
-        rowDetailsGroup.setItems(Lists.newArrayList(new InputField()));
+        Group rowDetailsGroup = new GroupBase();
+        rowDetailsGroup.setItems(Lists.newArrayList(new InputFieldBase()));
         ((TableLayoutManager) group.getLayoutManager()).setRowDetailsGroup(rowDetailsGroup);
 
         group.setRenderLineActions(true);

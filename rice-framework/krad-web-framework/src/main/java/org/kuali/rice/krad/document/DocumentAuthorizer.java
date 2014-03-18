@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,10 +34,12 @@ import org.kuali.rice.krad.bo.DataObjectAuthorizer;
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 public interface DocumentAuthorizer extends DataObjectAuthorizer {
+    
     /**
      * Checks if a user has the permissions to initiate a  document
      *
-     * @param documentTypeName, user
+     * @param documentTypeName document type name
+     * @param user current user
      * @return boolean, true if the user has the permissions to initiate a document else false
      */
 
@@ -46,7 +48,8 @@ public interface DocumentAuthorizer extends DataObjectAuthorizer {
     /**
      * Checks if a user has the permissions to open a  document
      *
-     * @param document, user
+     * @param document document to check
+     * @param user current user
      * @return boolean, true if the user has the permissions to open a document else false
      */
 
@@ -56,7 +59,8 @@ public interface DocumentAuthorizer extends DataObjectAuthorizer {
      * Determines if the document can be edited; if false is returned, then all fields are in a
      * read only state
      *
-     * @param document, user
+     * @param document document to check
+     * @param user current user
      * @return boolean, true if the user has the permissions to edit a document else false
      */
 
@@ -73,7 +77,8 @@ public interface DocumentAuthorizer extends DataObjectAuthorizer {
     /**
      * Determines if the user has permission to route the document
      *
-     * @param document, user
+     * @param document document to check
+     * @param user current user
      * @return boolean, true if the user has permissions to route a document else false
      */
     public boolean canRoute(Document document, Person user);
@@ -81,7 +86,8 @@ public interface DocumentAuthorizer extends DataObjectAuthorizer {
     /**
      * Determines if the user has permission to cancel the document
      *
-     * @param document, user
+     * @param document document to check
+     * @param user current user
      * @return boolean, true if the user has permissions to cancel a document else false
      */
     public boolean canCancel(Document document, Person user);
@@ -89,7 +95,8 @@ public interface DocumentAuthorizer extends DataObjectAuthorizer {
     /**
      * Determines if the user has permission to copy the document
      *
-     * @param document, user
+     * @param document document to check
+     * @param user current user
      * @return boolean, true if the user has permissions to cancel a document else false
      */
     public boolean canCopy(Document document, Person user);

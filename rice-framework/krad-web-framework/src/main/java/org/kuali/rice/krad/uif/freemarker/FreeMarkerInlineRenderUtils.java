@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import java.util.Map;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.component.Component;
-import org.kuali.rice.krad.uif.component.ComponentBase;
 import org.kuali.rice.krad.uif.container.CollectionGroup;
 import org.kuali.rice.krad.uif.container.Group;
 import org.kuali.rice.krad.uif.layout.LayoutManager;
@@ -155,6 +154,8 @@ public class FreeMarkerInlineRenderUtils {
     public static void renderTemplate(Environment env, Component component, String body,
             boolean componentUpdate, boolean includeSrc, Map<String, TemplateModel> tmplParms)
             throws TemplateException, IOException {
+        String dataJsScripts = "";
+        String templateJsScripts = "";
 
         if (component == null) {
             return;
@@ -162,10 +163,10 @@ public class FreeMarkerInlineRenderUtils {
 
         String s;
         Writer out = env.getOut();
-        if ((component.isRender() && (!component.isRetrieveViaAjax() || componentUpdate))
-                ||
-                (component.getProgressiveRender() != null && !component.getProgressiveRender().equals("")
-                        && !component.isProgressiveRenderViaAJAX() && !component.isProgressiveRenderAndRefresh())) {
+
+        if ((component.isRender() && (!component.isRetrieveViaAjax() || componentUpdate)) || (component
+                .getProgressiveRender() != null && !component.getProgressiveRender().equals("") && !component
+                .isProgressiveRenderViaAJAX() && !component.isProgressiveRenderAndRefresh())) {
 
             if (StringUtils.hasText(s = component.getPreRenderContent())) {
                 out.write(StringEscapeUtils.escapeHtml(s));
@@ -182,7 +183,15 @@ public class FreeMarkerInlineRenderUtils {
                         (Macro) env.getMainNamespace().get(component.getTemplateName());
 
                 if (fmMacro == null) {
-                    throw new TemplateException("No macro found using " + component.getTemplateName(), env);
+                    // force inclusion of the source to see if we can get the macro
+                    env.include(component.getTemplate(), env.getTemplate().getEncoding(), true);
+                    fmMacro = component.getTemplateName() == null ? null :
+                                            (Macro) env.getCurrentNamespace().get(component.getTemplateName());
+
+                    // if still missing throw an exception
+                    if (fmMacro == null) {
+                        throw new TemplateException("No macro found using " + component.getTemplateName(), env);
+                    }
                 }
 
                 Map<String, Object> args = new java.util.HashMap<String, Object>();
@@ -200,7 +209,11 @@ public class FreeMarkerInlineRenderUtils {
             }
 
             if (StringUtils.hasText(s = component.getEventHandlerScript())) {
-                renderScript(s, component, null, out);
+                templateJsScripts += s;
+            }
+
+            if (StringUtils.hasText(s = component.getScriptDataAttributesJs())) {
+                dataJsScripts += s;
             }
 
             if (StringUtils.hasText(s = component.getPostRenderContent())) {
@@ -209,65 +222,62 @@ public class FreeMarkerInlineRenderUtils {
 
         }
 
-        if (componentUpdate) {
+        if (componentUpdate || UifConstants.ViewStatus.RENDERED.equals(component.getViewStatus())) {
+            renderScript(dataJsScripts, component, UifConstants.RoleTypes.DATA_SCRIPT, out);
+            renderScript(templateJsScripts, component, null, out);
             return;
         }
 
-        String methodToCallOnRefresh = ((ComponentBase) component).getMethodToCallOnRefresh();
+        String methodToCallOnRefresh = component.getMethodToCallOnRefresh();
         if (!StringUtils.hasText(methodToCallOnRefresh)) {
             methodToCallOnRefresh = "";
         }
 
-        if (StringUtils.hasText(s = component.getProgressiveRender())) {
-            if (!component.isRender()
-                    && (component.isProgressiveRenderViaAJAX() || component.isProgressiveRenderAndRefresh())) {
-                out.write("<span id=\"");
-                out.write(component.getId());
-                out.write("\" data-role=\"placeholder\" class=\"uif-placeholder\"></span>");
-            }
-
-            for (String cName : component.getProgressiveDisclosureControlNames()) {
-                renderScript(
-                        "var condition = function(){return ("
-                                + component.getProgressiveDisclosureConditionJs()
-                                + ");};setupProgressiveCheck('" + StringEscapeUtils.escapeJavaScript(cName)
-                                + "', '" + component.getId() + "', '" + component.getBaseId() + "', condition,"
-                                + component.isProgressiveRenderAndRefresh() + ", '"
-                                + methodToCallOnRefresh + "');"
-                        , component, null, out);
-            }
-
-            renderScript("hiddenInputValidationToggle('" + component.getId() + "');", null, null, out);
-        }
-
-        if ((component.isProgressiveRenderViaAJAX() && !StringUtils.hasLength(component.getProgressiveRender())) ||
-                (!component.isRender() && (component.isDisclosedByAction() || component.isRefreshedByAction())) ||
-                component.isRetrieveViaAjax()) {
+        if ((!component.isRender() && (component.isProgressiveRenderViaAJAX() || component
+                .isProgressiveRenderAndRefresh() || component.isDisclosedByAction() || component.isRefreshedByAction()))
+                || component.isRetrieveViaAjax()) {
             out.write("<span id=\"");
             out.write(component.getId());
             out.write("\" data-role=\"placeholder\" class=\"uif-placeholder\"></span>");
         }
 
+        if (StringUtils.hasText(component.getProgressiveRender())) {
+            for (String cName : component.getProgressiveDisclosureControlNames()) {
+                templateJsScripts +=
+                        "var condition = function(){return ("
+                                + component.getProgressiveDisclosureConditionJs()
+                                + ");};setupProgressiveCheck('" + StringEscapeUtils.escapeJavaScript(cName)
+                                + "', '" + component.getId() + "', condition,"
+                                + component.isProgressiveRenderAndRefresh() + ", '"
+                                + methodToCallOnRefresh + "');";
+            }
+
+            templateJsScripts += "hiddenInputValidationToggle('" + component.getId() + "');";
+        }
+
         if (StringUtils.hasText(component.getConditionalRefresh())) {
             for (String cName : component.getConditionalRefreshControlNames()) {
-                renderScript(
+                templateJsScripts +=
                         "var condition = function(){return ("
                                 + component.getConditionalRefreshConditionJs()
                                 + ");};setupRefreshCheck('" + StringEscapeUtils.escapeJavaScript(cName) + "', '"
                                 + component.getId() + "', condition,'"
-                                + methodToCallOnRefresh + "');", null, null, out);
+                                + methodToCallOnRefresh + "');";
             }
         }
 
         List<String> refreshWhenChanged = component.getRefreshWhenChangedPropertyNames();
         if (refreshWhenChanged != null) {
             for (String cName : refreshWhenChanged) {
-                renderScript(
+                templateJsScripts +=
                         "setupOnChangeRefresh('" + StringEscapeUtils.escapeJavaScript(cName) + "', '"
                                 + component.getId()
-                                + "','" + methodToCallOnRefresh + "');", null, null, out);
+                                + "','" + methodToCallOnRefresh + "');";
             }
         }
+
+        renderScript(dataJsScripts, component, UifConstants.RoleTypes.DATA_SCRIPT, out);
+        renderScript(templateJsScripts, component, null, out);
 
         renderTooltip(component, out);
     }
@@ -285,13 +295,15 @@ public class FreeMarkerInlineRenderUtils {
      */
     public static void renderTooltip(Component component, Writer out) throws IOException {
         Tooltip tt = component.getToolTip();
+        String script = "";
         if (tt != null && StringUtils.hasText(tt.getTooltipContent())) {
             String templateOptionsJSString = tt.getTemplateOptionsJSString();
-            renderScript("createTooltip('" + component.getId() + "', '" + tt.getTooltipContent() + "', "
+            script += "createTooltip('" + component.getId() + "', '" + tt.getTooltipContent() + "', "
                     + (templateOptionsJSString == null ? "''" : templateOptionsJSString) + ", " + tt.isOnMouseHover()
-                    + ", " + tt.isOnFocus() + ");", component, null, out);
-            renderScript("addAttribute('" + component.getId() + "', 'class', 'uif-tooltip', true);", component, null,
-                    out);
+                    + ", " + tt.isOnFocus() + ");";
+            script += "addAttribute('" + component.getId() + "', 'class', 'uif-tooltip', true);";
+
+            renderScript(script, component, null, out);
         }
     }
 
@@ -338,23 +350,22 @@ public class FreeMarkerInlineRenderUtils {
      * @throws IOException If rendering is interrupted due to an I/O error.
      */
     public static void renderAttrBuild(Component component, Writer out) throws IOException {
-        String s;
-        if (component instanceof ComponentBase) {
-            ComponentBase componentBase = (ComponentBase) component;
-            if (StringUtils.hasText(s = componentBase.getStyleClassesAsString())) {
-                out.write(" class=\"");
-                out.write(s);
-                out.write("\"");
-            }
+        String s = component.getStyleClassesAsString();
+        if (StringUtils.hasText(s)) {
+            out.write(" class=\"");
+            out.write(s);
+            out.write("\"");
         }
 
-        if (StringUtils.hasText(s = component.getStyle())) {
+        s = component.getStyle();
+        if (StringUtils.hasText(s)) {
             out.write(" style=\"");
             out.write(s);
             out.write("\"");
         }
 
-        if (StringUtils.hasText(s = component.getTitle())) {
+        s = component.getTitle();
+        if (StringUtils.hasText(s)) {
             out.write(" title=\"");
             out.write(s);
             out.write("\"");
@@ -404,7 +415,6 @@ public class FreeMarkerInlineRenderUtils {
      * krad/WEB-INF/ftp/lib/div.ftl. When updating this method, also update that template.
      * </p>
      * 
-     * @param component The component to render a wrapper div for.
      * @param out The output writer to render to, typically from {@link Environment#getOut()}.
      * @throws IOException If rendering is interrupted due to an I/O error.
      */
@@ -418,7 +428,7 @@ public class FreeMarkerInlineRenderUtils {
      * <p>
      * NOTE: Inline rendering performance is improved by *not* passing continuations for nested body
      * content, so the open and close methods are implemented separately. Always call
-     * {@link #renderCloseGroupWrap(Writer)} after rendering the body related to a call to
+     * {@link #renderCloseGroupWrap(Environment, Group)} after rendering the body related to a call to
      * {@link #renderOpenGroupWrap(Environment, Group)}.
      * </p>
      * 
@@ -434,8 +444,11 @@ public class FreeMarkerInlineRenderUtils {
      */
     public static void renderOpenGroupWrap(Environment env, Group group) throws IOException, TemplateException {
         Writer out = env.getOut();
-        renderOpenDiv(group, out);
         renderTemplate(env, group.getHeader(), null, false, false, null);
+
+        if (!StringUtils.isEmpty(group.getHeaderText())) {
+
+        }
 
         if (group.isRenderLoading()) {
             out.write("<div id=\"");
@@ -450,7 +463,6 @@ public class FreeMarkerInlineRenderUtils {
                 out.write(Boolean.toString(disclosure.isDefaultOpen()));
                 out.write("\" class=\"uif-disclosureContent\">");
             }
-            renderTemplate(env, group.getValidationMessages(), null, false, false, null);
             renderTemplate(env, group.getInstructionalMessage(), null, false, false, null);
         }
     }
@@ -461,7 +473,7 @@ public class FreeMarkerInlineRenderUtils {
      * <p>
      * NOTE: Inline rendering performance is improved by *not* passing continuations for nested body
      * content, so the open and close methods are implemented separately. Always call
-     * {@link #renderCloseGroupWrap(Writer)} after rendering the body related to a call to
+     * {@link #renderCloseGroupWrap(Environment, Group)} after rendering the body related to a call to
      * {@link #renderOpenGroupWrap(Environment, Group)}.
      * </p>
      * 
@@ -492,8 +504,6 @@ public class FreeMarkerInlineRenderUtils {
             tmplParms.put("parent", env.getObjectWrapper().wrap(group));
             renderTemplate(env, disclosure, null, false, false, tmplParms);
         }
-
-        renderCloseDiv(out);
     }
 
     /**
@@ -504,7 +514,6 @@ public class FreeMarkerInlineRenderUtils {
      * template.
      * </p>
      * 
-     * @param component The component to render a wrapper div for.
      * @param group The collection group to render.
      * @throws IOException If rendering is interrupted due to an I/O error.
      * @throws TemplateException If FreeMarker rendering fails.
@@ -568,8 +577,10 @@ public class FreeMarkerInlineRenderUtils {
      * template.
      * </p>
      * 
-     * @param component The component to render a wrapper div for.
-     * @param group The collection group to render.
+     * @param env The FreeMarker environment
+     * @param items List of items to render in a stacked layout
+     * @param manager Layout manager for the container
+     * @param container Container to render
      * @throws IOException If rendering is interrupted due to an I/O error.
      * @throws TemplateException If FreeMarker rendering fails.
      */
@@ -586,23 +597,27 @@ public class FreeMarkerInlineRenderUtils {
             renderTemplate(env, pager, null, false, false, pagerTmplParms);
         }
 
+/*
         out.write("<div id=\"");
         out.write(manager.getId());
         out.write("\"");
 
-        if (StringUtils.hasText(s = manager.getStyle())) {
+        s = manager.getStyle();
+        if (StringUtils.hasText(s)) {
             out.write(" style=\"");
             out.write(s);
             out.write("\"");
         }
 
-        if (StringUtils.hasText(s = manager.getStyleClassesAsString())) {
+        s = manager.getStyleClassesAsString();
+        if (StringUtils.hasText(s)) {
             out.write(" class=\"");
             out.write(s);
             out.write("\"");
         }
 
         out.write(">");
+*/
 
         Group wrapperGroup = manager.getWrapperGroup();
         if (wrapperGroup != null) {
@@ -613,7 +628,7 @@ public class FreeMarkerInlineRenderUtils {
             }
         }
 
-        out.write("</div>");
+        /*out.write("</div>");*/
 
         if (pager != null && container.isUseServerPaging()) {
             pagerTmplParms = new HashMap<String, TemplateModel>();

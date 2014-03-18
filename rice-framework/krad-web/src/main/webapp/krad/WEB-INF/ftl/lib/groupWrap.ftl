@@ -1,6 +1,6 @@
 <#--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -16,9 +16,12 @@
 
 -->
 <#macro groupWrap group>
-	<#inline 'groupWrap-open' />
-	<#if !group.renderLoading>
-		<#nested/>
-	</#if>
-	<#inline 'groupWrap-close' />
+
+    <@krad.wrap component=group renderAs="${group.wrapperTag}">
+        <#inline 'groupWrap-open' />
+        <#if !group.renderLoading>
+            <#nested/>
+        </#if>
+        <#inline 'groupWrap-close' />
+    </@krad.wrap>
 </#macro>

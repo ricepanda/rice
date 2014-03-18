@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@ import org.kuali.rice.kew.framework.postprocessor.DocumentRouteLevelChange;
 import org.kuali.rice.kew.framework.postprocessor.DocumentRouteStatusChange;
 import org.kuali.rice.kew.framework.postprocessor.PostProcessor;
 import org.kuali.rice.kew.framework.postprocessor.ProcessDocReport;
+import org.kuali.rice.krad.data.DataObjectService;
+import org.kuali.rice.krad.service.KRADServiceLocator;
 
 import java.util.List;
 
@@ -48,7 +50,7 @@ public class NotificationSenderFormPostProcessor implements PostProcessor {
     private static final Logger LOG = Logger.getLogger(NotificationSenderFormPostProcessor.class);
     
     NotificationService notificationService;
-    GenericDao businessObjectDao;
+    DataObjectService dataObjectService;
     NotificationMessageContentService messageContentService;
     
     /**
@@ -56,18 +58,18 @@ public class NotificationSenderFormPostProcessor implements PostProcessor {
      */
     public NotificationSenderFormPostProcessor() {
         this.notificationService = GlobalNotificationServiceLocator.getInstance().getNotificationService();
-        this.businessObjectDao = GlobalNotificationServiceLocator.getInstance().getGenericDao();
+        this.dataObjectService = KRADServiceLocator.getDataObjectService();
         this.messageContentService = GlobalNotificationServiceLocator.getInstance().getNotificationMessageContentService();
     }
 
     /**
      * Constructs a NotificationSenderFormPostProcessor instance.
      * @param notificationService
-     * @param businessObjectDao
+     * @param dataObjectService
      */
-    public NotificationSenderFormPostProcessor(NotificationService notificationService, GenericDao businessObjectDao) {
+    public NotificationSenderFormPostProcessor(NotificationService notificationService, DataObjectService dataObjectService) {
         this.notificationService = notificationService;
-        this.businessObjectDao = businessObjectDao;
+        this.dataObjectService = dataObjectService;
     }
     
     /**

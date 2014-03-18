@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -149,17 +149,17 @@ public class AddRuleDelegationTest extends KEWTestCase {
 		 *  now let's try editing our first delegate rule
 		 */
 
-		String newRuleDelegationId = newRuleDelegation.getRuleDelegationId();
+        String newRuleDelegationId = newRuleDelegation.getRuleDelegationId();
 		// change the delegation type to secondary
 		newRuleDelegation.setDelegationType(DelegationType.SECONDARY);
-		newRuleDelegation = saveNewVersion(newRuleDelegation);
+        newRuleDelegation = saveNewVersion(newRuleDelegation);
 
         KRADServiceLocator.getDataObjectService().flush(RuleDelegationBo.class);
         ruleDelegations = KEWServiceLocator.getRuleDelegationService().findByResponsibilityId(
                 originalResp.getResponsibilityId());
         String newRuleDelegationId2 = null;
         for(RuleDelegationBo ruleDelegationBo : ruleDelegations){
-            if(!StringUtils.equals(ruleDelegationBo.getRuleDelegationId(),newRuleDelegationId)){
+            if(ruleDelegationBo.getDelegationRule().getPreviousRuleId() != null) {
                 newRuleDelegationId2 = ruleDelegationBo.getRuleDelegationId();
             }
         }

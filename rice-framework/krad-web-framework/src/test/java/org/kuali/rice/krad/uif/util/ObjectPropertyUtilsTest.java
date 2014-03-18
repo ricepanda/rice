@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,18 +34,20 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.kuali.rice.core.api.resourceloader.GlobalResourceLoader;
 import org.kuali.rice.krad.uif.component.BindingInfo;
 import org.kuali.rice.krad.uif.container.CollectionGroup;
+import org.kuali.rice.krad.uif.container.CollectionGroupBase;
 import org.kuali.rice.krad.uif.container.CollectionGroupBuilder;
 import org.kuali.rice.krad.uif.container.Group;
+import org.kuali.rice.krad.uif.container.GroupBase;
 import org.kuali.rice.krad.uif.element.Action;
 import org.kuali.rice.krad.uif.element.Message;
 import org.kuali.rice.krad.uif.element.ViewHeader;
 import org.kuali.rice.krad.uif.layout.StackedLayoutManager;
+import org.kuali.rice.krad.uif.layout.StackedLayoutManagerBase;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.service.impl.ViewHelperServiceImpl;
 import org.kuali.rice.krad.uif.view.FormView;
 import org.kuali.rice.krad.uif.view.ViewPresentationControllerBase;
@@ -53,19 +55,6 @@ import org.kuali.rice.krad.util.GlobalVariables;
 import org.kuali.rice.krad.web.form.UifFormBase;
 
 public class ObjectPropertyUtilsTest extends ProcessLoggingUnitTest {
-
-    @BeforeClass
-    public static void setupMockUserSession() throws Throwable {
-        UifUnitTestUtils.establishMockConfig(ObjectPropertyUtilsTest.class.getSimpleName());
-        UifUnitTestUtils.establishMockUserSession("testuser");
-    }
-
-    @AfterClass
-    public static void teardownMockUserSession() throws Exception {
-        GlobalVariables.setUserSession(null);
-        GlobalVariables.clear();
-        GlobalResourceLoader.stop();
-    }
 
     @Retention(RetentionPolicy.RUNTIME)
     public @interface TestAnnotation {
@@ -501,32 +490,35 @@ public class ObjectPropertyUtilsTest extends ProcessLoggingUnitTest {
     }
 
     @Test
-    public void testKradUifCollectionGroupBuilder() {
+    public void testKradUifCollectionGroupBuilder() throws Throwable {
+        UifUnitTestUtils.establishMockConfig(ObjectPropertyUtilsTest.class.getSimpleName());
+        UifUnitTestUtils.establishMockUserSession("testuser");
+        try {
         // Performance medium generates this property path:
         // newCollectionLines['newCollectionLines_'mediumCollection1'_.subList']
 
         // Below recreates the stack trace that ensued due to poorly escaped quotes,
         // and proves that the parser works around bad quoting in a manner similar to BeanWrapper 
 
-        CollectionGroupBuilder collectionGroupBuilder = new CollectionGroupBuilder();
-        CollectionTestForm form = new CollectionTestForm();
+        final CollectionGroupBuilder collectionGroupBuilder = new CollectionGroupBuilder();
+        final CollectionTestForm form = new CollectionTestForm();
         CollectionTestItem item = new CollectionTestItem();
         item.setFoobar("barfoo");
         ObjectPropertyUtils.setPropertyValue(form, "foo.baz['foo_bar_'badquotes'_.foobar']", item);
         assertEquals("barfoo", form.foo.baz.get("foo_bar_'badquotes'_.foobar").foobar);
 
-        FormView view = new FormView();
+        final FormView view = new FormView();
         view.setFormClass(CollectionTestForm.class);
         view.setViewHelperService(new ViewHelperServiceImpl());
         view.setPresentationController(new ViewPresentationControllerBase());
         view.setAuthorizer(UifUnitTestUtils.getAllowMostViewAuthorizer());
 
-        CollectionGroup collectionGroup = new CollectionGroup();
+        final CollectionGroup collectionGroup = new CollectionGroupBase();
         collectionGroup.setCollectionObjectClass(CollectionTestItem.class);
         collectionGroup.setAddLinePropertyName("addLineFoo");
 
-        StackedLayoutManager layoutManager = new StackedLayoutManager();
-        Group lineGroupPrototype = new Group();
+        StackedLayoutManager layoutManager = new StackedLayoutManagerBase();
+        Group lineGroupPrototype = new GroupBase();
         layoutManager.setLineGroupPrototype(lineGroupPrototype);
         collectionGroup.setLayoutManager(layoutManager);
 
@@ -538,7 +530,16 @@ public class ObjectPropertyUtilsTest extends ProcessLoggingUnitTest {
         collectionBindingInfo.setBindingPath("foo.bar");
         collectionGroup.setBindingInfo(collectionBindingInfo);
 
-        collectionGroupBuilder.build(view, form, collectionGroup.<CollectionGroup> copy());
+        ViewLifecycle.encapsulateLifecycle(view, form, null, null, new Runnable() {
+            @Override
+            public void run() {
+                collectionGroupBuilder.build(view, form, collectionGroup.<CollectionGroup> copy());
+            }});
+    } finally {
+        GlobalVariables.setUserSession(null);
+        GlobalVariables.clear();
+        GlobalResourceLoader.stop();
+    }
     }
 
     @Test
@@ -578,6 +579,41 @@ public class ObjectPropertyUtilsTest extends ProcessLoggingUnitTest {
             // IAE is not ok - KULRICE-10677 is this ok?
             throw e;
         }
+    }
+
+    @Test
+    public void testPropertySplitPath() {
+        String path = "foo.foo1.foo2";
+        String[] splitPaths = ObjectPropertyUtils.splitPropertyPath(path);
+
+        assertEquals(3, splitPaths.length);
+        assertEquals("foo", splitPaths[0]);
+        assertEquals("foo1", splitPaths[1]);
+        assertEquals("foo2", splitPaths[2]);
+
+        path = "foo[1]";
+        splitPaths = ObjectPropertyUtils.splitPropertyPath(path);
+
+        assertEquals(1, splitPaths.length);
+        assertEquals("foo[1]", splitPaths[0]);
+
+        path = "foo.foo1['key.nested'].foo2";
+        splitPaths = ObjectPropertyUtils.splitPropertyPath(path);
+
+        assertEquals(3, splitPaths.length);
+        assertEquals("foo", splitPaths[0]);
+        assertEquals("foo1['key.nested']", splitPaths[1]);
+        assertEquals("foo2", splitPaths[2]);
+
+        path = "foo.foo1['key.nested'].foo2.foo3['key.nest.nest'].foo4";
+        splitPaths = ObjectPropertyUtils.splitPropertyPath(path);
+
+        assertEquals(5, splitPaths.length);
+        assertEquals("foo", splitPaths[0]);
+        assertEquals("foo1['key.nested']", splitPaths[1]);
+        assertEquals("foo2", splitPaths[2]);
+        assertEquals("foo3['key.nest.nest']", splitPaths[3]);
+        assertEquals("foo4", splitPaths[4]);
     }
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -346,10 +346,14 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public Document recallDocument(Document document, String annotation, boolean cancel) throws WorkflowException {
         checkForNulls(document);
+        WorkflowDocument workflowDocument = KRADServiceLocatorWeb.getDocumentService().
+                getByDocumentHeaderId(document.getDocumentNumber()).getDocumentHeader().getWorkflowDocument();
 
-        Note note = createNoteFromDocument(document, annotation);
-        document.addNote(note);
-        getNoteService().save(note);
+        if (!workflowDocument.isFinal() && !workflowDocument.isProcessed()) {
+            Note note = createNoteFromDocument(document, annotation);
+            document.addNote(note);
+            getNoteService().save(note);
+        }
 
         prepareWorkflowDocument(document);
         getWorkflowDocumentService().recall(document.getDocumentHeader().getWorkflowDocument(), annotation, cancel);
@@ -941,7 +945,6 @@ public class DocumentServiceImpl implements DocumentService {
         Note note = new Note();
 
         note.setNotePostedTimestamp(getDateTimeService().getCurrentTimestamp());
-        note.setVersionNumber(Long.valueOf(1));
         note.setNoteText(text);
         note.setNoteTypeCode(document.getNoteType().getCode());
 

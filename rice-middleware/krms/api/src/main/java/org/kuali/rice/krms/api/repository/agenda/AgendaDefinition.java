@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -305,8 +305,9 @@ public final class AgendaDefinition extends AbstractDataTransferObject implement
 		public void setAttributes(Map<String, String> attributes){
 			if (attributes == null){
 				this.attributes = Collections.emptyMap();
-			}
-			this.attributes = Collections.unmodifiableMap(attributes);
+			} else {
+                this.attributes = Collections.unmodifiableMap(attributes);
+            }
 		}
 		
 		/**
@@ -385,7 +386,7 @@ public final class AgendaDefinition extends AbstractDataTransferObject implement
 	 * when this object is marshalled to XML.
 	 */
 	public static class Elements {
-		final static String AGENDA_ID = "id";
+		public final static String AGENDA_ID = "id";
 		final static String NAME = "name";
 		final static String TYPE_ID = "typeId";
 		final static String CONTEXT_ID = "contextId";

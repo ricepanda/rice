@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,13 @@ import org.kuali.rice.kew.api.repository.type.KewAttributeDefinition;
 import org.kuali.rice.kew.api.repository.type.KewTypeAttribute;
 import org.kuali.rice.kew.api.repository.type.KewTypeDefinition;
 import org.kuali.rice.kew.impl.type.KewTypeBo;
-import org.kuali.rice.krad.data.jpa.eclipselink.PortableSequenceGenerator;
+import org.kuali.rice.krad.data.jpa.converters.BooleanYNConverter;
+import org.kuali.rice.krad.data.jpa.PortableSequenceGenerator;
 import org.kuali.rice.krad.util.BeanPropertyComparator;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -81,6 +83,7 @@ public class PeopleFlowBo implements Serializable, PeopleFlowContract, MutableIn
     private String description;
 
     @Column(name = "ACTV", nullable = false)
+    @Convert(converter = BooleanYNConverter.class)
     private boolean active = true;
 
     @Version

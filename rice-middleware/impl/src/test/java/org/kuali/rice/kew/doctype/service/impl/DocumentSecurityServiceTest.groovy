@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,13 +22,12 @@ import org.junit.Ignore
  * Tests DocumentSecurityService
  */
 class DocumentSecurityServiceTest {
-    @Test @Ignore
+
+    @Test @Ignore // TODO: test that getRouteHeaderVariableValue is resolving variables correctly
     void testRouteHeaderVariableSubstitution() {
-       // TODO: test that getRouteHeaderVariableValue is resolving variables correctly
     }
 
-    @Test @Ignore
+    @Test @Ignore // TODO: test that isAuthenticatedByPermission is working correctly
     void testPermissionAuthentication() {
-       // TODO: test that isAuthenticatedByPermission is working correctly
     }
 }

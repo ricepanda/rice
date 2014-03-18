@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import org.kuali.rice.core.api.data.DataType;
 import org.kuali.rice.core.api.resourceloader.GlobalResourceLoader;
 import org.kuali.rice.core.api.util.ClassLoaderUtils;
 import org.kuali.rice.core.web.format.Formatter;
-import org.kuali.rice.krad.data.DataObjectUtils;
 import org.kuali.rice.krad.datadictionary.control.ControlDefinition;
 import org.kuali.rice.krad.datadictionary.mask.MaskFormatterLiteral;
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
@@ -44,6 +43,7 @@ import org.kuali.rice.krad.datadictionary.validator.ValidationTrace;
 import org.kuali.rice.krad.keyvalues.KeyValuesFinder;
 import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
 import org.kuali.rice.krad.uif.control.Control;
+import org.kuali.rice.krad.util.KRADUtils;
 
 /**
  * A single attribute definition in the DataDictionary, which contains
@@ -134,7 +134,7 @@ public class AttributeDefinition extends AttributeDefinitionBase implements Case
     /**
      * Returns the maximum length for this field, if set.  If not set, it attempts to pull from
      * the embedded metadata, if any.
-     *
+     *z
      * @see org.kuali.rice.krad.datadictionary.validation.constraint.LengthConstraint#getMaxLength()
      */
     @BeanTagAttribute(name = "maxLength")
@@ -412,7 +412,7 @@ public class AttributeDefinition extends AttributeDefinitionBase implements Case
      * @param propertyEditorClass
      */
     public void setPropertyEditorClass(Class<? extends PropertyEditor> propertyEditorClass) {
-        this.propertyEditor = DataObjectUtils.newInstance(propertyEditorClass);
+        this.propertyEditor = KRADUtils.createNewObjectFromClass(propertyEditorClass);
     }
 
     /**
@@ -760,7 +760,7 @@ public class AttributeDefinition extends AttributeDefinitionBase implements Case
      * @param optionsFinderClass
      */
     public void setOptionsFinderClass(Class<? extends KeyValuesFinder> optionsFinderClass) {
-        this.optionsFinder = DataObjectUtils.newInstance(optionsFinderClass);
+        this.optionsFinder = KRADUtils.createNewObjectFromClass(optionsFinderClass);
     }
 
     public void setAdditionalDisplayAttributeName(String additionalDisplayAttributeName) {

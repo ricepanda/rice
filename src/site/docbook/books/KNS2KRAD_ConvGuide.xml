@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
     
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
     
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -48,9 +48,20 @@
       manually.</para>
     <section>
       <title>Process Overview</title>
-      <para>There are four main steps involved in converting from KNS to KRAD: <orderedlist>
+      <para>There are five main steps involved in converting from KNS to KRAD: <orderedlist>
           <listitem>
-            <para>Convert data dictionary into krad compliant format.<itemizedlist>
+            <para><link linkend="ojb_to_jpa">Convert OJB BusinessObject Mappings to JPA
+                Annotations.</link><itemizedlist>
+                <listitem>
+                  <para>Configure and run provided automated conversion script.</para>
+                </listitem>
+                <listitem>
+                  <para>Review conversions and resolve reported issues.</para>
+                </listitem>
+              </itemizedlist></para>
+          </listitem>
+          <listitem>
+            <para>Convert data dictionary into KRAD compliant format.<itemizedlist>
                 <listitem>
                   <para>Convert validation patterns to constraint.</para>
                 </listitem>
@@ -127,7 +138,7 @@
         </orderedlist></para>
     </section>
   </section>
-  <section>
+  <section xml:id="dd_conv">
     <title>Data Dictionary Conversion</title>
     <para>The Data Dictionary is a repository of metadata primarily describing data objects and
       their properties with attribute Definitions that provide the metadata about the attributes
@@ -136,7 +147,7 @@
       they are virtually identical between KNS and KRAD. The following sections identify the
       Business Object bean properties, Validation Patterns, and Control Definitions which are
       converted by the script and those which require manual conversion.</para>
-    <section>
+    <section xml:id="DD10">
       <title>BusinessObjectEntry bean replaced by DataObjectEntry bean</title>
       <para><emphasis role="bold">KNS Code example:</emphasis></para>
       <para>
@@ -199,7 +210,7 @@
         </itemizedlist>
       </para>
     </section>
-    <section>
+    <section xml:id="AD2">
       <title>Attribute Definitions</title>
       <para>Attribute Definitions define the meta-data of an object and many of the Attribute
         Definition properties remain the same between KNS and KRAD. The major differences are in how
@@ -247,7 +258,7 @@
       </para>
       <para>
         <itemizedlist>
-          <listitem>
+          <listitem xml:id="DDAD1">
             <para>The property <emphasis role="keyword">validCharactersConstraint</emphasis> is used
               in KRAD in place of the KNS property <emphasis role="keyword"
                 >validationPattern</emphasis>. [KNS line: 11, KRAD line: 11] <inlinemediaobject>
@@ -256,7 +267,7 @@
                 </imageobject>
               </inlinemediaobject></para>
           </listitem>
-          <listitem>
+          <listitem xml:id="DDAD2">
             <para>The constraint <emphasis role="keyword">AnyCharacterPatternConstraint</emphasis>
               replaces the KNS pattern <emphasis role="keyword"
                 >AnyCharacterValidationPattern</emphasis>. [KNS line: 12, KRAD line: 12] <inlinemediaobject>
@@ -265,7 +276,7 @@
                 </imageobject>
               </inlinemediaobject></para>
           </listitem>
-          <listitem>
+          <listitem xml:id="DDAD3">
             <para>The property <emphasis role="keyword">controlField</emphasis> replaces the KNS
                 <emphasis role="keyword">control</emphasis> to define the control used to represent
               this field. [KNS line: 14, KRAD line: 14] <inlinemediaobject>
@@ -274,7 +285,7 @@
                 </imageobject>
               </inlinemediaobject></para>
           </listitem>
-          <listitem>
+          <listitem xml:id="DDAD4">
             <para>The property <emphasis role="keyword">Uif-TextControl</emphasis> replaces the KNS
                 <emphasis role="keyword">TextControlDefinition</emphasis>. [KNS line: 5, KRAD line:
               15] <inlinemediaobject>
@@ -283,12 +294,12 @@
                 </imageobject>
               </inlinemediaobject></para>
           </listitem>
-          <listitem>
+          <listitem xml:id="DDAD5">
             <para>The property <emphasis role="keyword">forceUpperCase</emphasis> remains the same
               in KRAD, however you can also specify <emphasis role="keyword"
                 >@ForceUppercase</emphasis> annotation for a property in KRAD. </para>
           </listitem>
-          <listitem>
+          <listitem xml:id="DDAD6">
             <para>The size property and similar properties of TextControl are converted or carried
               over by the script. [KNS line: 15, KRAD line: 15] <inlinemediaobject>
                 <imageobject>
@@ -299,7 +310,7 @@
         </itemizedlist>
       </para>
     </section>
-    <section>
+    <section xml:id="VP1">
       <title>Validation Patterns</title>
       <para>The KNS validation patterns are supported in KRAD, but the naming convention has changed
         for constraints and patterns even though the functionality is the same. KRAD also has
@@ -308,13 +319,13 @@
         demonstrates the differences in defining validation constraints using a single validation
         pattern and several such patterns are available.</para>
       <para>
-        <emphasis role="bold">KRAD Attribute Definition code example:</emphasis>
+        <emphasis role="bold">KNS validationPattern property example:</emphasis>
         <programlisting linenumbering="numbered">&lt;property name="validationPattern">
   &lt;bean  parent="AnyCharacterValidationPattern" p:allowWhitespace="true"/>
 &lt;/property></programlisting>
       </para>
       <para>
-        <emphasis role="bold">KRAD Attribute Definition code example:</emphasis>
+        <emphasis role="bold">KRAD validCharactersConstraint property example:</emphasis>
         <programlisting linenumbering="numbered">&lt;property name="validCharactersConstraint">
   &lt;bean parent="AnyCharacterPatternConstraint" p:allowWhitespace="true"/>
 &lt;/property></programlisting>
@@ -539,7 +550,7 @@
         </itemizedlist> See the <link xlink:show="new" xlink:href="KRAD_Guide.html">KRAD
           Guide</link> for more detail. </para>
     </section>
-    <section>
+    <section xml:id="CD0">
       <title>Controls</title>
       <para>Control components are defined to determine which HTML element(s) are rendered to
         represent the input field. Here is an example of a Text control within an Attribute
@@ -589,11 +600,11 @@
           </listitem>
         </itemizedlist>
       </para>
-      <section>
+      <section xml:id="CD1">
         <title>Button Control</title>
-        <para><emphasis role="bold"
-            ><?oxy_comment_start author="jessicacoltrin" timestamp="20131015T115343-0700" comment="Add short summary of what button control does."?>KNS<?oxy_comment_end?>
-            Button Control example</emphasis>:
+        <para>An action component that is configured to render a button. The button element can
+          include text (the label) along with an image.</para>
+        <para><emphasis role="bold">KNS Button Control example</emphasis>:
           <programlisting linenumbering="numbered">&lt;property name="control">
   &lt;bean parent="ButtonControlDefinition"/>
 &lt;/property></programlisting></para>
@@ -636,12 +647,13 @@
           </itemizedlist>
         </para>
       </section>
-      <section>
+      <section xml:id="CD6">
         <title>Checkbox Control</title>
-        <para><emphasis role="bold"
-            ><?oxy_comment_start author="jessicacoltrin" timestamp="20131015T115319-0700" comment="Add short summary of what checkbox control does."?>KNS<?oxy_comment_end?>
-            Checkbox Control example:
-          </emphasis><programlisting linenumbering="numbered">&lt;property name="control">
+        <para>The Checkbox control renders an HTML input tag with type of “checkbox”. This control
+          is used to toggle the state of a property between two values (usually the Booleans true
+          and false).</para>
+        <para><emphasis role="bold">KNS Checkbox Control example:</emphasis>
+          <programlisting linenumbering="numbered">&lt;property name="control">
   &lt;bean parent="CheckboxControlDefinition"/>
 &lt;/property></programlisting></para>
         <para>
@@ -670,12 +682,11 @@
           </itemizedlist>
         </para>
       </section>
-      <section>
+      <section xml:id="CD3">
         <title>Currency Control</title>
-        <para>
-          <emphasis role="bold"
-            ><?oxy_comment_start author="jessicacoltrin" timestamp="20131015T115221-0700" comment="Add short summary of what currency control does."?>KNS<?oxy_comment_end?>
-            Currency control example:</emphasis>
+        <para>Same as a Text control, except has an added style class of 'uif-currencyControl' which
+          adds a right aligh style to the control useful for diplaying currency.</para>
+        <para><emphasis role="bold">KNS Currency control example:</emphasis>
           <programlisting linenumbering="numbered">&lt;property name="control">
   &lt;bean parent="CurrencyControlDefinition" p:formattedMaxLength="26" p:size="10"/>
 &lt;/property></programlisting>
@@ -707,12 +718,12 @@
           </itemizedlist>
         </para>
       </section>
-      <section>
+      <section xml:id="CD13">
         <title>File Control</title>
-        <para>
-          <emphasis role="bold"
-            ><?oxy_comment_start author="jessicacoltrin" timestamp="20131015T115400-0700" comment="Add short summary of what file control does."?>KNS<?oxy_comment_end?>
-            File Control example:</emphasis>
+        <para>The File control is used to allow the user to select a file from their file system
+          whose contents will be submitted with the form. The server can then make use of the file
+          contents or simply store the file on the server (for example a note attachment).</para>
+        <para><emphasis role="bold">KNS File Control example:</emphasis>
           <programlisting linenumbering="numbered">&lt;property name="control">
   &lt;bean parent="FileControlDefinition"/>
 &lt;/property></programlisting></para>
@@ -734,12 +745,14 @@
           </itemizedlist>
         </para>
       </section>
-      <section>
+      <section xml:id="CD10">
         <title>Hidden Control</title>
+        <para>The Hidden control is used to render an HTML input of type hidden. A hidden control is
+          not visible to the user, therefore its value can only be changed by script. These are
+          often used to hold some state that is needed when the page is posted back, or to provide
+          data for scripting purposes.</para>
         <para>
-          <emphasis role="bold"
-            ><?oxy_comment_start author="jessicacoltrin" timestamp="20131015T115500-0700" comment="Add short summary of what hidden control does."?>KNS<?oxy_comment_end?>
-            Hidden control example:</emphasis>
+          <emphasis role="bold">KNS Hidden control example:</emphasis>
           <programlisting linenumbering="numbered">&lt;property name="control">
   &lt;bean parent="HiddenControlDefinition"/>
 &lt;/property></programlisting></para>
@@ -761,12 +774,17 @@
           </itemizedlist>
         </para>
       </section>
-      <section>
+      <section xml:id="CD11">
         <title>Kuali User Control</title>
-        <para>
-          <emphasis role="bold"
-            ><?oxy_comment_start author="jessicacoltrin" timestamp="20131015T115630-0700" comment="Add short summary of what Kuali User Control does. What&apos;s the difference between user control and Kim Person control?"?>KNS<?oxy_comment_end?>
-            Kuali User control example:</emphasis>
+        <para>The KIM User control is specifically tailored to represent a KIM user. This control
+          does several things for us. First like the group control, it will configured a quickfinder
+          for our field that is configured to invoke the KIM User lookup. The lookup will then
+          return the principal id, principal name (username), and person name (full name). Also like
+          the group control it will automatically add the principal id as a hidden field for us. In
+          addition, it sets up a field query (covered in later on in this chapter) that display the
+          person name under the control on return from the lookup or when tabbing out of the
+          control.</para>
+        <para><emphasis role="bold">KNS Kuali User control example:</emphasis>
           <programlisting linenumbering="numbered">&lt;property name="control">
   &lt;bean parent="KualiUserControlDefinition"/>
 &lt;/property></programlisting></para>
@@ -788,13 +806,13 @@
           </itemizedlist>
         </para>
       </section>
-      <section>
+      <section xml:id="CD9">
         <title>Link Control</title>
-        <para>
-          <emphasis role="bold"
-            ><?oxy_comment_start author="jessicacoltrin" timestamp="20131015T115702-0700" comment="Add short summary of what link control does."?>KNS<?oxy_comment_end?>
-            Link control example:
-          </emphasis><programlisting linenumbering="numbered">&lt;property name="control">
+        <para>The Link control generates the HTML a (link) tag. The a tag is used to link to another
+          document (the primary mechanism of navigation in the web). The link is presented to use by
+          a label, which when clicked on will take the user to the linked page.</para>
+        <para><emphasis role="bold">KNS Link control example:</emphasis>
+          <programlisting linenumbering="numbered">&lt;property name="control">
   &lt;bean parent="LinkControlDefinition" p:styleClass="globalLinks" 
         p:target="_blank" p:hrefText="click here" />
 &lt;/property></programlisting>
@@ -826,7 +844,7 @@
             </listitem>
             <listitem>
               <para>The sub-property <emphasis role="keyword">linkText</emphasis> replaces the KNS
-                  <emphasis role="keyword">jrefText</emphasis> property.[KNS line: 2, KRAD line: 2]<inlinemediaobject>
+                  <emphasis role="keyword">hrefText</emphasis> property.[KNS line: 2, KRAD line: 2]<inlinemediaobject>
                   <imageobject>
                     <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
                   </imageobject>
@@ -844,12 +862,13 @@
           </itemizedlist>
         </para>
       </section>
-      <section>
+      <section xml:id="CD4">
         <title>TextArea Control</title>
-        <para><emphasis role="bold">
-            <?oxy_comment_start author="jessicacoltrin" timestamp="20131015T115732-0700" comment="Add short summary of what text area control does."?>KNS<?oxy_comment_end?>
-            TextArea control example:
-          </emphasis><programlisting linenumbering="numbered">&lt;property name="control">
+        <para>The TextArea control is similar to the text control with the exception of providing
+          multiple lines for input. This control is used for entering longer strings of data such as
+          a description.</para>
+        <para><emphasis role="bold">KNS TextArea control example:</emphasis>
+          <programlisting linenumbering="numbered">&lt;property name="control">
   &lt;bean parent="TextareaControlDefinition"/>
 &lt;/property></programlisting></para>
         <para>
@@ -870,12 +889,11 @@
           </itemizedlist>
         </para>
       </section>
-      <section>
+      <section xml:id="CD2">
         <title>Text Control</title>
-        <para>
-          <emphasis role="bold"
-            ><?oxy_comment_start author="jessicacoltrin" timestamp="20131015T115757-0700" comment="Add short summary of what text control does."?>KNS<?oxy_comment_end?>
-            Text control example:</emphasis>
+        <para>The Text control renders the HTML input element with type of “text”. This is a
+          single-line box that allows the user to type the value.</para>
+        <para><emphasis role="bold">KNS Text control example:</emphasis>
           <programlisting linenumbering="numbered">&lt;property name="control">
   &lt;bean parent="TextControlDefinition"/>
 &lt;/property></programlisting></para>
@@ -917,12 +935,11 @@
           </itemizedlist>
         </para>
       </section>
-      <section>
+      <section xml:id="CD7">
         <title>Radio Control Group</title>
-        <para>
-          <emphasis role="bold"
-            ><?oxy_comment_start author="jessicacoltrin" timestamp="20131015T135210-0700" comment="Add short summary of what radio control does."?>KNS<?oxy_comment_end?>
-            Radio Group control example:</emphasis>
+        <para>A radio control allows a user to choose only one of a predefined set of
+          options.</para>
+        <para><emphasis role="bold">KNS Radio Group control example:</emphasis>
           <programlisting linenumbering="numbered">&lt;property name="control">
   &lt;bean parent="RadioControlDefinition" 
         p:valuesFinderClass="org.kuali.rice.krad.keyvalues.DelegateRuleValuesFinder"/>
@@ -972,12 +989,12 @@
           </itemizedlist>
         </para>
       </section>
-      <section>
+      <section xml:id="CD8">
         <title>Select Control</title>
-        <para>
-          <emphasis role="bold"
-            ><?oxy_comment_start author="jessicacoltrin" timestamp="20131015T135250-0700" comment="Add short summary of what select control does."?>KNS<?oxy_comment_end?>
-            Select control example:
+        <para>A select control provides a drop-down list of options. It is essentially an
+          alternative to radio buttons. Or a checkbox group if set to allow multiple selected
+          values</para>
+        <para><emphasis role="bold">KNS Select control example:
           </emphasis><programlisting linenumbering="numbered">&lt;bean id="BookOrder-bookId" parent="BookOrder-bookId-parentBean"/>
 &lt;bean id="BookOrder-bookId-parentBean" abstract="true" parent="AttributeDefinition">
   &lt;property name="name" value="bookId"/>
@@ -993,8 +1010,7 @@
               p:includeKeyInLabel="false" p:includeBlankRow="true" p:keyAttribute="id" 
               p:labelAttribute="para"/>
   &lt;/property>
-&lt;/bean></programlisting>
-        </para>
+&lt;/bean></programlisting></para>
         <para>
           <emphasis role="bold">KRAD Select control example:</emphasis>
           <programlisting linenumbering="numbered">&lt;bean id="BookOrder-bookId" parent="BookOrder-bookId-parentBean"/>
@@ -1046,7 +1062,7 @@
             <listitem>
               <para>The property <emphasis role="keyword">Uif-MultiSelectControl</emphasis> also
                 replaces the KNS <emphasis role="keyword">MultiselectControlDefinition</emphasis>
-                You may also specify multi value select capability from a Uif-DropdownContro, by
+                You may also specify multi value select capability from a Uif-DropdownControl, by
                 setting property <emphasis role="keyword">multiple</emphasis> to true.<inlinemediaobject>
                   <imageobject>
                     <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
@@ -1056,12 +1072,12 @@
           </itemizedlist>
         </para>
       </section>
-      <section>
+      <section xml:id="CD5">
         <title>Date Control</title>
+        <para>A date control is an input element with a type attribute of "date" and represents a
+          control for setting the element's value to a string representing a date.</para>
         <para>
-          <emphasis role="bold"
-            ><?oxy_comment_start author="jessicacoltrin" timestamp="20131015T135315-0700" comment="Add short summary of what date control does."?>KNS<?oxy_comment_end?>
-            Date control example:
+          <emphasis role="bold">KNS Date control example:
           </emphasis><programlisting linenumbering="numbered">&lt;property name="control">
   &lt;bean parent="TextareaControlDefinition"/>
 &lt;/property></programlisting>
@@ -1102,7 +1118,15 @@
   </section>
   <section>
     <title>Inquiry Conversion</title>
-    <para>&lt;add introduction here></para>
+    <para>Inquiries allow users to quickly view a data entity (typically one created via a
+      maintenance document) without having to start editing that entity. They provide a more compact
+      view of these entities and can control which users see what displayed data. KRAD moves all
+      inquiry definitions to a view and displays all inquiries in a lightbox by default. The
+      conversion script will automate part of the conversion for your inquiries to the view format,
+      but some inquiry attributes require no conversion since they are virtually identical between
+      the KNS and KRAD. The following sections provide a typical conversion sample and identify the
+      business object bean properties, sections, collections, helper classes, and other features
+      which are converted by the script and those which require manual conversion. </para>
     <section>
       <title>InquiryDefinition in KNS Data Dictionary to InquiryView in KRAD</title>
       <para><emphasis role="bold">KNS Code example:</emphasis></para>
@@ -1159,11 +1183,11 @@
       <para><emphasis role="bold">KRAD code example:</emphasis></para>
       <para>
         <programlisting linenumbering="numbered">&lt;bean id="EntityType-InquiryView" parent="Uif-InquiryView">
-  &lt;property name="headerText" value="Entity Type"/>
+  &lt;property name="headerText" value="Entity Type Inquiry"/>
   &lt;property name="dataObjectClassName" value="org.kuali.rice.kim.impl.identity.EntityTypeBo"/>
   &lt;property name="viewHelperServiceClass" value="org.kuali.rice.kim.inquiry.EntityTypeInquirableImpl"/>
   &lt;property name="authorizerClass" value="org.kuali.rice.kim.authorization.EntityTypeAuthorizer"/>
-  &lt;property name="presentationControllerClass" value="org.kuali.rice.kim.view.EntityTypeViewPresentationController"/>
+  &lt;property name="presentationControllerClass" value="org.kuali.rice.kim.presentation.EntityTypePresentationController"/>
   &lt;property name="items">
     &lt;list>
       &lt;bean id="EntityType-InquiryView-General" parent="Uif-Disclosure-GridSection">
@@ -1251,21 +1275,31 @@
           </listitem>
           <listitem xml:id="IBB5">
             <para>The <emphasis role="keyword">authorizerClass</emphasis> has now moved to the view.
-              See below for more information. [KNS line: 4, KRAD line: 5] <inlinemediaobject>
+              Conversion will copy the property. [KNS line: 4, KRAD line: 5] <inlinemediaobject>
                 <imageobject>
                   <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
                 </imageobject>
-              </inlinemediaobject>
-            </para>
+              </inlinemediaobject> Custom implementations of the <emphasis role="keyword"
+                >InquiryAuthorizer</emphasis> class will need refactoring. See InquiryAuthorizer
+              below for more information. <inlinemediaobject>
+                <imageobject>
+                  <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
+                </imageobject>
+              </inlinemediaobject></para>
           </listitem>
           <listitem xml:id="IBB6">
             <para>The <emphasis role="keyword">presentationControllerClass</emphasis> has now moved
-              to the view.  See below for more information. [KNS line: 5, KRAD line: 6] <inlinemediaobject>
+              to the view. Conversion will copy the property. [KNS line: 5, KRAD line: 6] <inlinemediaobject>
                 <imageobject>
                   <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
                 </imageobject>
-              </inlinemediaobject>
-            </para>
+              </inlinemediaobject> Custom implementations of the <emphasis role="keyword"
+                >InquiryPresentationController</emphasis> class will need refactoring. See
+              InquiryPresentationController below for more information. <inlinemediaobject>
+                <imageobject>
+                  <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
+                </imageobject>
+              </inlinemediaobject></para>
           </listitem>
         </itemizedlist>
       </para>
@@ -1331,11 +1365,11 @@
           </listitem>
           <listitem xml:id="IS6">
             <para>The org.kuali.rice.kns.inquiry.Inquirable.addAdditionalSections() has been removed
-              in KRAD. To add additional sections dynamically to an inquiry override <emphasis
-                role="keyword"> performFinalize</emphasis> method of ViewHelperService instead and
-              add custom components. The custom Inquirable implementation can be specified using the
-                <emphasis role="keyword"> viewHelperServiceClass</emphasis> property of the view
-              which in turn would extend <emphasis role="keyword"
+              in KRAD. To add additional sections dynamically to an inquiry, override the <emphasis
+                role="keyword"> performCustomInitialization</emphasis> method of ViewHelperService
+              instead and add custom components. The custom Inquirable implementation can be
+              specified using the <emphasis role="keyword"> viewHelperServiceClass</emphasis>
+              property of the view, which in turn would extend <emphasis role="keyword"
                 >org.kuali.rice.krad.inquiry.InquirableImpl</emphasis>.<inlinemediaobject>
                 <imageobject>
                   <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
@@ -1348,12 +1382,10 @@
 &lt;/bean></programlisting>
             </para>
           </listitem>
-          <listitem  xml:id="IS7">
+          <listitem xml:id="IS7">
             <para>The org.kuali.rice.kns.inquiry.Inquirable.getSection() has been removed in KRAD.
-              To modify existing sections dynamically in an inquiry override <emphasis
-                role="keyword"> performFinalize</emphasis> method of ViewHelperService. The list of
-              components can be obtained from the view object using <emphasis role="keyword"
-                >getComponentsForLifecycle</emphasis>. <inlinemediaobject>
+              To modify existing sections dynamically in an inquiry, override the <emphasis
+                role="keyword"> performCustomInitialization</emphasis> method of ViewHelperService. <inlinemediaobject>
                 <imageobject>
                   <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
                 </imageobject>
@@ -1433,8 +1465,8 @@
           </listitem>
           <listitem xml:id="IC3">
             <para>The <emphasis role="keyword">attributeName</emphasis> property of the collection
-              has been changed to <emphasis role="keyword">propertyName</emphasis>. [KNS line: 28,
-              KRAD line: 26] <inlinemediaobject>
+              has been changed to <emphasis role="keyword">propertyName</emphasis>. [KNS line: 29,
+              KRAD line: 27] <inlinemediaobject>
                 <imageobject>
                   <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
                 </imageobject>
@@ -1444,7 +1476,7 @@
           <listitem xml:id="IC4">
             <para>The property that contains the inquiry display fields was renamed from <emphasis
                 role="keyword">inquiryFields</emphasis> to <emphasis role="keyword"
-              >items</emphasis>. [KNS line: 29, KRAD line: 30] <inlinemediaobject>
+              >items</emphasis>. [KNS line: 30, KRAD line: 28] <inlinemediaobject>
                 <imageobject>
                   <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
                 </imageobject>
@@ -1453,8 +1485,8 @@
           </listitem>
           <listitem xml:id="IC5">
             <para>The property <emphasis role="keyword">summaryTitle</emphasis> has been moved to
-                <emphasis role="keyword">layoutManager.summaryTitle</emphasis>. [KNS line: 35, KRAD
-              line: 33] <inlinemediaobject>
+                <emphasis role="keyword">layoutManager.summaryTitle</emphasis>. [KNS line: 36, KRAD
+              line: 34] <inlinemediaobject>
                 <imageobject>
                   <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
                 </imageobject>
@@ -1464,7 +1496,7 @@
           <listitem xml:id="IC6">
             <para>The container <emphasis role="keyword">summaryFields</emphasis> has been moved to
                 <emphasis role="keyword">layoutManager.summaryFields</emphasis> and simplified to
-              just take a list of values. [KNS line: 36, KRAD line: 34] <inlinemediaobject>
+              just take a list of values. [KNS line: 37, KRAD line: 35] <inlinemediaobject>
                 <imageobject>
                   <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
                 </imageobject>
@@ -1473,8 +1505,8 @@
           </listitem>
           <listitem xml:id="IC7">
             <para>In general, only simple nestings such as the ones shown above are supported by the
-              conversion script. Any other combinations, such as <emphasis role="keyword"
-                >InquiryCollectionDefinition</emphasis>s directly inside an <emphasis role="keyword"
+              conversion script. Any other combinations, such as a <emphasis role="keyword"
+                >InquiryCollectionDefinition</emphasis> directly inside an <emphasis role="keyword"
                 >inquiryFields</emphasis> property or inside another <emphasis role="keyword"
                 >InquiryCollectionDefinition</emphasis> are not supported and will need to be
               converted manually. <inlinemediaobject>
@@ -1497,11 +1529,12 @@
           <para>In order to customize Inquiry links, the code originally in a subclass of <emphasis
               role="keyword">org.kuali.rice.kns.inquiry.Inquirable.getInquiryUrl</emphasis> will
             need to move to <emphasis role="keyword"
-              >org.kuali.rice.krad.inquiry.Inquirable.buildInquiryLink</emphasis> and be adapted for
-            the new framework. Implementers have a choice between using the convenience method
-              <emphasis role="keyword">Inquiry.buildInquiryLink</emphasis> to automatically build
-            the link or define a completely new link by calling <emphasis role="keyword"
-              >inquiry.getInquiryLink().setHref</emphasis>. <inlinemediaobject>
+              >org.kuali.rice.krad.inquiry.Inquirable.buildInquirableLink</emphasis> and be adapted
+            for the new framework. Implementers have a choice between using the convenience method
+              <emphasis role="keyword"
+              >org.kuali.rice.krad.uif.widget.Inquiry.buildInquiryLink</emphasis> to automatically
+            build the link or define a completely new link by calling <emphasis role="keyword"
+              >Inquiry.getInquiryLink().setHref</emphasis>. <inlinemediaobject>
               <imageobject>
                 <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
               </imageobject>
@@ -1514,11 +1547,11 @@
       <title>InquiryAuthorizer</title>
       <para>KRAD moves the functionality of <emphasis role="keyword">InquiryAuthorizer</emphasis> to
           <emphasis role="keyword">InquiryViewAuthorizer</emphasis>. While the data dictionary entry
-        will be automatically converted, if it points to a custom implementation of <emphasis
-          role="keyword">InquiryAuthorizer</emphasis>, then the custom class will need to be
-        reparented to <emphasis role="keyword">InquiryViewAuthorizer</emphasis> and the methods will
-        need to be migrated to <emphasis role="keyword">canViewGroup</emphasis> (for sections) and
-          <emphasis role="keyword">canViewField</emphasis> (for fields). <inlinemediaobject>
+        remains the same, if it points to a custom implementation of <emphasis role="keyword"
+          >InquiryAuthorizer</emphasis>, then the custom class will need to be reparented to
+          <emphasis role="keyword">InquiryViewAuthorizer</emphasis> and the methods will need to be
+        migrated to <emphasis role="keyword">canViewGroup</emphasis> (for sections) and <emphasis
+          role="keyword">canViewField</emphasis> (for fields). <inlinemediaobject>
           <imageobject>
             <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
           </imageobject>
@@ -1529,8 +1562,8 @@
       <title>InquiryPresentationController</title>
       <para>KRAD moves the functionality of <emphasis role="keyword"
           >InquiryPresentationController</emphasis> to <emphasis role="keyword"
-          >InquiryViewPresentationController</emphasis>. While the data dictionary entry will be
-        automatically converted, if it points to a custom implementation of <emphasis role="keyword"
+          >InquiryViewPresentationController</emphasis>. While the data dictionary entr remains the
+        same, if it points to a custom implementation of <emphasis role="keyword"
           >InquiryPresentationController</emphasis>, then the custom class will need to be
         reparented to <emphasis role="keyword">InquiryViewPresentationController</emphasis> and the
         methods will need to be migrated to <emphasis role="keyword">canViewGroup</emphasis> (for
@@ -1644,7 +1677,15 @@
   </section>
   <section>
     <title>Lookup Conversion</title>
-    <para>&lt;add overview here></para>
+    <para>Lookups allow users to search for data entries (typically ones created by a maintenance
+      document) in order to view the results and take actions (if any) on those entries. They allow
+      controlling how much information is shown and what actions the user can currently take on the
+      entry. KRAD moves all lookup definitions to a view. The conversion script will automate part
+      of the conversion for your lookups to the view format, but some lookup attributes require no
+      conversion since they are virtually identical between the KNS and KRAD. The following sections
+      provide a typical conversion sample and identify the business object bean properties, criteria
+      fields, result fields, helper classes, and other features which are converted by the script
+      and those that require manual conversion.</para>
     <section>
       <title>LookupDefinition in KNS Data Dictionary to LookupView in KRAD</title>
       <note>
@@ -1695,12 +1736,12 @@
       <para>
         <emphasis role="bold">KRAD code example:</emphasis>
         <programlisting linenumbering="numbered">&lt;bean id="EntityTypeLookupView" parent="Uif-LookupView">
-&lt;property name="dataObjectClassName" value="org.kuali.rice.kim.impl.identity.EntityTypeBo"/>
+  &lt;property name="dataObjectClassName" value="org.kuali.rice.kim.impl.identity.EntityTypeBo"/>
   &lt;property name="headerText" value="Entity Type Lookup" />
   &lt;property name="page.header.lowerGroup.items">
     &lt;list merge="true">
-      &lt;bean parent="Uif-SecondaryActionButton" p:actionLabel="Custom Button"
-               p:actionScript="alert('JavaScript triggered action.')"/>
+      &lt;bean parent="Uif-Message" value="[&amp;lt;a href=&amp;quot;javascript:void(0)&amp;quot;
+        onclick=&amp;quot;alert('JavaScript triggered action.')&amp;quot;&amp;gt;Custom Button&amp;lt;/a&amp;gt;]"/>
     &lt;/list>
   &lt;/property>
   &lt;property name="renderLookupCriteria" value="false"/>
@@ -1793,8 +1834,15 @@
               </inlinemediaobject></para>
           </listitem>
           <listitem xml:id="LBB5">
-            <para><emphasis role="keyword">multipleValuesSelectResultSetLimit</emphasis> [KRAD line
-              51] overrides the MULTIPLE_VALUE_RESULTS_PER_PAGE application/system parameter. <inlinemediaobject>
+            <para role="keyword"><emphasis role="keyword"
+                >multipleValuesSelectResultSetLimit</emphasis> [KRAD line 51] overrides the
+              MULTIPLE_VALUE_RESULTS_LIMIT application/system parameter. This parameter restricts
+              the number of results returned from a lookup that can return multiple values. The
+              parameter defaults to 100 results, but can either be changed in the database or be
+              overridden by setting <emphasis role="keyword"
+                >multipleValuesSelectResultSetLimit</emphasis>. The namespace of the parameter used
+              in KRAD is <emphasis role="keyword">KR-KRAD</emphasis> instead of <emphasis
+                role="keyword">KR-NS</emphasis>. <inlinemediaobject>
                 <imageobject>
                   <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
                 </imageobject>
@@ -1802,7 +1850,12 @@
           </listitem>
           <listitem xml:id="LBB6">
             <para><emphasis role="keyword">resultSetLimit</emphasis> [KRAD line 52] overrides the
-              application/system parameter RESULTS_LIMIT. <inlinemediaobject>
+              application/system parameter RESULTS_LIMIT. This parameter restricts the number of
+              results returned from a lookup that can return one value. The parameter defaults to
+              100 results, but can either be changed in the database or be overridden by setting
+                <emphasis role="keyword">resultSetLimit</emphasis>. The namespace of the parameter
+              used in KRAD is <emphasis role="keyword">KR-KRAD</emphasis> instead of <emphasis
+                role="keyword">KR-NS</emphasis>. <inlinemediaobject>
                 <imageobject>
                   <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
                 </imageobject>
@@ -1843,8 +1896,8 @@
               </inlinemediaobject></para>
           </listitem>
           <listitem xml:id="LCF4">
-            <para>Not rendering a quickfinder on a lookup criteria field is specified via
-                the<emphasis role="keyword">enableAutoQuickfinder</emphasis> property instead of the
+            <para>Not rendering a quickfinder on a lookup criteria field is specified via the
+                <emphasis role="keyword">enableAutoQuickfinder</emphasis> property instead of the
                 <emphasis role="keyword">noLookup</emphasis> property. [KNS line: 12, KRAD line 25] <inlinemediaobject>
                 <imageobject>
                   <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
@@ -1911,16 +1964,16 @@
                 >&lt;attribute-name></emphasis> parameter to the URL. In KRAD the URL parameter
               naming convention changed to <emphasis role="keyword"
                 >lookupCriteria[&lt;attribute-name>]</emphasis>. Alternatively the defaultValue can
-              be set on the Uif-LookupCriteriaInputField. [KNS line: n/a, KRAD line: 14] <inlinemediaobject>
+              be set on the Uif-LookupCriteriaInputField. [KNS line: n/a, KRAD line: 27] <inlinemediaobject>
                 <imageobject>
                   <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
                 </imageobject>
               </inlinemediaobject></para>
-            <para><emphasis role="bold">KNS
-              example:</emphasis><programlisting linenumbering="numbered">http://demo.rice.kuali.org/kr/lookup.do?methodToCall=start
+            <para><emphasis role="bold">KNS URL
+              example:</emphasis><programlisting linenumbering="unnumbered">http://demo.rice.kuali.org/kr/lookup.do?methodToCall=start
   &amp;businessObjectClassName=org.kuali.rice.location.impl.country.CountryBo&amp;<emphasis role="bold">code=us</emphasis></programlisting></para>
-            <para><emphasis role="bold">KRAD
-              example:</emphasis><programlisting linenumbering="numbered">http://demo.rice.kuali.org/kr/lookup.do?methodToCall=start
+            <para><emphasis role="bold">KRAD URL
+              example:</emphasis><programlisting linenumbering="unnumbered">http://demo.rice.kuali.org/kr/lookup.do?methodToCall=start
   &amp;businessObjectClassName=org.kuali.rice.location.impl.country.CountryBo<emphasis role="bold">&amp;lookupCriteria[code]=us</emphasis></programlisting></para>
           </listitem>
         </itemizedlist>
@@ -1999,9 +2052,8 @@
           <listitem xml:id="LRF7">
             <para>To display the maintenance links (create new, edit, copy, delete) on non
               maintenance documents the <emphasis role="keyword">renderMaintenanceLinks</emphasis>
-              on the LookupForm needs to be set. Not however the framework has logic based on
-              whether a quickfinder is used to determine whether to show the return links or
-              maintenance links.<inlinemediaobject>
+              on the LookupForm needs to be set. Note, the quickfinder logic in the framework
+              automatically determines wether to show the return links or the maintenance links.<inlinemediaobject>
                 <imageobject>
                   <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
                 </imageobject>
@@ -2127,9 +2179,10 @@
                   >Constraints</link>) </para>
             </listitem>
             <listitem xml:id="LLA6">
-              <para><emphasis role="keyword">performLookup</emphasis> has been renamed to
-                performSearch. The resultTable parameter has been removed and takes searchCriteria
-                as an additional parameter. </para>
+              <para><emphasis role="keyword">performLookup</emphasis> has been renamed to <emphasis
+                  role="keyword">performSearch</emphasis> which takes the LookupForm as an
+                additional parameter. The resultTable parameter has been removed and takes
+                searchCriteria as an additional parameter. </para>
             </listitem>
             <listitem xml:id="LLA7">
               <para><emphasis role="keyword">getSearchResults</emphasis> and <emphasis
@@ -2146,9 +2199,9 @@
             </listitem>
             <listitem xml:id="LLA9">
               <para><emphasis role="keyword">getReturnUrl</emphasis> has been renamed to
-                  <emphasis>buildReturnUrlForResult</emphasis> which accepts the Link that returns
-                the result from the lookup and the model. Configuration via the Uif-LookupView is
-                also possible:
+                  <emphasis>buildReturnUrlForResult</emphasis> which accepts the Link and sets the
+                result from the lookup and the model. Configuration via the Uif-LookupView is also
+                possible:
                 <programlisting linenumbering="numbered">&lt;bean id="Sample-LookupView" parent="Uif-LookupView">
   ...
   &lt;property name="resultsReturnField">
@@ -2185,7 +2238,7 @@
 &lt;/bean></programlisting></para>
             </listitem>
             <listitem xml:id="LLA12">
-              <para><emphasis role="keyword">getReturnKeys</emphasis> takes the <emphasis
+              <para><emphasis role="keyword">getReturnKeyValues</emphasis> takes the <emphasis
                   role="keyword">LookupView, LookupForm</emphasis> and the data object as an
                 additional parameter.</para>
             </listitem>
@@ -2306,7 +2359,7 @@
             </listitem>
             <listitem xml:id="LLA29">
               <para><emphasis role="keyword">applyFieldAuthorizationsFromNestedLookups</emphasis>
-                has been removed.  Conditional masking of result field is done through Uif
+                has been removed. Conditional masking of result field is done through Uif
                 configuration.
                 <programlisting linenumbering="numbered">&lt;bean id="Sample-LookupView" parent="Uif-LookupView">
   ...
@@ -2366,11 +2419,12 @@
             <listitem xml:id="LLH2">
               <para>The functionality of <emphasis role="keyword">getActionUrl</emphasis> and
                   <emphasis role="keyword">getMaintenanceUrl</emphasis> is handled by <emphasis
-                  role="keyword">getMaintenanceActionLink</emphasis>.</para>
+                  role="keyword">buildMaintenanceActionLink</emphasis>.</para>
             </listitem>
             <listitem xml:id="LLH4">
-              <para>The method <emphasis role="keyword">getSearchResults</emphasis> now accepts the
-                form, search criteria and the unbounded indicator.</para>
+              <para>The logic of <emphasis role="keyword">getSearchResults</emphasis> is now part of
+                  <emphasis role="keyword">performSearch</emphasis> which accepts the form, search
+                criteria and the unbounded indicator.</para>
             </listitem>
           </itemizedlist></para>
       </section>
@@ -2412,12 +2466,12 @@
 &lt;/bean></programlisting></para>
           </listitem>
           <listitem xml:id="LQF2">
-            <para>The <emphasis role="keyword">searchIconOverride</emphasis> doesn't exist in KRAD since
-              the quickfinder can be directly configured via the <emphasis role="keyword">quickfinder.quickfinderAction.actionImage.source</emphasis>.
-              Consequently, it was really not intended to be defined in the XML but rather in the JSP
-              code for a transactional document.  KRAD allows for much more flexibility and thus it
-              can be specified as well in the lookup.
-              <inlinemediaobject>
+            <para>The <emphasis role="keyword">searchIconOverride</emphasis> doesn't exist in KRAD
+              since the quickfinder can be directly configured via the <emphasis role="keyword"
+                >quickfinder.quickfinderAction.actionImage.source</emphasis>. Consequently, it was
+              really not intended to be defined in the XML but rather in the JSP code for a
+              transactional document. KRAD allows for much more flexibility and thus it can be
+              specified as well in the lookup. <inlinemediaobject>
                 <imageobject>
                   <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
                 </imageobject>
@@ -2428,70 +2482,6 @@
               <programlisting linenumbering="numbered">&lt;bean parent="Uif-LookupCriteriaInputField" p:propertyName="entityTypeCode">
   &lt;property name="quickfinder.quickfinderAction.actionImage.source" value="icon.png"/>
 &lt;/bean></programlisting></para>
-          </listitem>
-        </itemizedlist>
-      </para>
-    </section>
-    <section>
-      <title>Multiple Value Lookups</title>
-      <para>Multiple value lookups allow for a collection on a maintenance document to be populated
-        with multiple results at once, rather than forcing the user to iteratively add results one
-        after another. For a maintenance document to use a multiple value lookup, the maintenance
-        document must contain a collection, and a collection lookup must be configured for that
-        collection. </para>
-      <para><emphasis role="bold">KNS code example:</emphasis>
-        <programlisting linenumbering="numbered">&lt;bean parent="MaintainableCollectionDefinition">
-  &lt;property name="name" value="categories"/>
-  &lt;property name="businessObjectClass" value="org.kuali.rice.krms.impl.repository.CategoryBo"/>
-  &lt;property name="includeMultipleLookupLine" value="true"/>
-  ... 
-&lt;/bean></programlisting>
-        <emphasis role="bold">KRAD code example:</emphasis>
-      </para>
-      <para>
-        <programlisting linenumbering="numbered">&lt;bean parent="Uif-TableCollectionSection">
-  &lt;property name="collectionObjectClass" 
-            value="org.kuali.rice.krms.impl.repository.CategoryBo"/>
-  &lt;property name="propertyName" value="categories"/>
-  &lt;property name="collectionLookup">
-      &lt;bean parent="Uif-CollectionQuickFinder"
-            p:dataObjectClassName="org.kuali.rice.krms.impl.repository.CategoryBo"
-            p:fieldConversions="id:id,name:name,namespace:namespace"/>
-  &lt;/property>
-  ...
-&lt;/bean></programlisting>
-      </para>
-      <para>
-        <itemizedlist>
-          <listitem>
-            <para>The in KNS the <emphasis role="keyword"
-                >MaintainableCollectionDefinition</emphasis> is used to specify collections on a
-              maintenance document. With KRAD one of the Uif collection groups is used. [KNS line:
-              1, KRAD line: 1]</para>
-          </listitem>
-          <listitem>
-            <para>In KNS the <emphasis role="keyword">includeMultipleLookupLine</emphasis> property
-              was set to true to enable multiple value lookups on the collection. In KRAD this
-              property does no longer exist, instead the <emphasis role="keyword"
-                >collectionLookup</emphasis> property is initialized with the <emphasis
-                role="keyword">Uif-CollectionQuickfinder</emphasis> bean. <emphasis role="keyword"
-                >Uif-CollectionQuickfinder</emphasis> has the following properties but do not need
-              to be specified if the collectionObjectClass of the collection group is the same as
-              the dataObjectClassName of the multi value lookup:</para>
-            <itemizedlist>
-              <listitem>
-                <para>dataObjectClassName - the data object that should be looked up</para>
-              </listitem>
-              <listitem>
-                <para>fieldConversions - from-to mapping of the returned data
-                  (&lt;lookup-field>:&lt;maintenance-collection-field>)</para>
-              </listitem>
-              <listitem>
-                <para>viewName - name of the lookup view (only needed if multible views for the
-                  dataObjectClassName exists)</para>
-              </listitem>
-            </itemizedlist>
-            <para>[KNS line: , KRAD line: 4-8]</para>
           </listitem>
         </itemizedlist>
       </para>
@@ -2508,31 +2498,30 @@
               With KRAD the forms are specified as a property of the view.
               <programlisting>&lt;bean parent="Uif-TransactionalDocumentView">
     &lt;property name="formClass" 
-              value="org.kuali.rice.krad.demo.travel.authorization.TravelAuthorizationForm"/>
+              value="edu.sampleu.travel.TravelAuthorizationForm"/>
     ...
 &lt;/bean></programlisting>
             </para>
           </listitem>
           <listitem xml:id="LOF2">
             <para><emphasis role="bold">Help Items</emphasis></para>
-            <para>Help items can be displayed in the same manner in KRAD as in the KNS.
-              <inlinemediaobject>
+            <para>Help items can be displayed in the same manner in KRAD as in the KNS. <inlinemediaobject>
                 <imageobject>
                   <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
                 </imageobject>
               </inlinemediaobject></para>
-              <para>
-                <emphasis role="bold">KNS code example:</emphasis>
-                <programlisting linenumbering="numbered">&lt;property name="helpDefinition">
+            <para>
+              <emphasis role="bold">KNS code example:</emphasis>
+              <programlisting linenumbering="numbered">&lt;property name="helpDefinition">
   &lt;bean parent="HelpDefinition" p:parameterNamespace="KR-KRAD" p:parameterDetailType="Lookup"
                                 p:parameterName="DEFAULT_HELP_URL"/>
 &lt;/property></programlisting>
-                or
-                <programlisting linenumbering="numbered">&lt;property name="helpUrl" value="link.html"/></programlisting>
-              </para>
-              <para>
-                <emphasis role="bold">KRAD code example:</emphasis>
-                <programlisting linenumbering="numbered">&lt;property name="help">
+              or
+              <programlisting linenumbering="numbered">&lt;property name="helpUrl" value="link.html"/></programlisting>
+            </para>
+            <para>
+              <emphasis role="bold">KRAD code example:</emphasis>
+              <programlisting linenumbering="numbered">&lt;property name="help">
   &lt;bean parent="Uif-Help">
     &lt;property name="helpDefinition">
       &lt;bean parent="HelpDefinition" p:parameterNamespace="KR-KRAD" p:parameterDetailType="Lookup"
@@ -2540,8 +2529,8 @@
     &lt;/property>
   &lt;/bean>
 &lt;/property></programlisting>
-                or
-                <programlisting linenumbering="numbered">&lt;property name="help">
+              or
+              <programlisting linenumbering="numbered">&lt;property name="help">
   &lt;bean parent="Uif-Help" p:externalHelpUrl="link.html"/>
 &lt;/property></programlisting>
             </para>
@@ -2552,12 +2541,23 @@
   </section>
   <section>
     <title>Maintenance Conversion</title>
-    <para>&lt;add overview here></para>
+    <para>Maintenance documents provide an easy way to create and edit simple data entries. They
+      provide layout definitions to display base objects and collections for entering data and
+      editing it, as well as controlling access to data, providing links to attachments, applying
+      rules, and routing the document through several reviewers before finalizing and applying the
+      changes to the database. KRAD modifies the maintenance document entries and moves all relevant
+      display definitions to a view. The conversion script will automate part of the conversion for
+      your maintenance documents to the view format, but some maintenance attributes require no
+      conversion since they are virtually identical between the KNS and KRAD. The following sections
+      provide a typical conversion sample and identify the business object bean properties,
+      sections, collections, lookup definitions, helper classes, and other features which are
+      converted by the script and those that require manual conversion.</para>
     <section>
       <title>MaintenanceDefinition in KNS Data Dictionary to MaintenanceView in KRAD</title>
       <para><emphasis role="bold">KNS Code example:</emphasis></para>
-      <para><programlisting linenumbering="numbered">&lt;bean id="EntityTypeMaintenanceDocument" parent="MaintenanceDocumentEntry">
-  &lt;property name="dataObjectClass" value="org.kuali.rice.kim.impl.identity.EntityTypeBo"/>
+      <para>
+        <programlisting linenumbering="numbered">&lt;bean id="EntityTypeMaintenanceDocument" parent="MaintenanceDocumentEntry">
+  &lt;property name="businessObjectClass" value="org.kuali.rice.kim.impl.identity.EntityTypeBo"/>
   &lt;property name="documentTypeName" value="EntityTypeMaintenanceDocument"/>
   &lt;property name="maintainableClass" value="org.kuali.rice.kim.maintenance.EntityTypeMaintainableImpl"/>
 
@@ -2597,9 +2597,14 @@
       &lt;bean parent="MaintainableCollectionDefinition">
         &lt;property name="summaryTitle" value="Entity Type Detail"/>
         &lt;property name="businessObjectClass" value="org.kuali.rice.kim.impl.identity.EntityTypeDetailsBo"/>
-        &lt;property name="sourceClassName" value="org.kuali.rice.kim.impl.identity.EntityTypeDetailsBo"/>
         &lt;property name="name" value="entityTypeDetails"/>
         &lt;property name="maintainableFields">
+          &lt;list>
+            &lt;bean parent="MaintainableFieldDefinition" p:name="name"/>
+            &lt;bean parent="MaintainableFieldDefinition" p:name="value"/>
+          &lt;/list>
+        &lt;/property>
+        &lt;property name="duplicateIdentificationFields">
           &lt;list>
             &lt;bean parent="MaintainableFieldDefinition" p:name="name"/>
             &lt;bean parent="MaintainableFieldDefinition" p:name="value"/>
@@ -2608,31 +2613,32 @@
       &lt;/bean>
     &lt;/list>
   &lt;/property>
-&lt;/bean></programlisting></para>
+&lt;/bean></programlisting>
+      </para>
       <para><emphasis role="bold">KRAD code example:</emphasis></para>
-      <para><programlisting linenumbering="numbered">&lt;bean id="EntityTypeMaintenanceDocument" parent="uifMaintenanceDocumentEntry">
-  &lt;property name="dataObjectClass" value="org.kuali.rice.krad.demo.travel.dataobject.TravelAccount"/>
-  &lt;property name="documentTypeName" value="TravelAccountMaintenanceDocument"/>
+      <para>
+        <programlisting linenumbering="numbered">&lt;bean id="EntityTypeMaintenanceDocument-uifMaintenanceDocumentEntry" parent="uifMaintenanceDocumentEntry">
+  &lt;property name="dataObjectClass" value="org.kuali.rice.kim.impl.identity.EntityTypeBo"/>
+  &lt;property name="documentTypeName" value="EntityTypeMaintenanceDocument"/>
   &lt;property name="maintainableClass" value="org.kuali.rice.kim.maintenance.EntityTypeMaintainableImpl"/>
 &lt;/bean>
 
-&lt;bean id="EntityType-MaintenanceView" parent="Uif-MaintenanceView">
+&lt;bean id="EntityTypeMaintenanceDocument-MaintenanceView" parent="Uif-MaintenanceView">
   &lt;property name="dataObjectClassName" value="org.kuali.rice.kim.impl.identity.EntityTypeBo"/>
   &lt;property name="additionalScriptFiles">
     &lt;list>
       &lt;value>entityType.js&lt;/value>
     &lt;/list>
   &lt;/property>
-
   &lt;property name="items">
     &lt;list>
-      &lt;ref bean="EntityType-MaintenanceView-General"/>
-      &lt;ref bean="EntityType-MaintenanceView-Details"/>
+      &lt;ref bean="EntityTypeMaintenanceDocument-General"/>
+      &lt;ref bean="EntityTypeMaintenanceDocument-Details"/>
     &lt;/list>
   &lt;/property>
 &lt;/bean>
 
-&lt;bean id="EntityType-MaintenanceView-General" parent="Uif-MaintenanceGridSection">
+&lt;bean parent="Uif-MaintenanceGridSection" id="EntityTypeMaintenanceDocument-General">
   &lt;property name="headerText" value="Entity Type"/>
   &lt;property name="disclosure.defaultOpen" value="true"/>
   &lt;property name="help">
@@ -2642,18 +2648,16 @@
   &lt;/property>
   &lt;property name="items">
     &lt;list>
-      &lt;bean parent="Uif-InputField" p:propertyName="code"/>
-      &lt;bean parent="Uif-InputField" p:propertyName="name"/>
-      &lt;bean parent="Uif-InputField" p:propertyName="active"/>
+      &lt;bean p:propertyName="code" parent="Uif-InputField"/>
+      &lt;bean p:required="true" p:propertyName="name" parent="Uif-InputField"/>
+      &lt;bean p:required="true" p:propertyName="active" parent="Uif-InputField"/>
     &lt;/list>
   &lt;/property>
 &lt;/bean>
 
-&lt;bean id="EntityType-MaintenanceView-Details" parent="Uif-Disclosure-StackedCollectionSection">
+&lt;bean parent="Uif-VerticalBoxSection" id="EntityTypeMaintenanceDocument-Details">
   &lt;property name="headerText" value="Entity Type Details"/>
   &lt;property name="disclosure.defaultOpen" value="false"/>
-  &lt;property name="collectionObjectClass" value="org.kuali.rice.kim.impl.identity.EntityTypeDetailsBo"/>
-  &lt;property name="propertyName" value="entityTypeDetails"/>
   &lt;property name="help">
     &lt;bean parent="Uif-Help">
       &lt;property name="externalHelpUrl" value="docs/entityTypeDetails.html"/>
@@ -2661,80 +2665,103 @@
   &lt;/property>
   &lt;property name="items">
     &lt;list>
-      &lt;bean parent="Uif-DataField" p:attributeName="name"/>
-      &lt;bean parent="Uif-DataField" p:attributeName="value"/>
+      &lt;bean parent="Uif-MaintenanceStackedCollectionSection">
+        &lt;property name="collectionObjectClass" value="org.kuali.rice.kim.impl.identity.EntityTypeDetailsBo"/>
+        &lt;property name="propertyName" value="entityTypeDetails"/>
+        &lt;property name="items">
+          &lt;list>
+            &lt;bean p:propertyName="name" parent="Uif-InputField"/>
+            &lt;bean p:propertyName="value" parent="Uif-InputField"/>
+          &lt;/list>
+        &lt;/property>
+        &lt;property name="lineActions">
+          &lt;list>
+            &lt;bean parent="Uif-DeleteLineAction" p:render="@{isAddedCollectionItem(#line)}"/>
+            &lt;bean parent="Uif-SaveLineAction"/>
+          &lt;/list>
+        &lt;/property>
+        &lt;property name="duplicateLinePropertyNames">
+          &lt;list>
+            &lt;value>name&lt;/value>
+            &lt;value>value&lt;/value>
+          &lt;/list>
+        &lt;/property>
+      &lt;/bean>
     &lt;/list>
   &lt;/property>
-&lt;/bean></programlisting></para>
-  </section>
-  <section>
-    <title>Base Maintenance Bean</title>
-    <para>
-      <itemizedlist>
-        <listitem xml:id="MBB1">
-          <para>The parent bean of the maintenance document has changed from <emphasis role="keyword">MaintenanceDocumentEntry</emphasis>
-            to <emphasis role="keyword">uifMaintenanceDocumentEntry</emphasis>. [KNS line: 1, KRAD line: 1]
-            <inlinemediaobject>
-              <imageobject>
-                <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
-              </imageobject>
-            </inlinemediaobject></para>
-        </listitem>
-        <listitem xml:id="MBB2">
-          <para>The maintainable class for a given document is specified in the same way in KRAD as was
-            done in KNS using the <emphasis role="bold">maintainableClass</emphasis> property of
-            MaintenanceDocumentEntry. The maintainable class should extend <emphasis role="bold">
-              org.kuali.rice.krad.maintenance.MaintainableImpl.</emphasis>
-            [KNS line: 4, KRAD line: 4] <inlinemediaobject>
-              <imageobject>
-                <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
-              </imageobject>
-            </inlinemediaobject>
-          </para>
-        </listitem>
-        <listitem xml:id="MBB3">
-          <para>Maintenance sections are now referenced in a completely new bean parented by <emphasis role="keyword">Uif-MaintenanceView</emphasis>
-            instead of the KNS <emphasis role="keyword">MaintainableSectionDefinition</emphasis> beans.
-            Note that the sections are no longer referenced inside the <emphasis role="keyword">uifMaintenanceDocumentEntry</emphasis>
-            and instead are referenced in the view and are linked back to the <emphasis role="keyword">uifMaintenanceDocumentEntry</emphasis>
-            via <emphasis role="keyword">dataObjectClassName</emphasis> [KNS line: 12, KRAD line: 7]
-            <inlinemediaobject>
-              <imageobject>
-                <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
-              </imageobject>
-            </inlinemediaobject></para>
-        </listitem>
-        <listitem xml:id="MBB4">
-          <para>For including extra Javascript files, <emphasis role="keyword"
-                  >webScriptFiles</emphasis> has changed to <emphasis role="keyword"
-                  >additionalScriptFiles</emphasis>. [KNS line: 6-10, KRAD line: 9-13] <inlinemediaobject>
-            <imageobject>
-              <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
-            </imageobject>
-          </inlinemediaobject>
-          </para>
-        </listitem>
-      </itemizedlist>
-    </para>
-  </section>
-  <section>
-    <title>Sections</title>
+&lt;/bean></programlisting>
+      </para>
+    </section>
+    <section>
+      <title>Base Maintenance Bean</title>
+      <para>
+        <itemizedlist>
+          <listitem xml:id="MBB1">
+            <para>The parent bean of the maintenance document has changed from <emphasis
+                role="keyword">MaintenanceDocumentEntry</emphasis> to <emphasis role="keyword"
+                >uifMaintenanceDocumentEntry</emphasis>. [KNS line: 1, KRAD line: 1] <inlinemediaobject>
+                <imageobject>
+                  <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
+                </imageobject>
+              </inlinemediaobject></para>
+          </listitem>
+          <listitem xml:id="MBB2">
+            <para>The maintainable class for a given document is specified in the same way in KRAD
+              as was done in KNS using the <emphasis role="bold">maintainableClass</emphasis>
+              property of MaintenanceDocumentEntry. The maintainable class should extend <emphasis
+                role="bold"> org.kuali.rice.krad.maintenance.MaintainableImpl.</emphasis> [KNS line:
+              4, KRAD line: 4] <inlinemediaobject>
+                <imageobject>
+                  <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
+                </imageobject>
+              </inlinemediaobject>
+            </para>
+          </listitem>
+          <listitem xml:id="MBB3">
+            <para>Maintenance sections are now referenced in a completely new bean parented by
+                <emphasis role="keyword">Uif-MaintenanceView</emphasis> instead of the KNS <emphasis
+                role="keyword">MaintainableSectionDefinition</emphasis> beans. Note that the
+              sections are no longer referenced inside the <emphasis role="keyword"
+                >uifMaintenanceDocumentEntry</emphasis> and instead are referenced in the view and
+              are linked back to the <emphasis role="keyword">uifMaintenanceDocumentEntry</emphasis>
+              via <emphasis role="keyword">dataObjectClassName</emphasis> [KNS line: 12, KRAD line:
+              7] <inlinemediaobject>
+                <imageobject>
+                  <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
+                </imageobject>
+              </inlinemediaobject></para>
+          </listitem>
+          <listitem xml:id="MBB4">
+            <para>For including extra Javascript files, <emphasis role="keyword"
+                >webScriptFiles</emphasis> has changed to <emphasis role="keyword"
+                >additionalScriptFiles</emphasis>. [KNS line: 6-10, KRAD line: 9-13] <inlinemediaobject>
+                <imageobject>
+                  <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
+                </imageobject>
+              </inlinemediaobject>
+            </para>
+          </listitem>
+        </itemizedlist>
+      </para>
+    </section>
+    <section>
+      <title>Sections</title>
       <para>
         <itemizedlist>
           <listitem xml:id="MS1">
             <para>The title of the view is specified via the <emphasis role="keyword"
                 >headerText</emphasis> property instead of the <emphasis role="keyword"
-                >title</emphasis> property. [KNS line: 21, KRAD line: 24] <inlinemediaobject>
-              <imageobject>
-                <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
-              </imageobject>
-            </inlinemediaobject></para>
+                >title</emphasis> property. [KNS line: 21, KRAD line: 23] <inlinemediaobject>
+                <imageobject>
+                  <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
+                </imageobject>
+              </inlinemediaobject></para>
           </listitem>
           <listitem xml:id="MS2">
             <para>The property that controls whether the section defaults to open has moved from
-              <emphasis role="keyword">defaultOpen</emphasis> to the <emphasis role="keyword"
+                <emphasis role="keyword">defaultOpen</emphasis> to the <emphasis role="keyword"
                 >Disclosure</emphasis> object and is now accessed via <emphasis role="keyword"
-                >disclosure.defaultOpen</emphasis>. [KNS line: 22, KRAD line: 25] <inlinemediaobject>
+                >disclosure.defaultOpen</emphasis>. [KNS line: 22, KRAD line: 24] <inlinemediaobject>
                 <imageobject>
                   <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
                 </imageobject>
@@ -2743,9 +2770,9 @@
           </listitem>
           <listitem xml:id="MS3">
             <para>Help links specified by <emphasis role="keyword">helpUrl</emphasis> have now been
-              changed to a full <emphasis role="keyword">Uif-Help</emphasis> which contains a property
-              <emphasis role="keyword">externalHelpUrl</emphasis> where the link is now stored.
-              [KNS line: 23, KRAD line: 26-30] <inlinemediaobject>
+              changed to a full <emphasis role="keyword">Uif-Help</emphasis> which contains a
+              property <emphasis role="keyword">externalHelpUrl</emphasis> where the link is now
+              stored. [KNS line: 23, KRAD line: 25-29] <inlinemediaobject>
                 <imageobject>
                   <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
                 </imageobject>
@@ -2756,33 +2783,356 @@
       </para>
     </section>
     <section>
-      <title>MaintenanceDocumentPresentationController</title>
-        <para>KRAD splits the <emphasis role="keyword">MaintenanceDocumentPresentationController</emphasis>
-          interface into one for the maintenance entry and one for the maintenance view.  The one for
-          the maintenance entry is also named <emphasis role="keyword">MaintenanceDocumentPresentationController</emphasis>
-          but has been reparented.  The one for the maintenance view is <emphasis role="keyword">ViewPresentationController</emphasis>.
-        </para>
+      <title>Collections</title>
+      <para>
         <itemizedlist>
-          <listitem xml:id="MDPC1">
-            <para>Any references to <emphasis role="keyword">getConditionallyHiddenSectionIds</emphasis> and
-              <emphasis role="keyword">getConditionallyReadOnlySectionIds</emphasis> in <emphasis role="keyword">MaintenanceDocumentPresentationController</emphasis>
-              should be moved to <emphasis role="keyword">ViewPresentationController</emphasis> and
-              translated to <emphasis role="keyword">canViewGroup</emphasis> and <emphasis role="keyword">canEditGroup</emphasis>
-              respectively.
+          <listitem xml:id="MC1">
+            <para>The class of the collection is now specified by the <emphasis role="keyword"
+                >collectionObjectCLass</emphasis> property instead of the <emphasis role="keyword"
+                >businessObjectClass</emphasis> property. [KNS line: 41, KRAD line: 50] <inlinemediaobject>
+                <imageobject>
+                  <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
+                </imageobject>
+              </inlinemediaobject></para>
+          </listitem>
+          <listitem xml:id="MC2">
+            <para>The name of the collection within the parent object is now specified by the
+                <emphasis role="keyword">propertyName</emphasis> property instead of the <emphasis
+                role="keyword">name</emphasis> property. [KNS line: 42, KRAD line: 51] <inlinemediaobject>
+                <imageobject>
+                  <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
+                </imageobject>
+              </inlinemediaobject></para>
+          </listitem>
+          <listitem xml:id="MC3">
+            <para>The list of fields is now specified by the <emphasis role="keyword"
+                >items</emphasis> property instead of the <emphasis role="keyword"
+                >maintainableFields</emphasis> property. [KNS line: 43-47, KRAD line: 52-57] <inlinemediaobject>
+                <imageobject>
+                  <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
+                </imageobject>
+              </inlinemediaobject></para>
+          </listitem>
+          <listitem xml:id="MC4">
+            <para>To indicate which fields should be used to check for duplicate records is now
+              specified by the <emphasis role="keyword">duplicateLinePropertyNames</emphasis> and is
+              a simple list of property names, instead of the <emphasis role="keyword">
+                duplicateIdentificationFields</emphasis> property. [KNS line: 49-54, KRAD line:
+              64-69] <inlinemediaobject>
+                <imageobject>
+                  <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
+                </imageobject>
+              </inlinemediaobject></para>
+          </listitem>
+        </itemizedlist>
+      </para>
+    </section>
+    <section>
+      <title>Data Dictionary Features</title>
+      <para>
+        <itemizedlist>
+          <listitem xml:id="MDD1">
+            <para>In order to customize how the backing form populated after a lookup or refresh,
+              the KNS provided <emphasis role="keyword"
+                >DerivedValuesSetter.setDerivedValues</emphasis> which could update other objects on
+              the form when one object was updated via the request. KRAD provides a Uif property to
+              do this: <emphasis role="keyword">p:refreshWhenChangedPropertyNames="field1,
+                field2"</emphasis>. so that when an <emphasis role="keyword">InputField</emphasis>
+              specifying this property is updated, <emphasis role="keyword">field1</emphasis> and
+                <emphasis role="keyword">field2</emphasis> are refreshed as well. <inlinemediaobject>
+                <imageobject>
+                  <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
+                </imageobject>
+              </inlinemediaobject>
+            </para>
+          </listitem>
+          <listitem xml:id="MDD2">
+            <para>The KNS <emphasis role="keyword">PromptBeforeValidation</emphasis> class was used
+              to prompt the user with a question before continuing on with routing. This has been
+              deprecated in KRAD in favor of the new Dialog framework. To implement this, first
+              override the base Maintenance controller, call the dialog right before routing, and
+              get the dialog response from <emphasis role="keyword"
+                >getBooleanDialogResponse</emphasis>. Next in the Uif, add the dialog to the
+                <emphasis role="keyword">MaintenanceView.dialogs</emphasis> property. <programlisting linenumbering="numbered">&lt;property name="dialogs">
+  &lt;list>
+    &lt;bean id="routeConfirmationDialog" parent="Uif-OK-Cancel-DialogGroup" p:promptText="Would you like to route?"/>
+  &lt;/list>
+&lt;/property></programlisting>
               <inlinemediaobject>
                 <imageobject>
                   <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
                 </imageobject>
+              </inlinemediaobject>
+            </para>
+          </listitem>
+          <listitem xml:id="MDD3">
+            <para>The KNS <emphasis role="keyword">LookupReadonlyControlDefinition</emphasis>which
+              displayed only a quickfinder icon has been replaced. To create quickfinder only input
+              with no text input field, set the widgetInputOnly property on the <emphasis
+                role="keyword">InputField</emphasis>. <programlisting linenumbering="numbered">&lt;bean parent="Uif-InputField" p:propertyName="field" p:widgetInputOnly="true">
+  &lt;property name="quickfinder">
+    &lt;bean parent="Uif-QuickFinder"/>
+  &lt;/property>
+&lt;/bean></programlisting>
+              <inlinemediaobject>
+                <imageobject>
+                  <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
+                </imageobject>
+              </inlinemediaobject>
+            </para>
+          </listitem>
+          <listitem xml:id="MDD4">
+            <para>While default values can be specified via finders, they can also be specified
+              directly on the Uif with complete expression support.
+              <programlisting linenumbering="numbered">&lt;bean parent="Uif-InputField" p:propertyName="field" p:defaultValue="@{field2}"/></programlisting></para>
+          </listitem>
+          <listitem xml:id="MDD5">
+            <para>Several fields have been removed in favor of the new conditional <emphasis
+                role="keyword">readOnly</emphasis>. The <emphasis role="keyword"
+                >p:unconditionallyReadOnly="true"</emphasis> can be replaced directly by <emphasis
+                role="keyword">p:readOnly="true"</emphasis>, while <emphasis role="keyword"
+                >p:readOnlyAfterAdd="true"</emphasis> can be replaced with <emphasis role="keyword"
+                >p:readOnly="@{!#isAddLine}"</emphasis>. <inlinemediaobject>
+                <imageobject>
+                  <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
+                </imageobject>
+              </inlinemediaobject>
+            </para>
+          </listitem>
+          <listitem xml:id="MDD6">
+            <para>When the document is in read only mode, an alternate property can be displayed for
+              a field. The KNS property <emphasis role="keyword"
+                >p:alternateDisplayAttributeName="field"</emphasis> has been replaced with the KRAD
+              equivalent <emphasis role="keyword"
+                >p:readOnlyDisplayReplacementPropertyName="field"</emphasis>. <inlinemediaobject>
+                <imageobject>
+                  <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
+                </imageobject>
+              </inlinemediaobject>
+            </para>
+          </listitem>
+          <listitem xml:id="MDD7">
+            <para>When the document is in read only mode, an additional property can be displayed
+              with a field. The KNS property <emphasis role="keyword"
+                >p:additionalDisplayAttributeName="field"</emphasis> has been replaced with the KRAD
+              equivalent <emphasis role="keyword"
+                >p:readOnlyDisplaySuffixPropertyName="field"</emphasis>. <inlinemediaobject>
+                <imageobject>
+                  <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
+                </imageobject>
+              </inlinemediaobject>
+            </para>
+          </listitem>
+          <listitem xml:id="MDD8">
+            <para>In order to control whether the add line in a collection should be shown, the KNS
+              provided <emphasis role="keyword">&lt;property name="includeAddLine"
+                value="false"/></emphasis>. The setup in KRAD is a bit more complex but a lot more
+              flexible as it allows implementers to control the exactly when the line should be
+              shown or not depending on an expression. <programlisting linenumbering="numbered">&lt;bean parent="Uif-MaintenanceStackedCollectionSection">
+  &lt;property name="addLineActions">
+    &lt;list>
+      &lt;bean parent="Uif-SecondaryActionButton-Small" p:methodToCall="addLine" p:actionLabel="add" p:hidden="true"/>
+    &lt;/list>
+  &lt;/property>
+&lt;/bean></programlisting>
+              <inlinemediaobject>
+                <imageobject>
+                  <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
+                </imageobject>
+              </inlinemediaobject>
+            </para>
+          </listitem>
+          <listitem xml:id="MDD9">
+            <para>To specify whether items can be deleted from a collection, the KNS provided the
+              property <emphasis role="keyword">p:alwaysAllowCollectionDeletion="true"</emphasis>.
+              This has been removed in KRAD but has an equivalent replacement: <programlisting linenumbering="numbered">&lt;property name="lineActions">
+  &lt;list>
+    &lt;bean parent="Uif-DeleteLineAction" p:render="@{isAddedCollectionItem(#line)}"/>
+    &lt;bean parent="Uif-SaveLineAction"/>
+  &lt;/list>
+&lt;/property></programlisting>
+              <inlinemediaobject>
+                <imageobject>
+                  <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
+                </imageobject>
+              </inlinemediaobject>
+            </para>
+          </listitem>
+        </itemizedlist>
+      </para>
+    </section>
+    <section xml:id="MMVL">
+      <title>Maintenance Multiple Value Lookups</title>
+      <para>Multiple value lookups allow for a collection on a maintenance document to be populated
+        with multiple results at once, rather than forcing the user to iteratively add results one
+        after another. For a maintenance document to use a multiple value lookup, the maintenance
+        document must contain a collection, and a collection lookup must be configured for that
+        collection.</para>
+      <para><emphasis role="bold">KNS code example:</emphasis>
+        <programlisting linenumbering="numbered">&lt;bean parent="MaintainableCollectionDefinition">
+  ...
+  &lt;property name="businessObjectClass" value="org.kuali.rice.kim.impl.identity.EntityTypeDetailsBo"/>
+  &lt;property name="sourceClassName" value="org.kuali.rice.kim.impl.identity.CustomEntityTypeDetailsBo"/>
+  &lt;property name="includeMultipleLookupLine" value="true"/> 
+  &lt;property name="maintainableFields">
+    &lt;list>
+      &lt;bean parent="MaintainableFieldDefinition" p:name="name" p:required="true" p:template="detailName"/>
+      &lt;bean parent="MaintainableFieldDefinition" p:name="value" p:required="true" p:template="detailValue"/>
+    &lt;/list>
+  &lt;/property>
+&lt;/bean></programlisting>
+        <emphasis role="bold">KRAD code example:</emphasis>
+      </para>
+      <para>
+        <programlisting linenumbering="numbered">&lt;bean parent="Uif-Disclosure-StackedCollectionSection">
+  ...
+  &lt;property name="collectionObjectClass" value="org.kuali.rice.kim.impl.identity.EntityTypeDetailsBo"/>
+  &lt;property name="collectionLookup">
+    &lt;bean parent="Uif-CollectionQuickFinder"
+             p:dataObjectClassName="org.kuali.rice.kim.impl.identity.CustomEntityTypeDetailsBo"
+             p:fieldConversions="detailName:name,detailValue:value"/>
+  &lt;/property>
+  &lt;property name="items">
+    &lt;list>
+      &lt;bean parent="Uif-DataField" p:attributeName="name"/>
+      &lt;bean parent="Uif-DataField" p:attributeName="value"/>
+    &lt;/list>
+  &lt;/property>
+&lt;/bean></programlisting>
+      </para>
+      <para>
+        <itemizedlist>
+          <listitem>
+            <para>In KNS the <emphasis role="keyword">MaintainableCollectionDefinition</emphasis> is
+              used to specify collections on a maintenance document. With KRAD, one of the Uif
+              collection groups is used. <inlinemediaobject>
+                <imageobject>
+                  <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
+                </imageobject>
+              </inlinemediaobject></para>
+          </listitem>
+          <listitem>
+            <para>In KNS the <emphasis role="keyword">includeMultipleLookupLine</emphasis> property
+              was set to true and the <emphasis role="keyword">sourceClassName</emphasis> was
+              specified to enable multiple value lookups on the collection, using the <emphasis
+                role="keyword">template</emphasis> fields for the field conversions. In KRAD these
+              properties do no longer exist. Instead the <emphasis role="keyword"
+                >collectionLookup</emphasis> property is initialized with the <emphasis
+                role="keyword">Uif-CollectionQuickfinder</emphasis> bean. <inlinemediaobject>
+                <imageobject>
+                  <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
+                </imageobject>
+              </inlinemediaobject></para>
+          </listitem>
+          <listitem>
+            <para><emphasis role="keyword">Uif-CollectionQuickfinder</emphasis> has the following
+              properties but do not need to be specified if the collectionObjectClass of the
+              collection group is the same as the dataObjectClassName of the multi value
+              lookup:</para>
+            <itemizedlist>
+              <listitem>
+                <para>dataObjectClassName - the data object that should be looked up<inlinemediaobject>
+                    <imageobject>
+                      <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
+                    </imageobject>
+                  </inlinemediaobject></para>
+              </listitem>
+              <listitem>
+                <para>fieldConversions - from-to mapping of the returned data (&lt;lookup-field>:&lt;maintenance-collection-field>)<inlinemediaobject>
+                    <imageobject>
+                      <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
+                    </imageobject>
+                  </inlinemediaobject></para>
+              </listitem>
+            </itemizedlist>
+          </listitem>
+        </itemizedlist>
+      </para>
+    </section>
+    <section xml:id="MBC">
+      <title>Base Maintenance Class</title>
+      <para>Custom documents that extended <emphasis role="keyword"
+          >org.kuali.rice.kns.document.MaintenanceDocumentBase</emphasis> will need to reparent to
+          <emphasis role="keyword"
+          >org.kuali.rice.krad.maintenance.MaintenanceDocumentBase</emphasis>. <inlinemediaobject>
+          <imageobject>
+            <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
+          </imageobject>
+        </inlinemediaobject>
+      </para>
+    </section>
+    <section xml:id="MSC">
+      <title>Section Customization</title>
+      <para>The KNS provided the hook <emphasis role="keyword">Maintainable.getSections</emphasis>
+        to allow tweaking the section objects to be read only or hidden. Now that KRAD provides
+        dynamic fields on the Uif, this functionality is deprecated in favor of the dynamic fields.
+        These should be used to configure when a given section is read only or hidden. An example of
+        this would be to specify <emphasis role="keyword">p:readOnly="@{#dp.propertyName eq
+          null}"</emphasis>. <inlinemediaobject>
+          <imageobject>
+            <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
+          </imageobject>
+        </inlinemediaobject>
+      </para>
+    </section>
+    <section xml:id="MCC">
+      <title>Collection Customization</title>
+      <para>KNS provided the container <emphasis role="keyword"
+          >Maintainable.newCollectionLines</emphasis> for lines being added to a collection to
+        prevent them from being persisted until added. KRAD provides <emphasis role="keyword"
+          >UifFormBase.newCollectionLines</emphasis> which is similar but also allows customizing
+        the property names and <emphasis role="keyword">BindingInfo</emphasis> via <emphasis
+          role="keyword">CollectionGroup.addLinePropertyName</emphasis> and <emphasis role="keyword"
+          >CollectionGroup.addLineBindingInfo</emphasis>. </para>
+    </section>
+    <section xml:id="MRC">
+      <title>Rule Customization</title>
+      <para>The KNS provided methods for setting up convenience objects to process the rules. These
+        methods, <emphasis role="keyword"
+          >org.kuali.rice.kns.rules.MaintenanceDocumentRule.setupBaseConvenienceObjects</emphasis>
+        and <emphasis role="keyword"
+          >org.kuali.rice.kns.rules.MaintenanceDocumentRule.setupConvenienceObjects</emphasis> haved
+        been reparented and can now be overridden in <emphasis role="keyword"
+          >org.kuali.rice.krad.rules.MaintenanceDocumentRule.setupBaseConvenienceObjects</emphasis>
+        and <emphasis role="keyword"
+          >org.kuali.rice.krad.rules.MaintenanceDocumentRule.setupConvenienceObjects</emphasis>,
+        respectively. <inlinemediaobject>
+          <imageobject>
+            <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
+          </imageobject>
+        </inlinemediaobject>
+      </para>
+    </section>
+    <section>
+      <title>MaintenanceDocumentPresentationController</title>
+      <para>KRAD splits the <emphasis role="keyword"
+          >MaintenanceDocumentPresentationController</emphasis> interface into one for the
+        maintenance entry and one for the maintenance view. The one for the maintenance entry is
+        also named <emphasis role="keyword">MaintenanceDocumentPresentationController</emphasis> but
+        has been reparented. The one for the maintenance view is <emphasis role="keyword"
+          >ViewPresentationController</emphasis>. </para>
+      <itemizedlist>
+        <listitem xml:id="MDPC1">
+          <para>Any references to <emphasis role="keyword"
+              >getConditionallyHiddenSectionIds</emphasis> and <emphasis role="keyword"
+              >getConditionallyReadOnlySectionIds</emphasis> in <emphasis role="keyword"
+              >MaintenanceDocumentPresentationController</emphasis> should be moved to <emphasis
+              role="keyword">ViewPresentationController</emphasis> and translated to <emphasis
+              role="keyword">canViewGroup</emphasis> and <emphasis role="keyword"
+              >canEditGroup</emphasis> respectively. <inlinemediaobject>
+              <imageobject>
+                <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
+              </imageobject>
             </inlinemediaobject>
           </para>
         </listitem>
         <listitem xml:id="MDPC2">
-          <para>Sections can contain an ID attribute in KRAD just like they could in the KNS.  However,
-            if this ID was not specified in the KNS, it defaulted to the tab name. In KRAD, this defaults
-            to the bean name, so implementers using this defaulting capability in the <emphasis role="keyword">getConditionallyHiddenSectionIds</emphasis>
-            and <emphasis role="keyword">getConditionallyReadOnlySectionIds</emphasis> methods will
-            need to change any references from the tab name to the bean name.
-            <inlinemediaobject>
+          <para>Sections can contain an ID attribute in KRAD just like they could in the KNS.
+            However, if this ID was not specified in the KNS, it defaulted to the tab name. In KRAD,
+            this defaults to the bean name, so implementers using this defaulting capability in the
+              <emphasis role="keyword">getConditionallyHiddenSectionIds</emphasis> and <emphasis
+              role="keyword">getConditionallyReadOnlySectionIds</emphasis> methods will need to
+            change any references from the tab name to the bean name. <inlinemediaobject>
               <imageobject>
                 <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
               </imageobject>
@@ -2791,65 +3141,62 @@
         </listitem>
       </itemizedlist>
     </section>
-    <section>
+    <section xml:id="MJS">
       <title>Specifying a javascript function to call on tab out from a field</title>
-      <para>
-        <itemizedlist>
-          <listitem xml:id="MBA1">
-            <para> In KNS this was achieved using <emphasis role="bold">
-                MaintainableFieldDefinition. webUILeaveFieldFunction</emphasis>.
-              <programlisting linenumbering="numbered">&lt;bean parent="MaintainableFieldDefinition" p:name="name" p:required="false"
-      p:webUILeaveFieldFunction="alert('you are out')"/></programlisting>
-              However in KRAD Component classes include properties for events that are applicable to
-              the generate HTML elements. The same functionality can be obtained using the <emphasis
-                role="bold">ComponentBase.onBlurScript</emphasis>
-              <programlisting>&lt;bean parent="Uif-TextAreaControl" p:rows="5" p:cols="40">
-  &lt;property name="onBlurScript" 
-            value="jq(this).stop().animate({'height':'-=50px'},100);"/>
+      <para> In KNS this was achieved using <emphasis role="bold"
+          >MaintainableFieldDefinition.webUILeaveFieldFunction</emphasis>.
+        <programlisting linenumbering="numbered">&lt;bean parent="MaintainableFieldDefinition" p:name="name" p:required="false"
+  p:webUILeaveFieldFunction="alert('you are out')"/></programlisting>However
+        in KRAD Component classes include properties for events that are applicable to the generate
+        HTML elements. The same functionality can be obtained using the <emphasis role="bold"
+          >ComponentBase.onBlurScript</emphasis>.  The <emphasis role="bold"
+          >MaintainableFieldDefinition.webUILeaveFieldFunction</emphasis> is transformed to a
+          <emphasis role="bold">onBlurScript</emphasis> property.<inlinemediaobject>
+          <imageobject>
+            <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
+          </imageobject>
+        </inlinemediaobject>  A TODO  comment will be added "TODO - Check if javascript is still
+        relevant and correct".   <inlinemediaobject>
+          <imageobject>
+            <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
+          </imageobject>
+        </inlinemediaobject>
+        <programlisting>&lt;bean parent="Uif-TextAreaControl" p:rows="5" p:cols="40">
+  &lt;property name="onBlurScript" value="jq(this).stop().animate({'height':'-=50px'},100);"/>
 &lt;/bean></programlisting>
-            </para>
-          </listitem>
-        </itemizedlist>
       </para>
     </section>
-    <section>
+    <section xml:id="MHF">
       <title>Specifying help URL on a per-field basis</title>
-      <para>
-        <itemizedlist>
-          <listitem>
-            <para> In KNS <emphasis role="bold"> System parameter ENABLE_FIELD_LEVEL_HELP_IND
-                enables help on all fields</emphasis> enables help on all fields. You could set help
-              at the field\BO\document page level. In KRAD the <emphasis role="bold">Help
-                widget</emphasis> is used to render tooltip help and/or external help. Help can be
-              configured at the view, page, section or sub-section, or at the field level. Tooltip
-              help content is defined in the data dictionary.
-              <programlisting linenumbering="numbered">&lt;bean parent="Uif-TextControl">
+      <para> In KNS <emphasis role="bold"> System parameter ENABLE_FIELD_LEVEL_HELP_IND enables help
+          on all fields</emphasis> enables help on all fields. You could set help at the
+        field\BO\document page level. In KRAD the <emphasis role="bold">Help widget</emphasis> is
+        used to render tooltip help and/or external help. Help can be configured at the view, page,
+        section or sub-section, or at the field level. Tooltip help content is defined in the data
+        dictionary.<programlisting linenumbering="numbered">&lt;bean parent="Uif-TextControl">
   &lt;property name="help">
     &lt;bean parent="Uif-Help" p:tooltipHelpContent="This is my help text"/>
   &lt;/property>
 &lt;/bean></programlisting>
-              External Help can be specified via the data dictionary, or through a system parameter. <programlisting linenumbering="numbered">&lt;bean parent="Uif-View">
+        External Help can be specified via the data dictionary, or through a system parameter. <programlisting linenumbering="numbered">&lt;bean parent="Uif-View">
   &lt;property name="help">
     &lt;bean parent="Uif-Help" p:externalHelpUrl="http://www.kuali.org/"/>
   &lt;/property>
 &lt;/bean></programlisting>
-            <programlisting linenumbering="numbered">&lt;bean parent="Uif-View"&gt;
+        <programlisting linenumbering="numbered">&lt;bean parent="Uif-View"&gt;
   &lt;property name="help">
     &lt;bean parent="Uif-Help">
       &lt;property name="helpDefinition">
-        &lt;bean parent="HelpDefinition" p:parameterNamespace="KR-SAP" 
-              p:parameterName="TEST_PARAM" 
-              p:parameterDetailType="TEST_COMPONENT"/>
+        &lt;bean parent="HelpDefinition" p:parameterNamespace="KR-SAP"
+                 p:parameterName="TEST_PARAM"
+                 p:parameterDetailType="TEST_COMPONENT"/>
       &lt;/property>
     &lt;/bean>
   &lt;/property>
 &lt;/bean></programlisting>
-            </para>
-          </listitem>
-        </itemizedlist>
       </para>
     </section>
-    <section>
+    <section xml:id="MADV">
       <title>Additional display value</title>
       <para>In KNS <emphasis role="bold"> LookupDefinition.translateCode</emphasis>
         <emphasis role="bold"> FieldUtils.setAdditionalDisplayPropertyForCodes </emphasis> gave the
@@ -2864,14 +3211,85 @@
         relationship configured in the datadictionary file and set the name additional display value
         which will be displayed along with the code </para>
     </section>
-    <section>
+    <section xml:id="MA">
+      <title>Attachments</title>
+      <para> The KNS provided a way to download an attachment from a Maintenance Document. Typically
+        this was specified both in the business object and the data dictionary as follows: <programlisting linenumbering="numbered">private String fileName;
+private String contentType;
+private byte[] attachmentContent;
+private transient FormFile attachmentFile;</programlisting>
+        <programlisting linenumbering="numbered">&lt;bean id ="AttachmentSample-attachmentFile" parent="AttributeDefinition">
+  &lt;property name="name" value="attachmentFile" />
+  &lt;property name="label" value="Attachment File" />
+  &lt;property name="control">
+    &lt;bean parent="FileControlDefinition" p:size="50" />
+  &lt;/property>
+&lt;/bean></programlisting>
+        In KRAD, because of the transition to Spring, this configuration needs to be changed with
+        some additional setup. The Struts <emphasis role="bold">FormFile</emphasis> should change to
+          <emphasis role="bold">MultipartFile</emphasis> but should include some additional setup to
+        make sure that all of the rest of the variables are set on the form. KRAD also provides an
+        intelligent way to display the attachments depending on whether the attachment is null or
+        not. When the attachment exists, then this setup allows downloading the attachment via a
+        button. When the attachment is null, the <emphasis role="bold"
+          >Uif-ConditionalBeanPropertyReplacer</emphasis> replaces the button with a simple
+          <emphasis role="bold">Uif-FileControl</emphasis>. <programlisting linenumbering="numbered">private String fileName;
+private String contentType;
+private byte[] attachmentContent;
+private transient MultipartFile attachmentFile;
+
+public void setAttachmentFile(MultipartFile attachmentFile) {
+  if (attachmentFile != null) {
+    setContentType(attachmentFile.getContentType());
+    setFileName(attachmentFile.getOriginalFilename());
+    try {
+      setAttachmentContent(attachmentFile.getBytes());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+}</programlisting>
+        <programlisting linenumbering="numbered">&lt;bean parent="Uif-VerticalFieldGroup" p:label="Attachment File">
+  &lt;property name="items">
+    &lt;list>
+      &lt;bean parent="Uif-DataField" p:fieldLabel.render="false" p:propertyName="fileName" />
+      &lt;bean parent="Uif-PrimaryActionButton-Small" p:methodToCall="downloadBOAttachment"
+               p:actionLabel="download attachment" p:title="download attachment"
+               p:ajaxSubmit="false" p:disableBlocking="true"
+               p:onClickScript="writeHiddenToForm(&quot;ajaxReturnType&quot;, &quot;update-none&quot;);">
+        &lt;property name="actionParameters">
+          &lt;map>
+            &lt;entry key="selectedLineIndex" value="@{#index}"/>
+          &lt;/map>
+        &lt;/property>
+      &lt;/bean>
+    &lt;/list>
+  &lt;/property>
+  &lt;property name="propertyReplacers">
+    &lt;list>
+      &lt;bean parent="Uif-ConditionalBeanPropertyReplacer" p:propertyName="items" p:condition="@{#dp.fileName eq null}">
+        &lt;property name="replacement">
+          &lt;list>
+            &lt;bean parent="Uif-InputField" p:propertyName="attachmentFile" p:fieldLabel.render="false">
+              &lt;property name="control">
+                &lt;bean parent="Uif-FileControl" p:size="50"/>
+              &lt;/property>
+            &lt;/bean>
+          &lt;/list>
+        &lt;/property>
+      &lt;/bean>
+    &lt;/list>
+  &lt;/property>
+&lt;/bean></programlisting></para>
+    </section>
+    <section xml:id="MODV">
       <title>Overriding default values</title>
       <para> In KNS <emphasis role="bold">Maintainable.setGenerateDefaultValues</emphasis> was used
         to set the default values for fields. However in KRAD this functionality is provided by
           <emphasis role="bold"> ViewHelperServiceImpl.applyDefaultValues</emphasis>. This is called
         during the finalize phase of the view cycle before the view is rendered. </para>
     </section>
-    <section>
+    <section xml:id="MCH">
       <title>Customization Hooks</title>
       <para>Customization hooks have been provided for the various actions that can be performed on
         a maintenance document. It involves overriding the specific methods related to that action
@@ -2910,18 +3328,37 @@
         </itemizedlist>
       </para>
     </section>
-    <section>
-      <title>Preparing the BO as part of document setup </title>
-      <para> In KNS the business object was set up as part document setup using the
-        Maintainable.prepareBusinessObject. In KRAD this has been replaced by using
-        MaintenanceDocumentService.setupMaintenanceObject.</para>
-      <para><emphasis role="bold">KNS BO
-          Preparation:</emphasis><programlisting linenumbering="numbered">public void prepareBusinessObject(BusinessObject businessObject);         </programlisting><emphasis
-          role="bold">KRAD BO Preparation:
-        </emphasis><programlisting linenumbering="numbered">public void setupMaintenanceObject(MaintenanceDocument document, 
-    String maintenanceAction, Map&lt;String, String[]&gt; requestParameters);</programlisting></para>
+    <section xml:id="MPEBO">
+      <title>Preparing the BO from an external source</title>
+      <para>In the KNS an external business object was set up using <emphasis role="bold"
+          >org.kuali.rice.kns.maintenance.Maintainable.prepareBusinessObject</emphasis>. To activate
+        this, implementers also had to override <emphasis role="bold"
+          >org.kuali.rice.kns.maintenance.Maintainable.isExternalBusinessObject</emphasis> to return
+        true. In KRAD this functionality has been moved to <emphasis role="bold"
+          >org.kuali.rice.krad.maintenance.Maintainable</emphasis> and replaced. Different methods
+        should be overridden depending on whether the external BO being loaded is from the database
+        or not.</para>
+      <para><emphasis role="bold">KNS BO Preparation:</emphasis>
+        <programlisting linenumbering="numbered">public boolean isExternalBusinessObject();
+public void prepareBusinessObject(BusinessObject businessObject);</programlisting>
+        <emphasis role="bold">KRAD Database BO Preparation:</emphasis>
+        <programlisting linenumbering="numbered">public boolean isExternalBusinessObject();
+public void prepareExternalBusinessObject(BusinessObject businessObject);</programlisting>
+        <emphasis role="bold">KRAD Non-Database BO Preparation:</emphasis>
+        <programlisting linenumbering="numbered">public void retrieveObjectForEditOrCopy(MaintenanceDocument document, Map&lt;String, String> dataObjectKeys);</programlisting>
+      </para>
     </section>
-    <section>
+    <section xml:id="MPBO">
+      <title>Custom BO setup</title>
+      <para>While external Business Objects have methods to handle their setup, there is no way to
+        change the old Business Object after it is loaded but before it is copied into the new
+        Business Object. In edge cases where this needs to happen, the above methods can be used,
+        but it is better to use <emphasis role="bold"
+          >org.kuali.rice.krad.maintenance.Maintainable.processAfterCopy</emphasis> or <emphasis
+          role="bold">org.kuali.rice.krad.maintenance.Maintainable.processAfterEdit</emphasis> if
+        processing can wait until the new Business Object has been created.</para>
+    </section>
+    <section xml:id="MRR">
       <title>Refreshing references </title>
       <para>Specifying which reference objects to refresh on a document can be configured by using
         the <emphasis>referencesToRefresh</emphasis> property. It specifies primary keys of
@@ -2933,9 +3370,15 @@
     <section>
       <title>Permission Checks</title>
       <para>Permission checks for maintenance documents in KRAD can be setup the same way as
-        specified in the Other Lookup Features. Examples below.</para>
+        specified in the Other Lookup Features. Note that if any implementers are extending a KNS
+        base class, they need to move that logic over to a KRAD base class. Examples below.  <inlinemediaobject>
+          <imageobject>
+            <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
+          </imageobject>
+        </inlinemediaobject>
+      </para>
       <itemizedlist>
-        <listitem>
+        <listitem xml:id="MPC1">
           <para> Partial Unmask Field checks if a security-masked field can be partially displayed.
             In KNS this was checked using the
               <emphasis>BusinessObjectAuthorizationServiceImpl.canPartiallyUnmaskField.</emphasis>
@@ -2943,9 +3386,9 @@
               <emphasis>ViewAuthorizer.canPartialUnmaskField.</emphasis> Enabled by setting
               <emphasis>attributeSecurity.partialMask</emphasis> to true on the data field security
             object of the data. Implementers will have manually do the conversion and move any
-            custom logic in the new method. </para>
+            custom logic in the new method.  </para>
         </listitem>
-        <listitem>
+        <listitem xml:id="MPC2">
           <para> Full Unmask Field checks if a security-masked field can be displayed in the clear.
             In KNS this was checked using the
               <emphasis>BusinessObjectAuthorizationServiceImpl.canFullyUnmaskField.</emphasis> In
@@ -2954,7 +3397,7 @@
             security object of the data. Implementers will have manually do the conversion and move
             any custom logic in the new method. </para>
         </listitem>
-        <listitem>
+        <listitem xml:id="MPC3">
           <para>Modify Maintenance Document Section - In KNS this was accomplished using the
               <emphasis>
               BusinessObjectAuthorizationServiceImpl.considerMaintenanceDocumentAuthorizer
@@ -2963,6 +3406,56 @@
               <emphasis>ViewAuthorizer.canEditGroup.</emphasis> Any custom logic will need to be
             moved to the new method. A new permission which extends the KR-KRAD <emphasis>Edit Group
               template</emphasis> will have to be created. </para>
+        </listitem>
+        <listitem xml:id="MPC4">
+          <para>View Inquiry or Maintenance Document Section - In KNS this was accomplished using
+            the <emphasis>
+              BusinessObjectAuthorizationServiceImpl.considerInquiryOrMaintenanceDocumentAuthorizer
+            </emphasis> and a permission extending the KR-NS <emphasis>View Inquiry or Maintenance
+              Document Section.</emphasis> In KRAD the method has changed to
+              <emphasis>ViewAuthorizer.canViewGroup.</emphasis> Any custom logic will need to be
+            moved to the new method. A new permission which extends the KR-KRAD <emphasis>View Group
+              template</emphasis> will have to be created. </para>
+        </listitem>
+        <listitem xml:id="MPC5">
+          <para>Modify Maintenance Document Field - In KNS this was accomplished using the
+              <emphasis>
+              BusinessObjectAuthorizationServiceImpl.considerBusinessObjectFieldModifyAuthorization
+            </emphasis> and a permission extending the KR-NS <emphasis>Modify Maintenance Document
+              Field.</emphasis> In KRAD the method has changed to
+              <emphasis>ViewAuthorizer.canEditField.</emphasis> Any custom logic will need to be
+            moved to the new method. A new permission which extends the KR-KRAD <emphasis>Edit Field
+              template</emphasis> will have to be created. </para>
+        </listitem>
+        <listitem xml:id="MPC6">
+          <para>View Inquiry or Maintenance Document Field - In KNS this was accomplished using the
+              <emphasis>
+              BusinessObjectAuthorizationServiceImpl.considerBusinessObjectFieldViewAuthorization
+            </emphasis> and a permission extending the KR-NS <emphasis>View Inquiry or Maintenance
+              Document Field.</emphasis> In KRAD the method has changed to
+              <emphasis>ViewAuthorizer.canViewField.</emphasis> Any custom logic will need to be
+            moved to the new method. A new permission which extends the KR-KRAD <emphasis>View Field
+              template</emphasis> will have to be created. </para>
+        </listitem>
+        <listitem xml:id="MPC7">
+          <para>Perform Custom Maintenance Document Function - In KNS this was accomplished using
+            the <emphasis>
+              BusinessObjectAuthorizationServiceImpl.considerCustomButtonFieldAuthorization
+            </emphasis> and a permission extending the KR-NS <emphasis>Perform Custom Maintenance
+              Document Function.</emphasis> In KRAD the logic has moved to the Uif under
+              <emphasis>Uif-ActionSecurity.</emphasis> Any custom logic will need to be moved to the
+            new definition below. A new permission which extends the KR-KRAD <emphasis>Perform
+              Action template</emphasis> will have to be created.
+            <programlisting linenumbering="numbered">&lt;bean parent="Uif-ActionField" p:label="Button">
+  &lt;property name="action">
+    &lt;bean parent="Uif-PrimaryActionButton" p:id="button" p:actionLabel="Button" p:methodToCall="Button">
+      &lt;property name="componentSecurity">
+        &lt;bean parent="Uif-ActionSecurity" p:performActionAuthz="true" />
+      &lt;/property>
+    &lt;/bean>
+  &lt;/property>
+&lt;/bean></programlisting>
+          </para>
         </listitem>
       </itemizedlist>
     </section>
@@ -3001,12 +3494,25 @@
             <para>Where it used to be possible to specify additional non-standard sections via the
               Data Dictionary property <emphasis role="keyword">additionalSectionsFile</emphasis>,
               this is no longer possible since KRAD does not use JSP, preferring instead to use
-              Freemarker.  The conversion from JSP files to the KRAD format will vary from use
-              case to use case, and thus it is not possible to provide a straight conversion from
-              JSP to Freemarker.  KRAD does however address natively many of the typical non-standard
+              Freemarker. The conversion from JSP files to the KRAD format will vary from use case
+              to use case, and thus it is not possible to provide a straight conversion from JSP to
+              Freemarker. KRAD does however address natively many of the typical non-standard
               layouts previously addressed by this feature, and implementers can always choose to
-              create custom components to address any other requirements.
-              <inlinemediaobject>
+              create custom components to address any other requirements. <inlinemediaobject>
+                <imageobject>
+                  <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
+                </imageobject>
+              </inlinemediaobject>
+            </para>
+          </listitem>
+          <listitem xml:id="MOF2">
+            <para>To enable Externalizable Business Objects, users of the KNS would often override
+              the indicator <emphasis role="keyword"
+                >org.kuali.rice.kns.maintenance.Maintainable.isExternalBusinessObject</emphasis>. In
+              KRAD, this has been moved to <emphasis role="keyword"
+                >org.kuali.rice.krad.maintenance.Maintainable.isExternalBusinessObject</emphasis>.
+              If this has been implemented in an old KNS class, then the logic must be moved to the
+              new KRAD class. <inlinemediaobject>
                 <imageobject>
                   <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
                 </imageobject>
@@ -3023,170 +3529,880 @@
   </section>
   <section>
     <title>KIM Permission Conversion</title>
-    <note><para>Currently there is no conversion script to automatically convert or create new KRAD KIM permissions from KNS permissions.
-      This section of the guide documents the KIM structures involved and the KNS / KRAD equivalents.  To illustrate the various KIM entities,
-      examples from the Rice KIM management screens are shown.</para></note>
-    <para>KRAD uses KIM permissions for checking the ability to open views, view  and edit groups, lines and fields, as well as
-      the ability to perform actions.  In several instances the KRAD permissions are similar to their KNS counterparts, but use different
-      permissions templates and qualifiers.  But there are some differences:      <itemizedlist>
-        <listitem><para>In KNS the permission was checked against the business object. In KRAD, the permission is checked against the view name.
-          And you may have multiple views on the same object with different permissions.</para></listitem>
-        <listitem><para>In KRAD a view is viewable by all authenticated users by default. In this case, no KIM permissions need to be defined.
-          In KNS, a default KIM permission of the appropriate type is required, with the derived role USER assigned to it.</para></listitem>
+    <note>
+      <para>Currently there is no conversion script to automatically convert or create new KRAD KIM
+        permissions from KNS permissions. This section of the guide documents the KIM structures
+        involved and the KNS / KRAD equivalents. To illustrate the various KIM entities, examples
+        from the Rice KIM management screens are shown.</para>
+    </note>
+    <para>KRAD uses KIM permissions for checking the ability to open views, view and edit groups,
+      lines and fields, as well as the ability to perform actions. In several instances the KRAD
+      permissions are similar to their KNS counterparts, but use different permissions templates and
+      qualifiers. But there are some differences: <itemizedlist>
+        <listitem>
+          <para>In KNS the permission was checked against the business object. In KRAD, the
+            permission is checked against the view name. And you may have multiple views on the same
+            object with different permissions.</para>
+        </listitem>
+        <listitem>
+          <para>In KRAD a view is viewable by all authenticated users by default. In this case, no
+            KIM permissions need to be defined. In KNS, a default KIM permission of the appropriate
+            type is required, with the derived role USER assigned to it.</para>
+        </listitem>
       </itemizedlist>
     </para>
-    <para>KIM permissions are stored in Rice database tables.  They are created either by SQL script or using the Rice KIM maintenance
-      screens. <question>Is XML Import an option?</question></para>
+    <para>KIM permissions are stored in Rice database tables. They are created either by SQL script
+      or using the Rice KIM maintenance screens.</para>
     <section xml:id="IKP0">
       <title>Inquiry Permissions</title>
-      <para>In KNS, there are three types of KIM permissions related to Inquiries
-        <itemizedlist>
-          <listitem><para>Inquire Into Records - may the user inquire on objects of that type.</para></listitem>
-          <listitem><para>Full Unmask Field - may a security masked field be displayed in the clear.</para></listitem>
-          <listitem><para>Partial Unmask Field - may a security masked field be partially displayed.</para></listitem>
+      <para>In KNS, there are three types of KIM permissions related to Inquiries <itemizedlist>
+          <listitem>
+            <para>Inquire Into Records - may the user inquire on objects of that type.</para>
+          </listitem>
+          <listitem>
+            <para>Full Unmask Field - may a security masked field be displayed in the clear.</para>
+          </listitem>
+          <listitem>
+            <para>Partial Unmask Field - may a security masked field be partially displayed.</para>
+          </listitem>
         </itemizedlist>
       </para>
       <section xml:id="IKP30">
         <title>Inquire Into Records</title>
-        <para>Checks the user's ability to inquiry objects of that type. In KRAD the <emphasis role="keyword">Open View</emphasis> permission
-          is used in place of the KNS <emphasis role="keyword">Inquire Into Records</emphasis> permission.</para>
-        <para>The KRAD Can View permission uses different KIM entities than the KRAD Inquire Into Records permission.
-          <itemizedlist>
-            <listitem><para>KIM Permission</para>
+        <para>Checks the user's ability to inquiry objects of that type. In KRAD the <emphasis
+            role="keyword">Open View</emphasis> permission is used in place of the KNS <emphasis
+            role="keyword">Inquire Into Records</emphasis> permission.</para>
+        <para>The KRAD Can View permission uses different KIM entities than the KRAD Inquire Into
+          Records permission. <itemizedlist>
+            <listitem>
+              <para>KIM Permission</para>
               <para><emphasis role="bold">KNS Inquire Into Records Permission</emphasis></para>
-                <para>The following example illustrates the differences between a KNS Inquiry Into Records permission and a KRAD
-                Open VIew permission.
-                <inlinemediaobject>
+              <para>The following example illustrates the differences between a KNS Inquiry Into
+                Records permission and a KRAD Open VIew permission. <inlinemediaobject>
                   <imageobject>
-                    <imagedata fileref="../images/KRAD_ConvGuide/KNS_InquiryIntoRecords_permission.png" contentdepth="15"/>
+                    <imagedata
+                      fileref="../images/KRAD_ConvGuide/KNS_InquireIntoRecords_Permission.png"
+                      contentdepth="15"/>
                   </imageobject>
                 </inlinemediaobject>
               </para>
               <para><emphasis role="bold">KRAD Open View Permission</emphasis>
                 <inlinemediaobject>
                   <imageobject>
-                    <imagedata fileref="../images/KRAD_ConvGuide/KRAD_OpenView_Inquiry.png" contentdepth="15"/>
+                    <imagedata fileref="../images/KRAD_ConvGuide/KRAD_OpenView_Inquiry.png"
+                      contentdepth="15"/>
                   </imageobject>
                 </inlinemediaobject>
                 <itemizedlist>
-                  <listitem><para>In KRAD <emphasis role="keyword">Open View</emphasis> permissions are used in place of the KNS
-                    <emphasis role="keyword">Inquire Into Records</emphasis> permissions to limit access to an inquiry view.</para></listitem>
-                  <listitem><para>In KRAD the <emphasis role="keyword">Open View</emphasis> permission has a single Detail attribute: <emphasis role="keyword">viewId</emphasis>.
-                    This is in contrast to the two permission detail attributes <emphasis role="keyword">namespaceCode</emphasis> and <emphasis role="keyword">componentName</emphasis> used by the KNS
-                    <emphasis role="keyword">Inquire Into Records</emphasis> permissions to limit access to an inquiry view.</para></listitem>
+                  <listitem>
+                    <para>In KRAD <emphasis role="keyword">Open View</emphasis> permissions are used
+                      in place of the KNS <emphasis role="keyword">Inquire Into Records</emphasis>
+                      permissions to limit access to an inquiry view.</para>
+                  </listitem>
+                  <listitem>
+                    <para>In KRAD the <emphasis role="keyword">Open View</emphasis> permission has a
+                      single Detail attribute: <emphasis role="keyword">viewId</emphasis>. This is
+                      in contrast to the two permission detail attributes <emphasis role="keyword"
+                        >namespaceCode</emphasis> and <emphasis role="keyword"
+                        >componentName</emphasis> used by the KNS <emphasis role="keyword">Inquire
+                        Into Records</emphasis> permissions to limit access to an inquiry
+                      view.</para>
+                  </listitem>
                 </itemizedlist>
               </para>
             </listitem>
-            <listitem><para>KIM Permission Template: Inquire Into Records</para>
+            <listitem>
+              <para>KIM Permission Template: Inquire Into Records</para>
               <para><emphasis role="bold">KNS Namespace or Component KimType:</emphasis>
                 <inlinemediaobject>
                   <imageobject>
-                    <imagedata fileref="../images/KRAD_ConvGuide/KNS_PermTemplate_InquireIntoRecords.png" contentdepth="15"/>
-                  </imageobject>
-                </inlinemediaobject>
-              </para><para><emphasis role="bold">KRAD View KimType:</emphasis>
-                <inlinemediaobject>
-                  <imageobject>
-                    <imagedata fileref="../images/KRAD_ConvGuide/KRAD_PermTemplate_OpenView.png" contentdepth="15"/>
-                  </imageobject>
-                </inlinemediaobject></para>
-              <para>In KRAD the <emphasis role="keyword">Open View</emphasis> permission template is used in place of the
-                KNS <emphasis role="keyword">Inquire Into Records</emphasis> permission template.</para></listitem>
-            <listitem><para>KIM Type: Namespace or Component</para>
-              <para><emphasis role="bold">KNS Inquire Into Records Permission Template:</emphasis>
-                <inlinemediaobject>
-                  <imageobject>
-                    <imagedata fileref="../images/KRAD_ConvGuide/KNS_KimType_NamespaceOrComponent.png" contentdepth="15"/>
+                    <imagedata
+                      fileref="../images/KRAD_ConvGuide/KNS_PermTemplate_InquireIntoRecords.png"
+                      contentdepth="15"/>
                   </imageobject>
                 </inlinemediaobject>
               </para>
-              <para><emphasis role="bold">KRAD Open View Permission Template:</emphasis></para><para>
+              <para><emphasis role="bold">KRAD View KimType:</emphasis>
                 <inlinemediaobject>
                   <imageobject>
-                    <imagedata fileref="../images/KRAD_ConvGuide/KRAD_KimType_View.png" contentdepth="15"/>
+                    <imagedata fileref="../images/KRAD_ConvGuide/KRAD_PermTemplate_OpenView.png"
+                      contentdepth="15"/>
                   </imageobject>
                 </inlinemediaobject></para>
-              <para><itemizedlist>
-                <listitem><para>In KRAD the <emphasis role="keyword">Open View</emphasis> permission template is used in place of the
-                  KNS <emphasis role="keyword">Inquire Into Records</emphasis> permission template.</para></listitem>
-              </itemizedlist></para>
+              <para>In KRAD the <emphasis role="keyword">Open View</emphasis> permission template is
+                used in place of the KNS <emphasis role="keyword">Inquire Into Records</emphasis>
+                permission template.</para>
             </listitem>
-            <listitem><para>KIM Roles - the same roles can be applied to either KNS or KRAD permissions. It is not necessary to create separate KRAD equivalent roles.</para></listitem>
+            <listitem>
+              <para>KIM Type: Namespace or Component</para>
+              <para><emphasis role="bold">KNS Inquire Into Records Permission Template:</emphasis>
+                <inlinemediaobject>
+                  <imageobject>
+                    <imagedata
+                      fileref="../images/KRAD_ConvGuide/KNS_KimType_NamespaceOrComponent.png"
+                      contentdepth="15"/>
+                  </imageobject>
+                </inlinemediaobject>
+              </para>
+              <para><emphasis role="bold">KRAD Open View Permission Template:</emphasis></para>
+              <para>
+                <inlinemediaobject>
+                  <imageobject>
+                    <imagedata fileref="../images/KRAD_ConvGuide/KRAD_KimType_View.png"
+                      contentdepth="15"/>
+                  </imageobject>
+                </inlinemediaobject></para>
+              <para>
+                <itemizedlist>
+                  <listitem>
+                    <para>In KRAD the <emphasis role="keyword">Open View</emphasis> permission
+                      template is used in place of the KNS <emphasis role="keyword">Inquire Into
+                        Records</emphasis> permission template.</para>
+                  </listitem>
+                </itemizedlist>
+              </para>
+            </listitem>
+            <listitem>
+              <para>KIM Roles - the same roles can be applied to either KNS or KRAD permissions. It
+                is not necessary to create separate KRAD equivalent roles.</para>
+            </listitem>
           </itemizedlist></para>
         <section>
-          <para><emphasis role="bold">To Restrict an Inquiry to users assigned a supervisor role in KRAD:</emphasis>
+          <title><emphasis role="bold">To Restrict an Inquiry to users assigned a supervisor role in
+              KRAD:</emphasis>
+          </title>
+          <para><orderedlist>
+              <listitem>
+                <para>Create a new KIM Permission Using the KR-KRAD Open View Template</para>
+                <para><inlinemediaobject>
+                    <imageobject>
+                      <imagedata
+                        fileref="../images/KRAD_ConvGuide/KRAD_Create_CanOpenPermission.png"
+                        contentdepth="15"/>
+                    </imageobject>
+                  </inlinemediaobject> The Open View permission has one Permission Detail attribute:
+                    <emphasis role="keyword">viewID</emphasis>. Set the viewId to be the name of the
+                  Inquiry View defined for the data object. [Line 1 below]</para>
+                <para>
+                  <programlisting linenumbering="numbered">&lt;bean id="AgendaBo-InquiryView" parent="Uif-InquiryView">
+                &lt;property name="headerText" value="Agenda Inquiry"/>
+                &lt;property name="dataObjectClassName" value="org.kuali.rice.krms.impl.repository.AgendaBo"/>
+                &lt;property name="viewHelperServiceClass" value="org.kuali.rice.krms.impl.repository.AgendaInquiryHelperServiceImpl" />
+                &lt;property name="additionalScriptFiles"></programlisting>
+                </para>
+              </listitem>
+              <listitem>
+                <para>Assign the newly created permission to the appropriate roles</para>
+                <para>Edit the role(s) being given permission to open the view. Add the permission
+                  to the role.</para>
+                <para><inlinemediaobject>
+                    <imageobject>
+                      <imagedata
+                        fileref="../images/KRAD_ConvGuide/KRAD_AssignInquiryPermissionToRole.png"
+                        contentdepth="15"/>
+                    </imageobject>
+                  </inlinemediaobject>
+                </para>
+              </listitem>
+            </orderedlist>
             <inlinemediaobject>
               <imageobject>
                 <imagedata fileref="../images/badge-manualconv.png" contentdepth="15"/>
               </imageobject>
             </inlinemediaobject>
           </para>
-          <para><orderedlist>
-            <listitem><para>Create a new KIM Permission Using the KR-KRAD Open View Template</para>
-              <para><inlinemediaobject>
-                <imageobject>
-                  <imagedata fileref="../images/KRAD_ConvGuide/KRAD_Create_CanOpenPermission.png" contentdepth="15"/>
-                </imageobject>
-              </inlinemediaobject>
-                The Open View permission has one Permission Detail attribute: <emphasis role="keyword">viewID</emphasis>. Set the viewId to be the name of the
-                Inquiry View defined for the data object. [Line 1 below]</para>
-              <para><programlisting linenumbering="numbered">&lt;bean id="AgendaBo-InquiryView" parent="Uif-InquiryView">
-                &lt;property name="headerText" value="Agenda Inquiry"/>
-                &lt;property name="dataObjectClassName" value="org.kuali.rice.krms.impl.repository.AgendaBo"/>
-                &lt;property name="viewHelperServiceClass" value="org.kuali.rice.krms.impl.repository.AgendaInquiryHelperServiceImpl" />
-                &lt;property name="additionalScriptFiles"></programlisting></para></listitem>
-            <listitem><para>Assign the newly created permission to the appropriate roles</para>
-              <para>Edit the role(s) being given permission to open the view. Add the permission to the role.</para>
-              <para><inlinemediaobject>
-                <imageobject>
-                  <imagedata fileref="../images/KRAD_ConvGuide/KRAD_AssignInquiryPermissionToRole.png" contentdepth="15"/>
-                </imageobject>
-              </inlinemediaobject>
-              </para></listitem>
-          </orderedlist>
-          </para>
         </section>
         <section>
-          <para><emphasis role="bold">To make an inquiry available to all users in KRAD:</emphasis></para>
+          <title><emphasis role="bold">To make an inquiry available to all users in
+            KRAD:</emphasis></title>
           <para><itemizedlist>
-            <listitem><para>Do Nothing!  <inlinemediaobject>
+              <listitem>
+                <para>Do Nothing! </para>
+              </listitem>
+            </itemizedlist>
+            <inlinemediaobject>
               <imageobject>
                 <imagedata fileref="../images/badge-scriptconv.png" contentdepth="15"/>
               </imageobject>
             </inlinemediaobject>
-            </para></listitem>
-          </itemizedlist>
           </para>
         </section>
       </section>
       <section xml:id="IKP31">
         <title>Full Ummask Field</title>
-        <para>The Full Unmask Field permission is used in both KNS and KRAD. The existing KNS permissions will work as is in KRAD. No conversion
-        or duplication is necessary.</para>
+        <para>The Full Unmask Field permission is used in both KNS and KRAD. The existing KNS
+          permissions will work as is in KRAD. No conversion or duplication is necessary.</para>
         <para><inlinemediaobject>
-          <imageobject>
-            <imagedata fileref="../images/KRAD_ConvGuide/KNS_FullUnmaskField_Permission.png" contentdepth="15"/>
-          </imageobject>
-        </inlinemediaobject>
+            <imageobject>
+              <imagedata fileref="../images/KRAD_ConvGuide/KNS_FullUnmaskField_Permission.png"
+                contentdepth="15"/>
+            </imageobject>
+          </inlinemediaobject>
         </para>
       </section>
       <section xml:id="IKP32">
         <title>Partial Ummask Field</title>
-        <para>The Full Unmask Field permission is used in both KNS and KRAD. The existing KNS permissions will work as is in KRAD. No conversion
-          or duplication is necessary.</para>
+        <para>The Full Unmask Field permission is used in both KNS and KRAD. The existing KNS
+          permissions will work as is in KRAD. No conversion or duplication is necessary.</para>
         <para><inlinemediaobject>
-          <imageobject>
-            <imagedata fileref="../images/KRAD_ConvGuide/KNS_PartialUnmaskField_Permission.png" contentdepth="15"/>
-          </imageobject>
-        </inlinemediaobject>
+            <imageobject>
+              <imagedata fileref="../images/KRAD_ConvGuide/KNS_PartialUnmaskField_Permission.png"
+                contentdepth="15"/>
+            </imageobject>
+          </inlinemediaobject>
         </para>
       </section>
     </section>
     <section>
       <title>Lookup Permissions</title>
+      <para/>
     </section>
     <section>
       <title>Maintenance Permissions</title>
+      <para/>
+    </section>
+  </section>
+  <section xml:id="ojb_to_jpa">
+    <title>OJB to JPA Conversion</title>
+    <para>Conversion from OJB to JPA should be done a module at a time if possible.</para>
+    <para>In some cases there are clusters of tables that are related and will need to be converted
+      together, but often there are sets of tables (even within a given module) which are
+      independent from each other and can be converted independently to allow for some amount of
+      testing.</para>
+    <section>
+      <title>JPA Conversion Tool</title>
+      <para>As part of the upgrade to use KRAD, you will need to update all your OJB-mapped
+          <emphasis role="keyword">BusinessObject</emphasis> classes into JPA-mapped data
+        objects.</para>
+      <para>For this, the Rice project has provided a tool which should extract most of your OJB
+        metadata and use it to annotate your Java classes.</para>
+      <para>The script is written in Groovy and uses a Groovy configuration file for the more
+        verbose elements.</para>
+      <section>
+        <title>Running the Conversion Tool</title>
+        <orderedlist>
+          <listitem>
+            <para>In the project distribution, copy the contents of the <emphasis role="keyword"
+                >scripts/jpaconverter</emphasis> directory to a working directory.</para>
+          </listitem>
+          <listitem>
+            <para> If you do not have your own Groovy Grapes setup, place the XML content below into
+                <emphasis role="keyword">$HOME/.groovy/grapeConfig.xml</emphasis>. </para>
+            <programlisting><![CDATA[
+<ivysettings>
+  <property name="ivy.cache.ttl.default" value="24h"/>
+  <settings defaultResolver="downloadGrapes"/>
+  <resolvers>
+    <chain name="downloadGrapes" returnFirst="true">
+      <filesystem name="cachedGrapes">
+        <ivy pattern="\${user.home}/.groovy/grapes/[organisation]/[module]/ivy-[revision].xml"/>
+        <artifact pattern="\${user.home}/.groovy/grapes/[organisation]/[module]/[type]s/[artifact]-[revision](-[classifier]).[ext]"/>
+      </filesystem>
+      <ibiblio name="localm2" root="file:\${user.home}/.m2/repository/" checkmodified="true" changingPattern=".*" changingMatcher="regexp" m2compatible="true"/>
+      <ibiblio name="mavencentral" root="http://repo.maven.apache.org/maven2/" m2compatible="true"/>
+      <ibiblio name="codehaus" root="http://repository.codehaus.org/" m2compatible="true"/>
+    </chain>
+  </resolvers>
+</ivysettings>
+                    ]]></programlisting>
+          </listitem>
+          <listitem>
+            <para> Update (and rename) the <emphasis role="keyword">config-sample.groovy</emphasis>
+              script with the appropriate values for your project. </para>
+            <para> All the elements below should be set in the Groovy configuration file. See the
+              provided <emphasis role="keyword">config-sample.groovy</emphasis> for examples and use
+              it as a starting point. <itemizedlist>
+                <listitem>
+                  <para>
+                    <emphasis role="keyword">classpathDirectories</emphasis> : This is a list of
+                    directories, relative to the base path passed in on the command line, which will
+                    be used to resolve your compiled classes. The converter inspects the code to
+                    obtain needed information, and so needs a compiled version of all business
+                    object classes. Each directory is expected to be the base of a class file output
+                    directory. (E.g., <emphasis role="keyword">target/classes</emphasis>) </para>
+                </listitem>
+                <listitem>
+                  <para>
+                    <emphasis role="keyword">classpathJarDirectories</emphasis> : A list of
+                    directories, relative to the base path, which will be scanned for jar files.
+                    Each jar file found will be added to the classpath. This should contain paths to
+                    all the libraries used by your project in order to resolve dependencies of your
+                    business objects. (E.g., a <emphasis role="keyword">WEB-INF/lib</emphasis>
+                    directory) </para>
+                </listitem>
+                <listitem>
+                  <para>
+                    <emphasis role="keyword">sourceDirectories</emphasis> : A list of directories,
+                    relative to the base path, which will be scanned for the matching source files
+                    for your business objects. The first <emphasis role="keyword">.java</emphasis>
+                    file which matches a given class will be used and modified by this tool. </para>
+                </listitem>
+                <listitem>
+                  <para>
+                    <emphasis role="keyword">repositoryFiles</emphasis> : A list of the files,
+                    relative to the base path, of the OJB files you want to scan and process. Only
+                    classes referenced in <emphasis role="keyword"
+                      >&lt;class-descriptor&gt;</emphasis> elements in these files will be touched
+                    by the conversion process. </para>
+                </listitem>
+                <listitem>
+                  <para>
+                    <emphasis role="keyword">converterMappings</emphasis> : A mapping of class name
+                    to new JPA converter names. If you edit this map, leave all the existing entries
+                    in place and add your application-specific converters to the end of the list. If
+                    you have converters in your application which are not covered by the
+                    implementations already in the conversion list, you will need to create a new
+                    JPA converter class (<emphasis role="keyword"
+                      >javax.persistence.AttributeConverter</emphasis>) and then add the fully
+                    qualified class name in this map. </para>
+                </listitem>
+              </itemizedlist>
+            </para>
+          </listitem>
+          <listitem>
+            <para> Run the <emphasis role="keyword">JpaConverter.groovy</emphasis> tool as shown
+              below. See the README.md in the same directory as the scripts for troubleshooting
+              information and further recommendations. </para>
+            <para>
+              <emphasis role="bold">Tool Usage</emphasis>
+              <programlisting><![CDATA[usage: groovy JpaConverter.groovy -b <project base directory> -c <location of config file> [options]
+ -b,--base <base directory>   Absolute path to the base directory for the
+                              conversion.
+ -c,--config <config file>    Location of groovy configuration file
+ -e,--errorsonly              If set, the script will only report any
+                              errors or warnings it will encounter and
+                              *not* update any files.
+ -h,--help                    show usage information
+ -n,--dryrun                  If set, the script will dump the resulting
+                              java files to the console instead of
+                              updating the existing files.
+    --replace                 Replace all existing JPA annotations on
+                              classes referenced by OJB files.
+                        ]]></programlisting>
+            </para>
+          </listitem>
+        </orderedlist>
+
+      </section>
+    </section>
+    <section>
+      <title>JPA Configuration</title>
+      <para>Create a new spring file for your JPA configuration. Add a uniqueJpaPersistenceUnitName
+        that is unique for the module(location in example). To include classes or whole packages add
+        managedClassNames listed out or add the package prefix.</para>
+      <programlisting>&lt;beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+                           http://www.springframework.org/schema/util
+                           http://www.springframework.org/schema/util/spring-util-3.2.xsd
+                           http://www.springframework.org/schema/context
+                           http://www.springframework.org/schema/context/spring-context-3.2.xsd">
+
+	&lt;alias
+		alias="kradApplicationDataSource"
+		name="locationDataSource" />
+	&lt;bean
+		id="jpaPersistenceUnitName"
+		class="java.lang.String">
+		&lt;constructor-arg value="location" />
+	&lt;/bean>
+
+	&lt;util:list id="jpaPackagesToScan">
+    	&lt;value>org.kuali.rice.location.impl&lt;/value>
+	&lt;/util:list>
+
+	&lt;util:list id="managedClassNames" />
+
+	&lt;util:list id="additionalMetadataProviders" />
+	&lt;util:list id="springMetadataFileLocations" />
+
+	&lt;import resource="classpath:org/kuali/rice/krad/config/KRADSpringBeans-jpa-common.xml" />
+
+&lt;/beans></programlisting>
+      <para>Add the highlighted below section to your ModuleConfigurationBean</para>
+      <programlisting>  &lt;bean id="locationModuleConfiguration" class="org.kuali.rice.krad.bo.ModuleConfiguration">
+  &lt;property name="namespaceCode" value="KR-NS"/>
+    &lt;property name="dataSourceName" value="locationDataSource"/>
+    &lt;property name="initializeDataDictionary" value="true"/>
+    &lt;property name="dataDictionaryService" ref="dataDictionaryService"/>
+    &lt;property name="persistenceService" ref="persistenceServiceOjb"/>
+    &lt;property name="dataDictionaryPackages">
+      &lt;list>
+        &lt;value>classpath:org/kuali/rice/location/web/campus/Campus.xml&lt;/value>
+        &lt;value>classpath:org/kuali/rice/location/web/campus/CampusType.xml&lt;/value>
+        &lt;value>classpath:org/kuali/rice/location/web/country/Country.xml&lt;/value>
+        &lt;value>classpath:org/kuali/rice/location/web/county/County.xml&lt;/value>
+        &lt;value>classpath:org/kuali/rice/location/web/postalcode/PostalCode.xml&lt;/value>
+        &lt;value>classpath:org/kuali/rice/location/web/state/State.xml&lt;/value>
+        &lt;value>classpath:org/kuali/rice/location/web/campus/CampusMaintenanceDocument.xml&lt;/value>
+        &lt;value>classpath:org/kuali/rice/location/web/campus/CampusTypeMaintenanceDocument.xml&lt;/value>
+        &lt;value>classpath:org/kuali/rice/location/web/country/CountryMaintenanceDocument.xml&lt;/value>
+        &lt;value>classpath:org/kuali/rice/location/web/county/CountyMaintenanceDocument.xml&lt;/value>
+        &lt;value>classpath:org/kuali/rice/location/web/postalcode/PostalCodeMaintenanceDocument.xml&lt;/value>
+        &lt;value>classpath:org/kuali/rice/location/web/state/StateMaintenanceDocument.xml&lt;/value>
+      &lt;/list>
+    &lt;/property>
+    &lt;property name="packagePrefixes">
+      &lt;list>
+        &lt;value>org.kuali.rice.location.&lt;/value>
+      &lt;/list>
+    &lt;/property>
+    &lt;property name="externalizableBusinessObjectImplementations">
+      &lt;map>
+        &lt;entry key="org.kuali.rice.location.framework.country.CountryEbo"
+               value="org.kuali.rice.location.impl.country.CountryBo"/>
+        &lt;entry key="org.kuali.rice.location.framework.state.StateEbo"
+               value="org.kuali.rice.location.impl.state.StateBo"/>
+        &lt;entry key="org.kuali.rice.location.framework.postalcode.PostalCodeEbo"
+               value="org.kuali.rice.location.impl.postalcode.PostalCodeBo"/>
+        &lt;entry key="org.kuali.rice.location.framework.county.CountyEbo"
+               value="org.kuali.rice.location.impl.county.CountyBo"/>
+        &lt;entry key="org.kuali.rice.location.framework.campus.CampusEbo"
+               value="org.kuali.rice.location.impl.campus.CampusBo"/>
+        &lt;entry key="org.kuali.rice.location.framework.campus.CampusTypeEbo"
+               value="org.kuali.rice.location.impl.campus.CampusTypeBo"/>
+      &lt;/map>
+    &lt;/property>
+    <emphasis role="bold">
+    &lt;property name="entityManager" ref="sharedEntityManager" />
+    &lt;property name="providers">
+      &lt;list>
+        &lt;ref bean="jpaPersistenceProvider"/>
+        &lt;ref bean="metadataProvider"/>
+      &lt;/list>
+    &lt;/property>
+    </emphasis>&lt;/bean>
+      </programlisting>
+    </section>
+    <section>
+      <title>Entity Conversion</title>
+      <para>To convert your entity from OJB to JPA you have two options. One is to use the script
+        that will autoconvert for you or to manually convert based on the OJB-repository.xml file
+        for the module. To start here is a sample OJB descripotor for Postal Code in Rice.</para>
+      <programlisting>&lt;class-descriptor class="org.kuali.rice.location.impl.postalcode.PostalCodeBo" table="KRLC_PSTL_CD_T">
+	&lt;field-descriptor name="countryCode" column="POSTAL_CNTRY_CD" jdbc-type="VARCHAR" primarykey="true" indexed="true" />
+    &lt;ield-descriptor name="code" column="POSTAL_CD" jdbc-type="VARCHAR" primarykey="true" indexed="true" />
+    &lt;field-descriptor name="stateCode" column="POSTAL_STATE_CD" jdbc-type="VARCHAR" />
+    &lt;field-descriptor name="cityName" column="POSTAL_CITY_NM" jdbc-type="VARCHAR" />
+    &lt;field-descriptor name="objectId" column="OBJ_ID" jdbc-type="VARCHAR" indexed="true" />
+    &lt;field-descriptor name="versionNumber" column="VER_NBR" jdbc-type="BIGINT" locking="true" />
+	&lt;field-descriptor name="active" column="ACTV_IND" jdbc-type="VARCHAR" conversion="org.kuali.rice.core.framework.persistence.ojb.conversion.OjbCharBooleanConversion"/>
+	&lt;field-descriptor name="countyCode" column="COUNTY_CD" jdbc-type="VARCHAR" />
+
+	&lt;reference-descriptor name="country" class-ref="org.kuali.rice.location.impl.country.CountryBo" auto-retrieve="true" auto-update="none" auto-delete="none">
+        &lt;foreignkey field-ref="countryCode" target-field-ref="code" />
+    &lt;/reference-descriptor>
+
+    &lt;reference-descriptor name="state" class-ref="org.kuali.rice.location.impl.state.StateBo" auto-retrieve="true" auto-update="none" auto-delete="none">
+        &lt;foreignkey field-ref="countryCode" target-field-ref="countryCode" />
+        &lt;foreignkey field-ref="stateCode" target-field-ref="code"/>
+   &lt;/reference-descriptor>
+
+	&lt;reference-descriptor name="county" class-ref="org.kuali.rice.location.impl.county.CountyBo" auto-retrieve="true" auto-update="none" auto-delete="none">
+        &lt;foreignkey field-ref="countryCode" target-field-ref="countryCode" />
+        &lt;foreignkey field-ref="countyCode" target-field-ref="code" />
+        &lt;foreignkey field-ref="stateCode" target-field-ref="stateCode" />
+    &lt;/reference-descriptor>
+  &lt;/class-descriptor>
+      </programlisting>
+      <para>First to declare this class in JPA using @Entity and the table it maps to.</para>
+      <programlisting>@Entity
+@Table(name = "KRLC_PSTL_CD_T")
+class PostalCodeBo extends PersistableBusinessObjectBase implements PostalCodeEbo {</programlisting>
+      <para>Next is to declare each of the columns and what property it maps to.</para>
+      <programlisting>@Entity
+@Table(name = "KRLC_PSTL_CD_T")
+class PostalCodeBo extends PersistableBusinessObjectBase implements PostalCodeEbo {
+
+    @Column(name = "POSTAL_CD")
+    String code;
+
+    @Column(name = "POSTAL_CNTRY_CD")
+    String countryCode;
+
+    @Column(name = "POSTAL_CITY_NM")
+    String cityName;
+
+    @Column(name = "POSTAL_STATE_CD")
+    String stateCode;
+
+    @Column(name = "COUNTY_CD")
+    String countyCode;
+
+    @Column(name = "ACTV_IND")
+    boolean active;</programlisting>
+      <para>Next is to declare the ID columns. This class has a compound primary key so it uses an
+        more advanced feature of JPA called an IdClass.</para>
+      <programlisting>@IdClass(PostalCodeId.class)
+@Entity
+@Table(name = "KRLC_PSTL_CD_T")
+class PostalCodeBo extends PersistableBusinessObjectBase implements PostalCodeEbo {
+
+    @Id
+    @Column(name = "POSTAL_CD")
+    String code;
+
+    @Id
+    @Column(name = "POSTAL_CNTRY_CD")
+    String countryCode;
+
+    @Column(name = "POSTAL_CITY_NM")
+    String cityName;
+
+    @Column(name = "POSTAL_STATE_CD")
+    String stateCode;
+
+    @Column(name = "COUNTY_CD")
+    String countyCode;
+    
+    @Column(name = "ACTV_IND")
+    boolean active;</programlisting>
+      <para>If using an automatically generated ID from a sequence, use the <emphasis role="keyword">@GeneratedValue</emphasis>
+        and <emphasis role="keyword">@PortableSequenceGenerator</emphasis> annotations.</para>
+      <programlisting>@PortableSequenceGenerator(name = "KRLC_PSTL_CD_S")
+@GeneratedValue(generator = "KRLC_PSTL_CD_S")
+@Id
+@Column(name = "PSTL_CD_ID")
+private String id;</programlisting>
+      <para>The active indicator used an OJB converter to handle the Y/N conversion into boolean.
+        This is done with a customized EclipseLink Converter now.</para>
+      <programlisting>@IdClass(PostalCodeId.class)
+@Entity
+@Table(name = "KRLC_PSTL_CD_T")
+class PostalCodeBo extends PersistableBusinessObjectBase implements PostalCodeEbo {
+   ...
+
+    @Column(name = "ACTV_IND")
+    @javax.persistence.Convert(converter=BooleanYNConverter.class)
+    boolean active;
+    
+    
+    @Converter(
+		autoApply = true)
+public class BooleanYNConverter implements AttributeConverter&lt;Boolean, String> {
+
+	protected static final Set&lt;String> YES_VALUES = new HashSet&lt;String>();
+	static {
+		YES_VALUES.add("Y");
+		YES_VALUES.add("y");
+		YES_VALUES.add("true");
+		YES_VALUES.add("TRUE");
+	}
+
+	@Override
+	public String convertToDatabaseColumn(Boolean objectValue) {
+		if (objectValue == null) {
+			return "N";
+		}
+		return objectValue ? "Y" : "N";
+	}
+
+	@Override
+	public Boolean convertToEntityAttribute(String dataValue) {
+		if (dataValue == null) {
+			return false;
+		}
+		return YES_VALUES.contains(dataValue);
+	}
+}
+    
+    </programlisting>
+      <para>The next part is to map the relationships that are defined by the reference-descriptor
+        in OJB. The CountyBo has 3 columns as its primary key so it is described as follows.</para>
+      <programlisting>@IdClass(PostalCodeId.class)
+@Entity
+@Table(name = "KRLC_PSTL_CD_T")
+class PostalCodeBo extends PersistableBusinessObjectBase implements PostalCodeEbo {
+    ...
+    @ManyToOne(targetEntity = CountyBo.class, fetch = FetchType.EAGER)
+    @JoinColumns(value=[@JoinColumn(name = "COUNTY_CD", referencedColumnName="COUNTY_CD", insertable = false, updatable = false),
+                        @JoinColumn(name="POSTAL_STATE_CD", referencedColumnName="STATE_CD", insertable = false, updatable = false),
+                        @JoinColumn(name="POSTAL_CNTRY_CD", referencedColumnName="POSTAL_CNTRY_CD", insertable = false, updatable = false)])
+    CountyBo county;
+      </programlisting>
+    </section>
+    <section>
+      <title>Migrate Service methods and Data Access layer to JPA</title>
+      <para>During the JPA conversion it is a good opportunity to remove any code that is not
+        necessary due to enhancements  in the core data fetching layer in the KRAD Data Module. The
+        following are the best practices that should be used   when using JPA in Kuali applications.
+        In general the order of consideration for a query should go as the following:<orderedlist>
+          <listitem>
+            <para>Use DataObjectService methods in service methods.</para>
+          </listitem>
+          <listitem>
+            <para>Create custom DAOs method to use NamedQuery in JPA.</para>
+          </listitem>
+          <listitem>
+            <para>Use Rice Criteria API if query is too complicated and would require dynamic
+              generation(String concatenation).</para>
+          </listitem>
+          <listitem>
+            <para>Use JPA Criteria API if query requires functions not supported in Rice Criteria
+              API.</para>
+          </listitem>
+        </orderedlist><emphasis role="bold"> Simple DataObjectService fetch by Primary
+          Key</emphasis><programlisting>CountryBo countryBo = getDataObjectService().find(CountryBo.class,code);
+
+//Fetch by Compound Primary Key
+final Map&lt;String, Object> map = new HashMap&lt;String, Object>();
+map.put("countryCode", countryCode);
+map.put("code", code);
+StateBo stateBo = getDataObjectService().find(StateBo.class,new CompoundKey(map)));</programlisting>
+        <emphasis role="bold">DataObjectService query for matching results</emphasis>
+        <programlisting>//Fetch all matching results by countryCode and that have active equivalent to true
+final Map&lt;String, Object> map = new HashMap&lt;String, Object>();
+map.put("countryCode", countryCode);
+map.put("active", Boolean.TRUE);
+
+QueryResults&lt;PostalCodeBo> postalCodeBoQueryResults = getDataObjectService().
+    findMatching(PostalCodeBo.class,QueryByCriteria.Builder.andAttributes(map).build());
+
+//Fetch all Countries that have alternateCountryCode equal to value passed in
+QueryByCriteria qbc = QueryByCriteria.Builder.forAttribute(KRADPropertyConstants.ALTERNATE_POSTAL_COUNTRY_CODE,
+                alternateCode).build();
+QueryResults&lt;CountryBo> countryBoQueryResults = getDataObjectService().findMatching(CountryBo.class,qbc);
+List&lt;CountryBo> countryList = countryBoQueryResults.getResults();</programlisting><emphasis
+          role="bold"> DataObjectService query returning the count based on Criteria </emphasis><programlisting>//Fetch count based on document id and principal id and current indicator being true
+QueryByCriteria.Builder criteria = QueryByCriteria.Builder.create().setPredicates(
+                                       equal(DOCUMENT_ID, documentId),
+                   	                equal(PRINCIPAL_ID, principalId),
+                   	                equal(CURRENT_INDICATOR, Boolean.TRUE)
+                    	        );
+criteria.setCountFlag(CountFlag.ONLY);
+return getDataObjectService().findMatching(ActionTakenValue.class, criteria.build()).getTotalRowCount();</programlisting>
+        <emphasis role="bold">Injecting the Shared Entity Manager</emphasis></para>
+      <programlisting>//Add the following to your Spring DAO implementation to assign the appropriate Persistence 
+//Unit to your DAO
+
+public class DocumentTypeDAOJpa implements DocumentTypeDAO {
+
+@PersistenceContext(unitName="kew")
+private EntityManager entityManager;
+
+}</programlisting>
+      <para>
+        <emphasis role="bold"> Simple example of Named Query in Rice</emphasis>
+        <programlisting>//Fetch Application Document ID by Document ID
+//Define constants for named query in DAO - In this case DocumentRouteHeaderDAOJpa
+//Name your queries such that they start with the Entity name 
+//like @NamedQuery(name="ParameterBo.findAll", query="SELECT p FROM ParameterBo")
+
+public static final String GET_APP_DOC_STATUS_NAME = "DocumentRouteHeaderValue.GetAppDocStatus";
+public static final String GET_APP_DOC_STATUS_QUERY = "SELECT d.appDocStatus from "
+            + "DocumentRouteHeaderValue as d where d.documentId = :documentId";
+
+//Definition of NamedQuery on Queried Entity(DocumentRouteHeaderValue)
+    @NamedQuery(name=DocumentRouteHeaderDAOJpa.GET_APP_DOC_STATUS_NAME, query=
+            DocumentRouteHeaderDAOJpa.GET_APP_DOC_STATUS_QUERY)
+
+//Code to call NamedQuery
+TypedQuery&lt;String> query = getEntityManager().createNamedQuery(
+                            "DocumentRouteHeaderValue.GetAppDocId",String.class);
+query.setParameter("documentId",documentId);
+
+String applicationDocId = null;
+if(query.getResultList() != null &amp;&amp; !query.getResultList().isEmpty()){
+    applicationDocId = query.getResultList().get(0);
+}
+return applicationDocId;</programlisting>
+        <emphasis role="bold">More Complex example of NamedQuery </emphasis><programlisting>//Fetch all distinct document IDs by document type and application document ID
+public static final String GET_DOCUMENT_ID_BY_DOC_TYPE_APP_ID_NAME =
+            "DocumentRouteHeaderValue.GetDocumentIdByDocTypeAndAppId";
+public static final String GET_DOCUMENT_ID_BY_DOC_TYPE_APP_ID_QUERY = "SELECT "
+            + "DISTINCT(DH.documentId) FROM DocumentRouteHeaderValue DH, DocumentType DT "
+            + "WHERE DH.appDocId = :appDocId AND DH.documentTypeId = DT.documentTypeId  AND DT.name = :name";
+
+@NamedQuery(name=DocumentRouteHeaderDAOJpa.GET_DOCUMENT_ID_BY_DOC_TYPE_APP_ID_NAME, query =
+            DocumentRouteHeaderDAOJpa.GET_DOCUMENT_ID_BY_DOC_TYPE_APP_ID_QUERY)
+
+TypedQuery&lt;String> query = getEntityManager().createNamedQuery(GET_DOCUMENT_ID_BY_DOC_TYPE_APP_ID_NAME,
+                String.class);
+query.setParameter("appDocId",appId);
+query.setParameter("name",documentTypeName);
+return query.getResultList();</programlisting>
+        <tip>
+          <para> When building named queries you must use an alias the object "select <emphasis
+              role="bold">r</emphasis> from KUL_RICE_T <emphasis role="bold">r</emphasis>". If you
+            get the below error you are probably missing an alias.
+            <programlisting>Caused by: java.lang.ClassCastException: 
+                    org.eclipse.persistence.jpa.jpql.parser.NullExpression 
+                    cannot be cast to org.eclipse.persistence.jpa.jpql.parser.IdentificationVariable
+                 </programlisting>
+          </para>
+        </tip>
+        <emphasis role="bold">Using Rice Criteria API </emphasis>
+        <programlisting>//Example of Dynamic query, this query needs to add date checks dates 
+//if effectiveDate parameter is not null
+
+//This should be in a DAO class - RuleDAOJpa in this case
+
+public List&lt;RuleBaseValues> fetchAllCurrentRulesForTemplateDocCombination(String ruleTemplateId, List documentTypes, Timestamp effectiveDate) {
+       QueryByCriteria.Builder builder = QueryByCriteria.Builder.create();
+        List&lt;Predicate> predicates = new ArrayList&lt;Predicate>();
+        predicates.add(equal("ruleTemplateId",ruleTemplateId));
+        predicates.add(in("docTypeName", documentTypes));
+        predicates.add(equal("active", Boolean.TRUE));
+        predicates.add(equal("delegateRule",Boolean.FALSE));
+        predicates.add(equal("templateRuleInd",Boolean.FALSE));
+
+        if(effectiveDate != null){
+            predicates.add(lessThanOrEqual("activationDate",effectiveDate));
+            predicates.add(greaterThanOrEqual("deactivationDate", effectiveDate));
+        }
+        List&lt;Predicate> datePredicateList = generateFromToDatePredicate(new Date());
+        Predicate[] datePreds = generateFromToDatePredicate(new Date()).
+                toArray(new Predicate[datePredicateList.size()]);
+        predicates.add(and(datePreds));
+        Predicate[] preds = predicates.toArray(new Predicate[predicates.size()]);
+        builder.setPredicates(preds);
+        QueryResults&lt;RuleBaseValues> results = getDataObjectService().findMatching(RuleBaseValues.class,
+                                            builder.build());
+        return results.getResults();
+	}
+
+    public List&lt;Predicate> generateFromToDatePredicate(Date date){
+        List&lt;Predicate> datePredicates = new ArrayList&lt;Predicate>();
+
+        Predicate orFromDateValue = or(lessThanOrEqual("fromDateValue",new Timestamp(date.getTime())),
+              isNull("fromDateValue"));
+        Predicate orToDateValue = or(greaterThanOrEqual("toDateValue",new Timestamp(date.getTime())),
+              isNull("toDateValue"));
+
+        datePredicates.add(orFromDateValue);
+        datePredicates.add(orToDateValue);
+
+        return datePredicates;
+    }
+            </programlisting>
+        <emphasis role="bold">Using JPA Criteria API </emphasis>
+        <programlisting>//Using JPA Criteria Builder
+
+	public List&lt;RuleBaseValues> search(String docTypeName, String ruleId, String ruleTemplateId, String ruleDescription,
+ String groupId, String principalId, Boolean delegateRule, Boolean activeInd, Map extensionValues, String workflowIdDirective) {
+        CriteriaBuilder cb = getEntityManager().getCriteriaBuilder();
+        CriteriaQuery&lt;RuleBaseValues> cq = cb.createQuery(RuleBaseValues.class);
+        Root&lt;RuleBaseValues> root = cq.from(RuleBaseValues.class);
+        List&lt;javax.persistence.criteria.Predicate> predicates = getSearchCriteria(root,cq,docTypeName,
+ ruleTemplateId, ruleDescription, delegateRule, activeInd, extensionValues);
+
+        if (ruleId != null) {
+            predicates.add(cb.equal(root.get("id"),ruleId));
+        }
+        if (groupId != null) {
+            predicates.add(cb.in(root.get("id")).value(getRuleResponsibilitySubQuery(
+                    groupId, cq)));
+        }
+        Collection&lt;String> kimGroupIds = new HashSet&lt;String>();
+        Boolean searchUser = Boolean.FALSE;
+        Boolean searchUserInWorkgroups = Boolean.FALSE;
+        
+        if ("group".equals(workflowIdDirective)) {
+            searchUserInWorkgroups = Boolean.TRUE;
+        } else if (StringUtils.isBlank(workflowIdDirective)) {
+            searchUser = Boolean.TRUE;
+            searchUserInWorkgroups = Boolean.TRUE;
+        } else {
+            searchUser = Boolean.TRUE;
+        }
+        
+        if (!org.apache.commons.lang.StringUtils.isEmpty(principalId) &amp;&amp; searchUserInWorkgroups) {
+            Principal principal = null;
+
+            principal = KimApiServiceLocator.getIdentityService().getPrincipal(principalId);
+
+            if (principal == null)
+            {
+            	throw new RiceRuntimeException("Failed to locate user for the given principal id: " + principalId);
+            }
+            kimGroupIds = KimApiServiceLocator.getGroupService().getGroupIdsByPrincipalId(principalId);
+        }
+        Subquery&lt;RuleResponsibilityBo> subquery = addResponsibilityCriteria(cq,kimGroupIds, principalId, searchUser, searchUserInWorkgroups);
+
+        if(subquery != null){
+            predicates.add(cb.in(root.get("id")).value(subquery));
+        }
+        cq.distinct(true);
+        javax.persistence.criteria.Predicate[] preds = predicates.toArray(
+                new javax.persistence.criteria.Predicate[predicates.size()]);
+        cq.where(preds);
+        TypedQuery&lt;RuleBaseValues> q = getEntityManager().createQuery(cq);
+
+        return q.getResultList();
+	}
+
+    private Subquery&lt;RuleResponsibilityBo> getRuleResponsibilitySubQuery(String ruleRespName,
+                        CriteriaQuery&lt;RuleBaseValues> query){
+        CriteriaBuilder cb = getEntityManager().getCriteriaBuilder();
+        Subquery&lt;RuleResponsibilityBo> subquery = query.subquery(RuleResponsibilityBo.class);
+        Root fromResp = subquery.from(RuleResponsibilityBo.class);
+        subquery.where(cb.equal(fromResp.get("ruleResponsibilityName"),ruleRespName));
+        subquery.select(fromResp.get("ruleBaseValuesId"));
+
+        return subquery;
+    }
+        </programlisting>
+        <emphasis role="bold">Miscellaneous JPA information </emphasis><tip>
+          <para>
+            <programlisting>//Relationship foreign key updating can go wrong if missing 
+//"nullable" on JoinColumn.  It can insert null into the column instead of
+//the actual value of the foreign entity key
+
+public class RouteNodeInstance implements Serializable {
+    @ManyToOne
+    @JoinColumn(name="RTE_NODE_ID", <emphasis role="bold">nullable = false</emphasis>)
+    private RouteNode routeNode;
+}
+                  </programlisting>
+          </para>
+        </tip>
+      </para>
+    </section>
+    <section>
+      <title>Filter</title>
+      <para>In OJB you could add a query customizer that would allow you to add additional criteria
+        or sort a collection. This is facilitated in KRAD Data with the FilterGenerator annotation. <programlisting>&lt;!-- Example in OJB -->
+ &lt;collection-descriptor name="sourceAccountingLines" proxy="true" 
+  element-class-ref="org.kuali.kfs.sys.businessobject.SourceAccountingLine" 
+  collection-class="org.apache.ojb.broker.util.collections.ManageableArrayList" auto-retrieve="true">
+        &lt;inverse-foreignkey field-ref="documentNumber" />
+		<emphasis role="bold">&lt;query-customizer class="org.kuali.kfs.sys.dataaccess.impl.OjbQueryCustomizer">
+			&lt;attribute attribute-name="financialDocumentLineTypeCode" attribute-value="F" />
+		&lt;/query-customizer></emphasis>
+ &lt;/collection-descriptor></programlisting>
+        <programlisting>&lt;!-- Example in KRAD Data, Simply add the annotation with the appropriate criteria -->
+ <emphasis role="bold">@QFilterGenerator(attributeName="financialDocumentLineTypeCode",attributeValue="F")</emphasis>
+ protected List&lt;SourceAccountingLine> sourceAccountingLines;
+        </programlisting>
+        To resolve a value using a class instead of attributeValue define a full qualified class.
+        <programlisting>
+@FilterGenerator(attributeName="testCol",attributeResolverClass="org.kuali.bar.Foo")
+        </programlisting>
+        To define sorting behavior on fetch translate this previous usage to use the @OrderBy
+        annotation in JPA. To chain multiple columns together add a comma between them
+        (column1,column2, etc)
+        <programlisting>&lt;!-- Example in OJB -->
+&lt;collection-descriptor name="items" proxy="true" element-class-ref="org.kuali.kfs.module.purap.businessobject.PurchaseOrderItem" 
+      collection-class="org.apache.ojb.broker.util.collections.ManageableArrayList" auto-retrieve="true">
+  &lt;inverse-foreignkey field-ref="documentNumber" />
+  <emphasis role="bold">&lt;query-customizer class="org.kuali.kfs.module.purap.dataaccess.impl.PurapItemQueryCustomizer">
+    &lt;attribute
+      attribute-name="orderByField.itemLineNumber"
+      attribute-value="ASC"
+    />
+  &lt;/query-customizer></emphasis> 
+&lt;/collection-descriptor> 
+
+&lt;!-- Example in JPA -->
+<emphasis role="bold">@OrderBy("itemLineNumber ASC")</emphasis>
+private List&lt;PurchaseOrderItem> items;
+        </programlisting>
+      </para>
+
     </section>
   </section>
 </article>

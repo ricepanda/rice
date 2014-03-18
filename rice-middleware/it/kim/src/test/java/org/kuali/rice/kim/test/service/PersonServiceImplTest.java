@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,29 +15,23 @@
  */
 package org.kuali.rice.kim.test.service;
 
-import org.apache.ojb.broker.metadata.DescriptorRepository;
-import org.apache.ojb.broker.metadata.MetadataManager;
 import org.junit.Test;
 import org.kuali.rice.core.api.resourceloader.GlobalResourceLoader;
-import org.kuali.rice.core.api.util.ClasspathOrFileResourceLoader;
 import org.kuali.rice.kim.api.identity.Person;
 import org.kuali.rice.kim.api.identity.principal.Principal;
 import org.kuali.rice.kim.api.services.KimApiServiceLocator;
+import org.kuali.rice.kim.impl.identity.PersonImpl;
 import org.kuali.rice.kim.impl.identity.PersonServiceImpl;
 import org.kuali.rice.kim.impl.identity.external.EntityExternalIdentifierBo;
 import org.kuali.rice.kim.test.KIMTestCase;
-import org.kuali.rice.kim.test.bo.BOContainingPerson;
-import org.kuali.rice.kns.lookup.Lookupable;
-import org.kuali.rice.kns.service.KNSServiceLocator;
 import org.kuali.rice.krad.bo.BusinessObject;
-import org.kuali.rice.krad.service.BusinessObjectService;
+import org.kuali.rice.krad.data.KradDataServiceLocator;
 import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
 import org.kuali.rice.test.BaselineTestCase;
 import org.springframework.util.AutoPopulatingList;
 
 import javax.xml.namespace.QName;
-import java.io.InputStream;
-import java.util.ArrayList;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,7 +68,7 @@ public class PersonServiceImplTest extends KIMTestCase {
 		externalIdentifier.setEntityId(principal.getEntityId());
 		externalIdentifier.setExternalId("000-00-0000");
 		externalIdentifier.setExternalIdentifierTypeCode("SSN");
-        KNSServiceLocator.getBusinessObjectService().save(externalIdentifier);
+        KradDataServiceLocator.getDataObjectService().save(externalIdentifier);
 		
 		List<Person> people = personService.getPersonByExternalIdentifier( "SSN", "000-00-0000" );
 		assertNotNull( "result object must not be null", people );
@@ -301,37 +295,11 @@ public class PersonServiceImplTest extends KIMTestCase {
 	}
 
 	@Test
-	public void testLookupWithPersonJoin() throws Exception {
-		
-		// merge the OJB file in containing the OJB metadata
-        InputStream is = new ClasspathOrFileResourceLoader().getResource("classpath:org/kuali/rice/kim/test/OJB-repository-kimunittests.xml").getInputStream();
-        MetadataManager mm = MetadataManager.getInstance();
-        DescriptorRepository dr = mm.readDescriptorRepository(is);
-        mm.mergeDescriptorRepository(dr);
-		
-		KRADServiceLocatorWeb.getDataDictionaryService().getDataDictionary().addConfigFileLocation("KR-KIM", "classpath:org/kuali/rice/kim/bo/datadictionary/test/BOContainingPerson.xml" );
-		KRADServiceLocatorWeb.getDataDictionaryService().getDataDictionary().parseDataDictionaryConfigurationFiles( false );
-		BusinessObjectService bos = KNSServiceLocator.getBusinessObjectService();
-		bos.delete( new ArrayList(bos.findAll( BOContainingPerson.class )) );
-		BOContainingPerson bo = new BOContainingPerson();
-		bo.setBoPrimaryKey( "ONE" );
-		bo.setPrincipalId( "p1" );
-		bos.save( bo );
-		bo = new BOContainingPerson();
-		bo.setBoPrimaryKey( "TWO" );
-		bo.setPrincipalId( "p2" );
-		bos.save( bo );
-
-		Lookupable l = KNSServiceLocator.getKualiLookupable();
-		l.setBusinessObjectClass( BOContainingPerson.class );
-		Map<String,String> criteria = new HashMap<String,String>();
-		criteria.put( "person.principalName", "principal1" );
-		List<BOContainingPerson> results = (List)l.getSearchResultsUnbounded( (Map)criteria );
-		System.out.println( results );
-		assertNotNull( "results may not be null", results );
-		assertEquals( "number of results is incorrect", 1, results.size() );
-		bo =  results.iterator().next();
-		assertEquals( "principalId does not match", "p1", bo.getPrincipalId() );
+	public void testUpdatePersonIfNecessary() throws Exception {
+        Person person = personService.updatePersonIfNecessary("p1", null);
+        assertNotNull("person object must not be null", person);
+		assertEquals("principalId does not match", "p1", person.getPrincipalId() );
+        assertEquals("principalName does not match", "principal1", person.getPrincipalName());
 	}
 
 //	@Test
@@ -358,7 +326,7 @@ public class PersonServiceImplTest extends KIMTestCase {
 		private String anAttribute;
 		private String anotherAttribute;
 		private String personPrincipalId;
-		private Person personAttribute;
+		private PersonImpl personAttribute;
 		private List<SampleChildBOWithPerson> childBos = new AutoPopulatingList(SampleChildBOWithPerson.class);
 		public String getAnAttribute() {
 			return this.anAttribute;
@@ -378,11 +346,11 @@ public class PersonServiceImplTest extends KIMTestCase {
 		public void setPersonPrincipalId(String personPrincipalId) {
 			this.personPrincipalId = personPrincipalId;
 		}
-		public Person getPersonAttribute() {
-			personAttribute = KimApiServiceLocator.getPersonService().updatePersonIfNecessary( personPrincipalId, personAttribute );
+		public PersonImpl getPersonAttribute() {
+			personAttribute = (PersonImpl) KimApiServiceLocator.getPersonService().updatePersonIfNecessary( personPrincipalId, personAttribute );
 			return personAttribute;
 		}
-		public void setPersonAttribute(Person personAttribute) {
+		public void setPersonAttribute(PersonImpl personAttribute) {
 			this.personAttribute = personAttribute;
 		}
 		public void refresh() {}
@@ -398,7 +366,7 @@ public class PersonServiceImplTest extends KIMTestCase {
 
 		private String childsAttribute;
 		private String childsPersonPrincipalId;
-		private Person childsPersonAttribute;
+		private PersonImpl childsPersonAttribute;
 
 
 
@@ -414,11 +382,11 @@ public class PersonServiceImplTest extends KIMTestCase {
 		public void setChildsPersonPrincipalId(String childsPersonPrincipalId) {
 			this.childsPersonPrincipalId = childsPersonPrincipalId;
 		}
-		public Person getChildsPersonAttribute() {
-			childsPersonAttribute = KimApiServiceLocator.getPersonService().updatePersonIfNecessary( childsPersonPrincipalId, childsPersonAttribute );
+		public PersonImpl getChildsPersonAttribute() {
+			childsPersonAttribute = (PersonImpl) KimApiServiceLocator.getPersonService().updatePersonIfNecessary( childsPersonPrincipalId, childsPersonAttribute );
 			return childsPersonAttribute;
 		}
-		public void setChildsPersonAttribute(Person childsPersonAttribute) {
+		public void setChildsPersonAttribute(PersonImpl childsPersonAttribute) {
 			this.childsPersonAttribute = childsPersonAttribute;
 		}
 		public void refresh() {}

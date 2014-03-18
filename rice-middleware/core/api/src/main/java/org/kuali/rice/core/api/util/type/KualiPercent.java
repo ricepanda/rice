@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,10 @@ import java.math.BigDecimal;
  */
 public class KualiPercent extends KualiDecimal {
     private static final long serialVersionUID = 1L;
-    protected static final KualiDecimal ONE_HUNDRED = new KualiDecimal("100.00");
+
+    public static final KualiPercent ZERO = new KualiPercent(BigDecimal.ZERO);
+
+    protected static final KualiPercent ONE_HUNDRED = new KualiPercent("100.00");
 
     /**
      * Constructs a KualiPercent.java.

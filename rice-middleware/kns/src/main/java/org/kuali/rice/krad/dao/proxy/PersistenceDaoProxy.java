@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,24 +53,15 @@ public class PersistenceDaoProxy implements PersistenceDao {
                 if (persistenceDaoValues.get(dataSourceName) != null) {
                     return persistenceDaoValues.get(dataSourceName);
                 } else {
-                	if (!LegacyUtils.useLegacy(clazz)) {
-                        throw new IllegalStateException(this.getClass() + " called with non-legacy class: " + clazz);
-                    } else {
-                        //using OJB
-                        PersistenceDaoOjb persistDaoOjb = new PersistenceDaoOjb();
-                        persistDaoOjb.setJcdAlias(dataSourceName);
-                
-                        persistenceDaoValues.put(dataSourceName, persistDaoOjb);
-                        return persistDaoOjb;
-                    }
+                    //using OJB
+                    PersistenceDaoOjb persistDaoOjb = new PersistenceDaoOjb();
+                    persistDaoOjb.setJcdAlias(dataSourceName);
 
+                    persistenceDaoValues.put(dataSourceName, persistDaoOjb);
+                    return persistDaoOjb;
                 }
 
             }
-        }
-
-        if (!LegacyUtils.useLegacy(clazz)) {
-            throw new IllegalStateException(this.getClass() + " called with non-legacy class: " + clazz);
         }
     	return persistenceDaoOjb;
     }

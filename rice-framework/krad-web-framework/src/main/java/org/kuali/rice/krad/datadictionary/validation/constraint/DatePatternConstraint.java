@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,8 +50,7 @@ public class DatePatternConstraint extends ValidDataPatternConstraint {
      */
     @Override
     protected String getRegexString() {
-        List<String> dateFormatParams = parseConfigValues(ConfigContext.getCurrentContextConfig().getProperty(
-                CoreConstants.STRING_TO_DATE_FORMATS));
+        List<String> dateFormatParams = loadFormats(CoreConstants.STRING_TO_DATE_FORMATS, CoreConstants.STRING_TO_DATE_FORMATS_DEFAULT);
         if (allowedFormats != null && !allowedFormats.isEmpty()) {
             if (dateFormatParams.containsAll(allowedFormats)) {
                 dateFormatParams = allowedFormats;
@@ -60,9 +59,6 @@ public class DatePatternConstraint extends ValidDataPatternConstraint {
             }
         }
 
-        if (dateFormatParams.isEmpty()) {
-            //exception
-        }
         String regex = "";
         int i = 0;
         for (String format : dateFormatParams) {
@@ -79,8 +75,8 @@ public class DatePatternConstraint extends ValidDataPatternConstraint {
     /**
      * Converts a date format supplied to the appropriate date format regex equivalent
      *
-     * @param format
-     * @return
+     * @param format date format
+     * @return regex for validating the date format
      */
     private String convertDateFormatToRegex(String format) {
         format = format.replace("\\", "\\\\").replace(".", "\\.").replace("-", "\\-").replace("+", "\\+").replace("(",
@@ -110,10 +106,40 @@ public class DatePatternConstraint extends ValidDataPatternConstraint {
     }
 
     /**
+     * Loads a list of date formats from the config, using a default for fallback.
+     *
+     * @param property the config property
+     * @param defaultValue the default value
+     *
+     * @return the config or default value
+     */
+    private List<String> loadFormats(String property, String defaultValue) {
+        return parseConfigValues(loadFormat(property, defaultValue));
+    }
+
+    /**
+     * Loads a particular date format from the config, using a default for fallback.
+     *
+     * @param property the config property
+     * @param defaultValue the default value
+     *
+     * @return the config value or default value
+     */
+    private String loadFormat(String property, String defaultValue) {
+        String format = ConfigContext.getCurrentContextConfig().getProperty(property);
+
+        if (StringUtils.isNotBlank(format)) {
+            return format;
+        }
+
+        return defaultValue;
+    }
+
+    /**
      * The dateTime config vars are ';' seperated.
      *
-     * @param configValue
-     * @return
+     * @param configValue configuration value
+     * @return list of tokens in the config value, split on ';'
      */
     private List<String> parseConfigValues(String configValue) {
         if (configValue == null || "".equals(configValue)) {
@@ -153,8 +179,7 @@ public class DatePatternConstraint extends ValidDataPatternConstraint {
             if (allowedFormats != null && !allowedFormats.isEmpty()) {
                 validationMessageParams.add(StringUtils.join(allowedFormats, ", "));
             } else {
-                List<String> dateFormatParams = parseConfigValues(ConfigContext.getCurrentContextConfig().getProperty(
-                        CoreConstants.STRING_TO_DATE_FORMATS));
+                List<String> dateFormatParams = loadFormats(CoreConstants.STRING_TO_DATE_FORMATS, CoreConstants.STRING_TO_DATE_FORMATS_DEFAULT);
                 validationMessageParams.add(StringUtils.join(dateFormatParams, ", "));
             }
         }

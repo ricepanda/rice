@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,24 @@
  */
 package org.kuali.rice.kim.test.service;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.util.List;
+
 import org.junit.Test;
 import org.kuali.rice.kim.api.group.Group;
+import org.kuali.rice.kim.api.group.GroupMember;
 import org.kuali.rice.kim.api.group.GroupService;
 import org.kuali.rice.kim.api.services.KimApiServiceLocator;
 import org.kuali.rice.kim.test.KIMTestCase;
 import org.kuali.rice.test.BaselineTestCase;
 
-import java.util.List;
-
-import static org.junit.Assert.*;
-
 /**
- * Test the GroupService 
- * 
+ * Test the GroupService
+ *
  * @author Kuali Rice Team (rice.collab@kuali.org)
  *
  */
@@ -37,7 +41,8 @@ public class GroupServiceTest extends KIMTestCase {
 
 	private GroupService groupService;
 
-	public void setUp() throws Exception {
+	@Override
+    public void setUp() throws Exception {
 		super.setUp();
 		setGroupService(KimApiServiceLocator.getGroupService());
 	}
@@ -67,12 +72,12 @@ public class GroupServiceTest extends KIMTestCase {
 		assertFalse( "g1 must not contain group g3", groupIds.contains( "g3" ) );
 
 		groupIds = groupService.getDirectMemberGroupIds("g2");
-		
+
 		assertTrue( "g2 must contain group g3", groupIds.contains( "g3" ) );
 		assertFalse( "g2 must not contain group g4 (inactive)", groupIds.contains( "g4" ) );
-		
+
 	}
-	
+
 	@Test
 	public void testGetMemberGroupIds() {
 		List<String> groupIds = groupService.getMemberGroupIds("g1");
@@ -86,16 +91,18 @@ public class GroupServiceTest extends KIMTestCase {
 		assertTrue( "g2 must contain group g3", groupIds.contains( "g3" ) );
 		assertFalse( "g2 must not contain group g1", groupIds.contains( "g1" ) );
 	}
-	
+
 	// test principal membership
 	@Test
 	public void testPrincipalMembership() {
+        clearNamedCache(Group.Cache.NAME);
+        clearNamedCache(GroupMember.Cache.NAME);
 		assertTrue( "p1 must be in g2", groupService.isMemberOfGroup("p1", "g2") );
 		assertTrue( "p1 must be direct member of g2", groupService.isDirectMemberOfGroup("p1", "g2") );
 		assertTrue( "p3 must be in g2", groupService.isMemberOfGroup("p3", "g2") );
 		assertFalse( "p3 should not be a direct member of g2", groupService.isDirectMemberOfGroup("p3", "g2") );
 		assertFalse( "p4 should not be reported as a member of g2 (g4 is inactive)", groupService.isMemberOfGroup("p4", "g2") );
-		
+
 		// re-activate group 4
 		Group g4Info = groupService.getGroup("g4");
         Group.Builder builder = Group.Builder.create(g4Info);
@@ -104,6 +111,9 @@ public class GroupServiceTest extends KIMTestCase {
 		Group ug = groupService.updateGroup("g4", builder.build());
         assertTrue(ug.isActive());
 
+        clearNamedCache(Group.Cache.NAME);
+        clearNamedCache(GroupMember.Cache.NAME);
+
 		Group gg = groupService.getGroup("g4");
         assertTrue(gg.isActive());
 		assertTrue( "p4 should be reported as a member of g2 (now that g4 is active)", groupService.isMemberOfGroup("p4", "g2") );
@@ -111,6 +121,10 @@ public class GroupServiceTest extends KIMTestCase {
         builder = Group.Builder.create(gg);
         builder.setActive(false);
         groupService.updateGroup(builder.build());
+
+        clearNamedCache(Group.Cache.NAME);
+        clearNamedCache(GroupMember.Cache.NAME);
+
         assertFalse( "p4 should be reported as a member of g2 (now that g4 is active)", groupService.isMemberOfGroup("p4", "g2") );
 	}
 

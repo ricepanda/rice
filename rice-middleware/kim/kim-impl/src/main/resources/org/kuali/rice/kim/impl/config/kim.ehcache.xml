@@ -1,6 +1,6 @@
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -53,5 +53,6 @@
   <cache name="http://rice.kuali.org/kim/v2_0/DelegateMemberType" maxEntriesLocalHeap="200000" timeToLiveSeconds="1800"/>
   <cache name="http://rice.kuali.org/kim/v2_0/RoleResponsibilityType" maxEntriesLocalHeap="200000" timeToLiveSeconds="1800"/>
   <cache name="http://rice.kuali.org/kim/v2_0/DelegateTypeType" maxEntriesLocalHeap="50000" timeToLiveSeconds="1800"/>
+  <cache name="http://rice.kuali.org/kim/v2_0/KimAttributeType" maxEntriesLocalHeap="500" timeToLiveSeconds="1800" copyOnRead="false" copyOnWrite="false"/>
 
 </ehcache>

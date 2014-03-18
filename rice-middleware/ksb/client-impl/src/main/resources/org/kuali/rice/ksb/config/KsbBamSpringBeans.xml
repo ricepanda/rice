@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@
 	</bean>
 
 	<bean id="rice.ksb.bamService" class="org.kuali.rice.ksb.messaging.bam.service.impl.BAMServiceImpl">
-		<property name="dao" ref="rice.ksb.bamDao" />
+		<property name="dataObjectService" ref="rice.ksb.message.dataObjectService" />
 	</bean>
 
     <bean class="org.springframework.aop.framework.autoproxy.BeanNameAutoProxyCreator">

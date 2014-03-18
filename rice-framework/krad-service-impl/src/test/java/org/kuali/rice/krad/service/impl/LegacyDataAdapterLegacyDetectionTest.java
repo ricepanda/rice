@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,6 @@
  * limitations under the License.
  */
 package org.kuali.rice.krad.service.impl;
-
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyMap;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-
-import java.io.InputStream;
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.xml.namespace.QName;
 
 import org.apache.ojb.broker.metadata.DescriptorRepository;
 import org.apache.ojb.broker.metadata.MetadataManager;
@@ -80,6 +60,21 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.core.io.Resource;
+
+import javax.xml.namespace.QName;
+import java.io.InputStream;
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyMap;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
 
 /**
  * Tests that the LegacyDataAdapter is correctly calling either the DataObjectService or appropriate legacy service
@@ -145,6 +140,7 @@ public class LegacyDataAdapterLegacyDetectionTest {
         // make sure these calls return something because they are inevitably followed by deferences
         when(dataObjectService.findMatching(any(Class.class), any(QueryByCriteria.class))).thenReturn(mock(QueryResults.class));
         when(dataObjectService.wrap(any(Class.class))).thenReturn(wrap);
+        when(dataObjectService.getMetadataRepository()).thenReturn(metadataRepository);
         when(metadataRepository.getMetadata(any(Class.class))).thenReturn(mock(DataObjectMetadata.class));
         when(lookupCriteriaGenerator.generateCriteria(any(Class.class), anyMap(), anyBoolean())).thenReturn(
                 QueryByCriteria.Builder.create());
@@ -187,7 +183,7 @@ public class LegacyDataAdapterLegacyDetectionTest {
     public void testLinkAndSave() {
         Serializable obj = newDataObject();
         lda.linkAndSave(obj);
-        verify(dataObjectService).save(obj, PersistenceOption.LINK);
+        verify(dataObjectService).save(obj, PersistenceOption.LINK_KEYS);
         verify(businessObjectService, never()).linkAndSave(any(PersistableBusinessObject.class));
     }
 
@@ -329,17 +325,13 @@ public class LegacyDataAdapterLegacyDetectionTest {
         verify(dataObjectService, never()).wrap(obj);
     }
 
-
     @Test
     public void testRetrieveNonKeyFields() {
         Object obj = new Object();
-        try{
-            lda.retrieveNonKeyFields(obj);
-            Assert.fail("Retrieve non key fields should not be called in non legacy contexts");
-        } catch(UnsupportedOperationException e){
-            verify(persistenceService, never()).retrieveNonKeyFields(any());
-        }
+        lda.retrieveNonKeyFields(obj);
+        verify(persistenceService, never()).retrieveNonKeyFields(any());
     }
+
     @Test
     public void testLegacyRetrieveNonKeyFields() {
         enableLegacyFramework();
@@ -353,13 +345,10 @@ public class LegacyDataAdapterLegacyDetectionTest {
     public void testRetrieveReferenceObject() {
         Object obj = new Object();
         String name = "";
-        try{
-            lda.retrieveReferenceObject(obj, name);
-            Assert.fail("Retrieve reference object is not supported in non legacy context");
-        } catch(UnsupportedOperationException e){
-            verify(persistenceService, never()).retrieveReferenceObject(any(), anyString());
-        }
+        lda.retrieveReferenceObject(obj, name);
+        verify(persistenceService, never()).retrieveReferenceObject(any(), anyString());
     }
+
     @Test
     public void testLegacyRetrieveReferenceObject() {
         enableLegacyFramework();
@@ -373,14 +362,10 @@ public class LegacyDataAdapterLegacyDetectionTest {
     @Test
     public void testRefreshAllNonUpdatingReferences() {
         Object obj = new Object();
-        try{
-            lda.refreshAllNonUpdatingReferences(obj);
-            Assert.fail("Refresh all non updating references should fall in non legacy context");
-        } catch(UnsupportedOperationException e){
-            verify(persistenceService, never()).refreshAllNonUpdatingReferences(any(PersistableBusinessObject.class));
-        }
-
+        lda.refreshAllNonUpdatingReferences(obj);
+        verify(persistenceService, never()).refreshAllNonUpdatingReferences(any(PersistableBusinessObject.class));
     }
+
     @Test
     public void testLegacyRefreshAllNonUpdatingReferences() {
         enableLegacyFramework();

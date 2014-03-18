@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,25 +17,25 @@ package org.kuali.rice.kim.test
 
 import org.junit.Before
 import org.kuali.rice.kim.bo.ui.KimDocumentBoActivatableEditableBase
-import org.kuali.rice.test.persistence.PersistenceTestHelper
+import org.kuali.rice.test.persistence.JpaPersistenceTestHelper
 
 /**
  * Tests persisting Entity objects in order to verify ORM mappings
  */
-abstract class BoPersistenceTest extends KIMTestCase {
+public abstract class BoPersistenceTest extends KIMTestCase {
 
-    @Delegate PersistenceTestHelper helper
+    @Delegate JpaPersistenceTestHelper helper
     protected factory = new EntityFactory()
 
     @Before
     void init() {
-        helper = new PersistenceTestHelper("kimDataSource")
+        helper = new JpaPersistenceTestHelper("kimDataSource")
     }
 
     protected def docno_field(KimDocumentBoActivatableEditableBase bo) {
         [ FDOC_NBR: bo.documentNumber ]
     }
     protected def kimdoc_fields(KimDocumentBoActivatableEditableBase bo) {
-        basic_fields(bo) + active_field(bo) + default_field(bo) + edit_field(bo) + docno_field(bo)
+        active_field(bo) + default_field(bo) + edit_field(bo) + docno_field(bo)
     }
 }

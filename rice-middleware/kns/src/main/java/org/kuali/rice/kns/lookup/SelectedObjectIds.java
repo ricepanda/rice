@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,8 @@
  */
 package org.kuali.rice.kns.lookup;
 
-import javax.persistence.Basic;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.Lob;
-import javax.persistence.Table;
-
-
-@Entity
-@Table(name="KRNS_LOOKUP_SEL_T")
 public class SelectedObjectIds extends MultipleValueLookupMetadata {
-    @Lob
-	@Basic(fetch=FetchType.LAZY)
-	@Column(name="SEL_OBJ_IDS")
+
 	private String selectedObjectIds;
     
     public String getSelectedObjectIds() {

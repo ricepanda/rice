@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 package org.kuali.rice.krad.test.document.bo;
 
 import org.kuali.rice.krad.bo.DataObjectBase;
-import org.kuali.rice.krad.data.jpa.eclipselink.PortableSequenceGenerator;
+import org.kuali.rice.krad.data.jpa.PortableSequenceGenerator;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -52,10 +52,6 @@ public class SimpleAccount extends DataObjectBase {
     @Transient
     private Object extension;
 
-    @ManyToOne(fetch=FetchType.LAZY, cascade={CascadeType.REFRESH})
-    @JoinColumn(name="ACCT_FO_ID",insertable=false,updatable=false)
-    private AccountManager accountManager;
-
     public String getName() {
         return name;
     }
@@ -79,14 +75,6 @@ public class SimpleAccount extends DataObjectBase {
     public void setAmId(Long id) {
         System.err.println("Setting AmId from " + this.amId + " to " + id);
         this.amId = id;
-    }
-
-    public AccountManager getAccountManager() {
-        return this.accountManager;
-    }
-
-    public void setAccountManager(AccountManager accountManager) {
-        this.accountManager = accountManager;
     }
 
     public Object getExtension() {

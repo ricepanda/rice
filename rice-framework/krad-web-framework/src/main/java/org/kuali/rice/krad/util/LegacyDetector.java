@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.kuali.rice.krad.util;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -26,6 +27,8 @@ import org.kuali.rice.krad.data.metadata.MetadataRepository;
 import org.kuali.rice.krad.datadictionary.BusinessObjectEntry;
 import org.kuali.rice.krad.service.DataDictionaryService;
 import org.springframework.util.ClassUtils;
+
+import com.google.common.collect.Lists;
 
 /**
  * Utility class which is used to determine whether the given object or class has been configured in the "legacy" KRAD/KNS
@@ -120,6 +123,8 @@ class LegacyDetector {
 
     /**
      * A type is considered krad-data managed if it is included in the metadata repository.
+     * @param type data type
+     * @return true if the type is krad-data managed
      */
     public boolean isKradDataManaged(Class<?> type) {
         return metadataRepository.contains(type);
@@ -207,8 +212,8 @@ class LegacyDetector {
         //ADDED hack to handle classes like PersonImpl that are not in OJB but are Legacy and should
         //goto that adapter
         if (isLegacyDataFrameworkEnabled() &&
-                (ojbLoadedClass || (isTransientBoOnClasspath(dataObjectClass))) &&
-                        !isKradDataManaged(dataObjectClass)) {
+                (ojbLoadedClass || isTransientBO(dataObjectClass)) &&
+                !isKradDataManaged(dataObjectClass)) {
             return true;
         }
         // default to non-legacy when in a non-legacy context
@@ -216,20 +221,34 @@ class LegacyDetector {
     }
 
     /**
-     * Confirm if TransientBO on classpath and this is one
-     * @param dataObjectClass
-     * @return
+     * Confirm if this is a BO that is not mapped by OJB but should be handled by the Legacy Adapter.
+     *
+     * @param dataObjectClass the data object class
+     *
+     * @return true if {@code dataObjectClass} should be handled by the Legacy Adapter, false otherwise
      */
-    private boolean isTransientBoOnClasspath(Class dataObjectClass){
-        Class<?> tbob = null;
-        Object dataObject = null;
+    private boolean isTransientBO(Class dataObjectClass) {
+        boolean isTransientBo = false;
+
+        List<String> transientClassNames = Lists.newArrayList(
+                "org.kuali.rice.krad.bo.TransientBusinessObjectBase");
+
         try {
-            dataObject = dataObjectClass.newInstance();
-            tbob = Class.forName("org.kuali.rice.krad.bo.TransientBusinessObjectBase");
+            Object dataObject = dataObjectClass.newInstance();
+
+            for (String transientClassName : transientClassNames) {
+                Class<?> transientClass = Class.forName(transientClassName);
+
+                if (transientClass.isInstance(dataObject)) {
+                    isTransientBo = true;
+                    break;
+                }
+            }
         } catch (Exception e) {
             return false;
         }
-        return tbob.isInstance(dataObject);
+
+        return isTransientBo;
     }
 
     /**

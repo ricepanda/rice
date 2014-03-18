@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,6 @@ import org.apache.cxf.phase.PhaseInterceptorChain;
 import org.kuali.rice.ksb.messaging.remotedservices.EchoService;
 import org.kuali.rice.ksb.messaging.remotedservices.ServiceCallInformationHolder;
 
-import javax.annotation.Resource;
-import javax.ws.rs.core.HttpHeaders;
-import javax.xml.ws.WebServiceContext;
-import javax.xml.ws.handler.MessageContext;
 import java.util.List;
 import java.util.Map;
 
@@ -37,7 +33,7 @@ public class EchoService2Impl implements EchoService {
 	}
 
     public void captureHeaders() {
-        ServiceCallInformationHolder.stuff.put("capturedHeaders", PhaseInterceptorChain.getCurrentMessage().get(Message.PROTOCOL_HEADERS));
+        ServiceCallInformationHolder.multiValues = (Map<String, List<String>>)PhaseInterceptorChain.getCurrentMessage().get(Message.PROTOCOL_HEADERS);
     }
 
 }

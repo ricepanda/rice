@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ import org.kuali.rice.krad.datadictionary.parse.BeanTags;
 @BeanTags({@BeanTag(name = "linkGroup-bean", parent = "Uif-LinkGroup"),
         @BeanTag(name = "linkSubGroup-bean", parent = "Uif-LinkSubGroup"),
         @BeanTag(name = "lookupView-resultActions-bean", parent = "Uif-LookupView-ResultActions")})
-public class LinkGroup extends Group {
+public class LinkGroup extends GroupBase {
     private static final long serialVersionUID = -4173031543626881250L;
 
     private String groupBeginDelimiter;
@@ -137,21 +137,6 @@ public class LinkGroup extends Group {
      */
     public void setEmptyLinkGroupString(String emptyLinkGroupString) {
         this.emptyLinkGroupString = emptyLinkGroupString;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        LinkGroup linkGroupCopy = (LinkGroup) component;
-
-        linkGroupCopy.setGroupBeginDelimiter(this.groupBeginDelimiter);
-        linkGroupCopy.setGroupEndDelimiter(this.groupEndDelimiter);
-        linkGroupCopy.setLinkSeparator(this.linkSeparator);
-        linkGroupCopy.setEmptyLinkGroupString(this.emptyLinkGroupString);
     }
 
 }

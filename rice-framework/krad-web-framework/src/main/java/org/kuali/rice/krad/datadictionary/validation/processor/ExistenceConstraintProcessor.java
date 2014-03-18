@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,8 +72,12 @@ public class ExistenceConstraintProcessor extends OptionalElementConstraintProce
         if (constraint.isRequired().booleanValue() && !skipConstraint(attributeValueReader)) {
             // If this attribute is required and the value is null then
             if (ValidationUtils.isNullOrEmpty(value)) {
+                String errorParameter = attributeValueReader.getLabel(attributeValueReader.getAttributeName());
+                if (ValidationUtils.isNullOrEmpty(errorParameter)) {
+                    errorParameter = attributeValueReader.getAttributeName();
+                }
                 return result.addError(attributeValueReader, CONSTRAINT_NAME, RiceKeyConstants.ERROR_REQUIRED,
-                        attributeValueReader.getLabel(attributeValueReader.getAttributeName()));
+                        errorParameter);
             }
             return result.addSuccess(attributeValueReader, CONSTRAINT_NAME);
         }
@@ -87,7 +91,7 @@ public class ExistenceConstraintProcessor extends OptionalElementConstraintProce
      * attribute and the complex attribute is not required.
      *
      * @param attributeValueReader
-     * @return
+     * @return true if the constraint should be skipped
      */
     private boolean skipConstraint(AttributeValueReader attributeValueReader) {
         boolean skipConstraint = false;

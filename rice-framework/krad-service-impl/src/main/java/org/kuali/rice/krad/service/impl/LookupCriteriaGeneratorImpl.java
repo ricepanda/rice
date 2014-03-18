@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,18 +30,17 @@ import org.kuali.rice.core.framework.persistence.ojb.conversion.OjbCharBooleanCo
 import org.kuali.rice.core.framework.persistence.platform.DatabasePlatform;
 import org.kuali.rice.krad.bo.InactivatableFromTo;
 import org.kuali.rice.krad.data.DataObjectService;
-import org.kuali.rice.krad.data.metadata.MetadataRepository;
+import org.kuali.rice.krad.lookup.LookupInputField;
 import org.kuali.rice.krad.lookup.LookupUtils;
+import org.kuali.rice.krad.lookup.LookupView;
 import org.kuali.rice.krad.service.DataDictionaryService;
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.UifParameters;
 import org.kuali.rice.krad.uif.component.Component;
-import org.kuali.rice.krad.lookup.LookupInputField;
-import org.kuali.rice.krad.lookup.LookupView;
 import org.kuali.rice.krad.uif.view.View;
 import org.kuali.rice.krad.util.GlobalVariables;
-import org.kuali.rice.krad.util.KRADConstants;
 import org.kuali.rice.krad.util.KRADPropertyConstants;
+import org.kuali.rice.krad.util.KRADUtils;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -64,7 +63,6 @@ public class LookupCriteriaGeneratorImpl implements LookupCriteriaGenerator {
     private DataDictionaryService dataDictionaryService;
     private DatabasePlatform dbPlatform;
     private DataObjectService dataObjectService;
-    private MetadataRepository metadataRepository;
 
     public DateTimeService getDateTimeService() {
         return dateTimeService;
@@ -96,14 +94,6 @@ public class LookupCriteriaGeneratorImpl implements LookupCriteriaGenerator {
 
     public void setDataObjectService(DataObjectService dataObjectService) {
         this.dataObjectService = dataObjectService;
-    }
-
-    public MetadataRepository getMetadataRepository() {
-        return metadataRepository;
-    }
-
-    public void setMetadataRepository(MetadataRepository metadataRepository) {
-        this.metadataRepository = metadataRepository;
     }
 
     @Override
@@ -138,8 +128,9 @@ public class LookupCriteriaGeneratorImpl implements LookupCriteriaGenerator {
                 searchValue = formProp.getValue();
             }
 
-            if (StringUtils.isNotBlank(searchValue) & PropertyUtils.isWriteable(example, propertyName)) {
-                Class<?> propertyType = getPropertyType(example, propertyName);
+            Object instanObject = instantiateLookupDataObject((Class<?>)example);
+            if (StringUtils.isNotBlank(searchValue) & PropertyUtils.isWriteable(instanObject, propertyName)) {
+                Class<?> propertyType = getPropertyType(instanObject, propertyName);
                 if (TypeUtils.isIntegralClass(propertyType) || TypeUtils.isDecimalClass(propertyType) ) {
                     addEqualNumeric(criteria, propertyName, propertyType, searchValue);
                 } else if (TypeUtils.isTemporalClass(propertyType)) {
@@ -175,7 +166,8 @@ public class LookupCriteriaGeneratorImpl implements LookupCriteriaGenerator {
     }
 
     public boolean createCriteria(Object example, String searchValue, String propertyName, boolean caseInsensitive, boolean treatWildcardsAndOperatorsAsLiteral, Predicates criteria) {
-        return createCriteria( example, searchValue, propertyName, caseInsensitive, treatWildcardsAndOperatorsAsLiteral, criteria, null );
+        return createCriteria(example, searchValue, propertyName, caseInsensitive, treatWildcardsAndOperatorsAsLiteral,
+                criteria, null);
     }
 
     protected boolean createCriteria(Object example, String searchValue, String propertyName, boolean caseInsensitive, boolean treatWildcardsAndOperatorsAsLiteral, Predicates criteria, Map<String, String> searchValues) {
@@ -187,7 +179,9 @@ public class LookupCriteriaGeneratorImpl implements LookupCriteriaGenerator {
         // get property type which is used to determine type of criteria
         Class<?> propertyType = getPropertyType(example, propertyName);
         if (propertyType == null) {
-            return false;
+        	// Instead of skipping the property if we can't determine a type, assume it's a String
+        	// so that the criteria does not get dropped
+            propertyType = String.class;
         }
 
         // build criteria
@@ -314,7 +308,8 @@ public class LookupCriteriaGeneratorImpl implements LookupCriteriaGenerator {
                     }
                 }
             }
-            boolean treatWildcardsAndOperatorsAsLiteral = doesLookupFieldTreatWildcardsAndOperatorsAsLiteral(type, pkFieldName);
+            boolean treatWildcardsAndOperatorsAsLiteral = doesLookupFieldTreatWildcardsAndOperatorsAsLiteral(type,
+                    pkFieldName);
             createCriteria(dataObject, pkValue, pkFieldName, false, treatWildcardsAndOperatorsAsLiteral, criteria);
         }
         return criteria;
@@ -345,7 +340,11 @@ public class LookupCriteriaGeneratorImpl implements LookupCriteriaGenerator {
         return false;
     }
 
-    protected BigDecimal cleanNumeric(String value) {
+    /**
+     * @throws NumberFormatException if {@code value} is not a valid
+     *         representation of a {@code BigDecimal}.
+     */
+    protected Number cleanNumeric(String value, Class<?> propertyType) {
         String cleanedValue = value.replaceAll("[^-0-9.]", "");
         // ensure only one "minus" at the beginning, if any
         if (cleanedValue.lastIndexOf('-') > 0) {
@@ -360,13 +359,15 @@ public class LookupCriteriaGeneratorImpl implements LookupCriteriaGenerator {
         if (cleanedValue.indexOf('.') != decimalLoc) {
             cleanedValue = cleanedValue.substring(0, decimalLoc).replaceAll("\\.", "") + cleanedValue.substring(decimalLoc);
         }
-        try {
-            return new BigDecimal(cleanedValue);
-        } catch (NumberFormatException ex) {
-            GlobalVariables.getMessageMap().putError(KRADConstants.DOCUMENT_ERRORS, RiceKeyConstants.ERROR_CUSTOM, new String[] { "Invalid Numeric Input: " + value });
-            return null;
-        }
+        Object rv = KRADUtils.hydrateAttributeValue(propertyType, cleanedValue);
+
+        if( !(rv instanceof  Number))
+            throw new NumberFormatException("Value: " + cleanedValue + " cannot be converted into number type");
+
+        return (Number) rv;
     }
+
+
 
     protected void addOrCriteria(String propertyName, String propertyValue, Class propertyType, boolean caseInsensitive, Predicates criteria) {
         addLogicalOperatorCriteria(propertyName, propertyValue, propertyType, caseInsensitive, criteria, SearchOperator.OR.op());
@@ -429,7 +430,7 @@ public class LookupCriteriaGeneratorImpl implements LookupCriteriaGenerator {
                 addLike(criteria, propertyName, propertyValue, caseInsensitive);
             }
         } else if (TypeUtils.isIntegralClass(propertyType) || TypeUtils.isDecimalClass(propertyType)) {
-            addNumericRangeCriteria(propertyName, propertyValue, treatWildcardsAndOperatorsAsLiteral, criteria);
+            addNumericRangeCriteria(propertyName, propertyValue, propertyType, treatWildcardsAndOperatorsAsLiteral, criteria);
         } else if (TypeUtils.isTemporalClass(propertyType)) {
             addDateRangeCriteria(propertyName, propertyValue, treatWildcardsAndOperatorsAsLiteral, criteria);
         } else if (TypeUtils.isBooleanClass(propertyType)) {
@@ -458,59 +459,67 @@ public class LookupCriteriaGeneratorImpl implements LookupCriteriaGenerator {
      * Adds to the criteria object based on query characters given
      */
     protected void addDateRangeCriteria(String propertyName, String propertyValue, boolean treatWildcardsAndOperatorsAsLiteral, Predicates criteria) {
-        if (StringUtils.contains(propertyValue, SearchOperator.BETWEEN.op())) {
-            if (treatWildcardsAndOperatorsAsLiteral)
-                throw new RuntimeException("Wildcards and operators are not allowed on this date field: " + propertyName);
-            String[] rangeValues = StringUtils.split(propertyValue, SearchOperator.BETWEEN.op());
-            addBetween(criteria, propertyName, parseDate(LookupUtils.scrubQueryCharacters(rangeValues[0])), parseDate(LookupUtils.scrubQueryCharacters(rangeValues[1])));
-        } else if (propertyValue.startsWith(SearchOperator.GREATER_THAN_EQUAL.op())) {
-            if (treatWildcardsAndOperatorsAsLiteral)
-                throw new RuntimeException("Wildcards and operators are not allowed on this date field: " + propertyName);
-            addGreaterThanOrEqual(criteria, propertyName, parseDate(LookupUtils.scrubQueryCharacters(propertyValue)));
-        } else if (propertyValue.startsWith(SearchOperator.LESS_THAN_EQUAL.op())) {
-            if (treatWildcardsAndOperatorsAsLiteral)
-                throw new RuntimeException("Wildcards and operators are not allowed on this date field: " + propertyName);
-            addLessThanOrEqual(criteria, propertyName, parseDate(LookupUtils.scrubQueryCharacters(propertyValue)));
-        } else if (propertyValue.startsWith(SearchOperator.GREATER_THAN.op())) {
-            if (treatWildcardsAndOperatorsAsLiteral)
-                throw new RuntimeException("Wildcards and operators are not allowed on this date field: " + propertyName);
-            addGreaterThan(criteria, propertyName, parseDate(LookupUtils.scrubQueryCharacters(propertyValue)));
-        } else if (propertyValue.startsWith(SearchOperator.LESS_THAN.op())) {
-            if (treatWildcardsAndOperatorsAsLiteral)
-                throw new RuntimeException("Wildcards and operators are not allowed on this date field: " + propertyName);
-            addLessThan(criteria, propertyName, parseDate(LookupUtils.scrubQueryCharacters(propertyValue)));
-        } else {
-            addEqual(criteria, propertyName, parseDate(LookupUtils.scrubQueryCharacters(propertyValue)));
+        try {
+            if (StringUtils.contains(propertyValue, SearchOperator.BETWEEN.op())) {
+                if (treatWildcardsAndOperatorsAsLiteral)
+                    throw new RuntimeException("Wildcards and operators are not allowed on this date field: " + propertyName);
+                String[] rangeValues = StringUtils.split(propertyValue, SearchOperator.BETWEEN.op());
+                addBetween(criteria, propertyName, parseDate(LookupUtils.scrubQueryCharacters(rangeValues[0])), parseDate(LookupUtils.scrubQueryCharacters(rangeValues[1])));
+            } else if (propertyValue.startsWith(SearchOperator.GREATER_THAN_EQUAL.op())) {
+                if (treatWildcardsAndOperatorsAsLiteral)
+                    throw new RuntimeException("Wildcards and operators are not allowed on this date field: " + propertyName);
+                addGreaterThanOrEqual(criteria, propertyName, parseDate(LookupUtils.scrubQueryCharacters(propertyValue)));
+            } else if (propertyValue.startsWith(SearchOperator.LESS_THAN_EQUAL.op())) {
+                if (treatWildcardsAndOperatorsAsLiteral)
+                    throw new RuntimeException("Wildcards and operators are not allowed on this date field: " + propertyName);
+                addLessThanOrEqual(criteria, propertyName, parseDate(LookupUtils.scrubQueryCharacters(propertyValue)));
+            } else if (propertyValue.startsWith(SearchOperator.GREATER_THAN.op())) {
+                if (treatWildcardsAndOperatorsAsLiteral)
+                    throw new RuntimeException("Wildcards and operators are not allowed on this date field: " + propertyName);
+                addGreaterThan(criteria, propertyName, parseDate(LookupUtils.scrubQueryCharacters(propertyValue)));
+            } else if (propertyValue.startsWith(SearchOperator.LESS_THAN.op())) {
+                if (treatWildcardsAndOperatorsAsLiteral)
+                    throw new RuntimeException("Wildcards and operators are not allowed on this date field: " + propertyName);
+                addLessThan(criteria, propertyName, parseDate(LookupUtils.scrubQueryCharacters(propertyValue)));
+            } else {
+                addEqual(criteria, propertyName, parseDate(LookupUtils.scrubQueryCharacters(propertyValue)));
+            }
+        } catch (ParseException ex) {
+            GlobalVariables.getMessageMap().putError("lookupCriteria[" + propertyName + "]", RiceKeyConstants.ERROR_DATE, propertyValue);
         }
     }
 
     /**
      * Adds to the criteria object based on query characters given
      */
-    protected void addNumericRangeCriteria(String propertyName, String propertyValue, boolean treatWildcardsAndOperatorsAsLiteral, Predicates criteria) {
-        if (StringUtils.contains(propertyValue, SearchOperator.BETWEEN.op())) {
-            if (treatWildcardsAndOperatorsAsLiteral)
-                throw new RuntimeException("Cannot use wildcards and operators on numeric field " + propertyName);
-            String[] rangeValues = StringUtils.split(propertyValue, SearchOperator.BETWEEN.op());
-            addBetween(criteria, propertyName, cleanNumeric(rangeValues[0]), cleanNumeric(rangeValues[1]));
-        } else if (propertyValue.startsWith(SearchOperator.GREATER_THAN_EQUAL.op())) {
-            if (treatWildcardsAndOperatorsAsLiteral)
-                throw new RuntimeException("Cannot use wildcards and operators on numeric field " + propertyName);
-            addGreaterThanOrEqual(criteria, propertyName, cleanNumeric(propertyValue));
-        } else if (propertyValue.startsWith(SearchOperator.LESS_THAN_EQUAL.op())) {
-            if (treatWildcardsAndOperatorsAsLiteral)
-                throw new RuntimeException("Cannot use wildcards and operators on numeric field " + propertyName);
-            addLessThanOrEqual(criteria, propertyName, cleanNumeric(propertyValue));
-        } else if (propertyValue.startsWith(SearchOperator.GREATER_THAN.op())) {
-            if (treatWildcardsAndOperatorsAsLiteral)
-                throw new RuntimeException("Cannot use wildcards and operators on numeric field " + propertyName);
-            addGreaterThan(criteria, propertyName, cleanNumeric(propertyValue));
-        } else if (propertyValue.startsWith(SearchOperator.LESS_THAN.op())) {
-            if (treatWildcardsAndOperatorsAsLiteral)
-                throw new RuntimeException("Cannot use wildcards and operators on numeric field " + propertyName);
-            addLessThan(criteria, propertyName, cleanNumeric(propertyValue));
-        } else {
-            addEqual(criteria, propertyName, cleanNumeric(propertyValue));
+    protected void addNumericRangeCriteria(String propertyName, String propertyValue, Class<?> propertyType, boolean treatWildcardsAndOperatorsAsLiteral, Predicates criteria) {
+        try {
+            if (StringUtils.contains(propertyValue, SearchOperator.BETWEEN.op())) {
+                if (treatWildcardsAndOperatorsAsLiteral)
+                    throw new RuntimeException("Cannot use wildcards and operators on numeric field " + propertyName);
+                String[] rangeValues = StringUtils.split(propertyValue, SearchOperator.BETWEEN.op());
+                addBetween(criteria, propertyName, cleanNumeric(rangeValues[0], propertyType), cleanNumeric(rangeValues[1], propertyType));
+            } else if (propertyValue.startsWith(SearchOperator.GREATER_THAN_EQUAL.op())) {
+                if (treatWildcardsAndOperatorsAsLiteral)
+                    throw new RuntimeException("Cannot use wildcards and operators on numeric field " + propertyName);
+                addGreaterThanOrEqual(criteria, propertyName, cleanNumeric(propertyValue, propertyType));
+            } else if (propertyValue.startsWith(SearchOperator.LESS_THAN_EQUAL.op())) {
+                if (treatWildcardsAndOperatorsAsLiteral)
+                    throw new RuntimeException("Cannot use wildcards and operators on numeric field " + propertyName);
+                addLessThanOrEqual(criteria, propertyName, cleanNumeric(propertyValue,propertyType));
+            } else if (propertyValue.startsWith(SearchOperator.GREATER_THAN.op())) {
+                if (treatWildcardsAndOperatorsAsLiteral)
+                    throw new RuntimeException("Cannot use wildcards and operators on numeric field " + propertyName);
+                addGreaterThan(criteria, propertyName, cleanNumeric(propertyValue, propertyType));
+            } else if (propertyValue.startsWith(SearchOperator.LESS_THAN.op())) {
+                if (treatWildcardsAndOperatorsAsLiteral)
+                    throw new RuntimeException("Cannot use wildcards and operators on numeric field " + propertyName);
+                addLessThan(criteria, propertyName, cleanNumeric(propertyValue, propertyType));
+            } else {
+                addEqual(criteria, propertyName, cleanNumeric(propertyValue,propertyType));
+            }
+        } catch (NumberFormatException ex) {
+            GlobalVariables.getMessageMap().putError("lookupCriteria[" + propertyName + "]", RiceKeyConstants.ERROR_NUMBER, propertyValue);
         }
     }
 
@@ -679,17 +688,13 @@ public class LookupCriteriaGeneratorImpl implements LookupCriteriaGenerator {
     //    }
 
 
-    protected java.sql.Date parseDate(String dateString) {
+    protected java.sql.Date parseDate(String dateString) throws ParseException {
         dateString = dateString.trim();
-        try {
-            return dateTimeService.convertToSqlDate(dateString);
-        } catch (ParseException ex) {
-            return null;
-        }
+        return dateTimeService.convertToSqlDate(dateString);
     }
 
     protected List<String> listPrimaryKeyFieldNames(Class<?> type) {
-        return metadataRepository.getMetadata(type).getPrimaryKeyAttributeNames();
+        return getDataObjectService().getMetadataRepository().getMetadata(type).getPrimaryKeyAttributeNames();
     }
 
     protected Class<?> getPropertyType(Object example, String propertyName) {
@@ -731,7 +736,7 @@ public class LookupCriteriaGeneratorImpl implements LookupCriteriaGenerator {
                 // If the next level is a Collection, look into the collection,
                 // to find out what type its elements are.
                 if (Collection.class.isAssignableFrom(c)) {
-                    c = metadataRepository.getMetadata(o.getClass()).getCollection(parts[0]).getRelatedType();
+                    c = getDataObjectService().getMetadataRepository().getMetadata(o.getClass()).getCollection(parts[0]).getRelatedType();
                 }
 
                 // Look into the attribute class to see if it is writeable.
@@ -767,8 +772,12 @@ public class LookupCriteriaGeneratorImpl implements LookupCriteriaGenerator {
     }
 
     protected void addEqualTemporal(Predicates criteria, String propertyName, String searchValue) {
-        criteria.addPredicate(PredicateFactory.equal(propertyName, parseDate(LookupUtils.scrubQueryCharacters(
-                searchValue))));
+        try {
+            criteria.addPredicate(PredicateFactory.equal(propertyName, parseDate(LookupUtils.scrubQueryCharacters(
+                    searchValue))));
+        } catch (ParseException ex) {
+            GlobalVariables.getMessageMap().putError("lookupCriteria[" + propertyName + "]", RiceKeyConstants.ERROR_DATE, searchValue);
+        }
     }
 
     protected void addEqual(Predicates criteria, String propertyName, Object searchValue) {
@@ -793,7 +802,8 @@ public class LookupCriteriaGeneratorImpl implements LookupCriteriaGenerator {
 
     protected void addEqualToBoolean(Predicates criteria, String propertyName, String propertyValue) {
         String temp = LookupUtils.scrubQueryCharacters(propertyValue);
-        criteria.addPredicate(PredicateFactory.equal(propertyName, ("Y".equalsIgnoreCase(temp) || "T".equalsIgnoreCase(temp) || "1".equalsIgnoreCase(temp) || "true".equalsIgnoreCase(temp))));
+        criteria.addPredicate(PredicateFactory.equal(propertyName, ("Y".equalsIgnoreCase(temp) || "T".equalsIgnoreCase(
+                temp) || "1".equalsIgnoreCase(temp) || "true".equalsIgnoreCase(temp))));
     }
 
     /**

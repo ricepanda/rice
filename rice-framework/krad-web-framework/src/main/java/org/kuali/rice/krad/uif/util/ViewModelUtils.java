@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ public class ViewModelUtils {
      * </p>
      *
      * @param view view instance providing the context (abstract map)
+     * @param model the model
      * @param propertyPath full path to property to retrieve type for (relative to the form class)
      * @return Class<?> type of property in model, or Null if type could not be determined
      * @see org.kuali.rice.krad.uif.view.View#getObjectPathToConcreteClassMapping()

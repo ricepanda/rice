@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
  */
 package org.kuali.rice.kim.impl.group;
 
-import org.kuali.rice.core.api.criteria.CriteriaLookupService;
 
-public abstract class GroupServiceBase {
-    //protected BusinessObjectService businessObjectService;
-    private CriteriaLookupService criteriaLookupService;
+public abstract class
+        GroupServiceBase {
+
+//    private CriteriaLookupService criteriaLookupService;
 
 }

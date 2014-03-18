@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -315,11 +315,11 @@ public final class ActionDefinition extends AbstractDataTransferObject implement
         /**
          * Sets the value of the ruleId on this builder to the given value.
          *
-         * @param ruleId the ruleId value to set, must not be null or blank
-         * @throws IllegalArgumentException if the ruleId is null or blank
+         * @param ruleId the ruleId value to set, may be null but must not blank
+         * @throws IllegalArgumentException if the ruleId is blank
          */
 		public void setRuleId(String ruleId) {
-			if (StringUtils.isBlank(ruleId)) {
+			if (ruleId != null && StringUtils.isBlank(ruleId)) {
 	                throw new IllegalArgumentException("rule id is blank");
 			}
 			this.ruleId = ruleId;

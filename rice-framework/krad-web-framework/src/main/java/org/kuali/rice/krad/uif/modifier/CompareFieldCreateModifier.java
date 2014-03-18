@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import org.kuali.rice.krad.uif.field.Field;
 import org.kuali.rice.krad.uif.field.SpaceField;
 import org.kuali.rice.krad.uif.layout.GridLayoutManager;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleUtils;
 import org.kuali.rice.krad.uif.util.ComponentFactory;
 import org.kuali.rice.krad.uif.util.ComponentUtils;
 import org.kuali.rice.krad.uif.util.ObjectPropertyUtils;
@@ -79,8 +80,7 @@ public class CompareFieldCreateModifier extends ComponentModifierBase {
     /**
      * Calls <code>ViewHelperService</code> to initialize the header field prototype
      *
-     * @see org.kuali.rice.krad.uif.modifier.ComponentModifier#performInitialization(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
     public void performInitialization(Object model, Component component) {
@@ -101,8 +101,7 @@ public class CompareFieldCreateModifier extends ComponentModifierBase {
      * to suffixing the id and setting the readOnly property
      * </p>
      *
-     * @see org.kuali.rice.krad.uif.modifier.ComponentModifier#performModification(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
     public void performModification(Object model, Component component) {
@@ -136,8 +135,7 @@ public class CompareFieldCreateModifier extends ComponentModifierBase {
         
         context.put(UifConstants.ContextVariableNames.COMPONENT, component);
 
-        ExpressionEvaluator expressionEvaluator =
-                view.getViewHelperService().getExpressionEvaluator();
+        ExpressionEvaluator expressionEvaluator = ViewLifecycle.getExpressionEvaluator();
 
         for (ComparableInfo comparable : groupComparables) {
             expressionEvaluator.evaluateExpressionsOnConfigurable(view, comparable, context);
@@ -148,13 +146,10 @@ public class CompareFieldCreateModifier extends ComponentModifierBase {
             // add space field for label column
             SpaceField spaceField = ComponentFactory.getSpaceField();
             comparisonItems.add(spaceField);
-            ViewLifecycle.spawnSubLifecyle(model, spaceField, group);
 
             for (ComparableInfo comparable : groupComparables) {
                 Header compareHeaderField = ComponentUtils.copy(headerFieldPrototype, comparable.getIdSuffix());
                 compareHeaderField.setHeaderText(comparable.getHeaderText());
-                ViewLifecycle.spawnSubLifecyle(model, compareHeaderField, group);
-
                 comparisonItems.add(compareHeaderField);
             }
             
@@ -257,7 +252,7 @@ public class CompareFieldCreateModifier extends ComponentModifierBase {
     protected boolean performValueComparison(Group group, Component compareItem, Object model,
             String compareValueObjectBindingPath) {
         // get any attribute fields for the item so we can compare the values
-        List<DataField> itemFields = ComponentUtils.getComponentsOfTypeDeep(compareItem, DataField.class);
+        List<DataField> itemFields = ViewLifecycleUtils.getElementsOfTypeDeep(compareItem, DataField.class);
         boolean valueChanged = false;
         for (DataField field : itemFields) {
             String fieldBindingPath = field.getBindingInfo().getBindingPath();
@@ -279,6 +274,7 @@ public class CompareFieldCreateModifier extends ComponentModifierBase {
             if (valueChanged) {
                 // add script to show change icon
                 String onReadyScript = "showChangeIcon('" + field.getId() + "');";
+                field.setRenderMarkerIconSpan(true);
                 field.setOnDocumentReadyScript(onReadyScript);
             }
             // TODO: add script for value changed?
@@ -310,7 +306,7 @@ public class CompareFieldCreateModifier extends ComponentModifierBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.modifier.ComponentModifier#getSupportedComponents()
+     * {@inheritDoc}
      */
     @Override
     public Set<Class<? extends Component>> getSupportedComponents() {
@@ -424,29 +420,4 @@ public class CompareFieldCreateModifier extends ComponentModifierBase {
         this.comparables = comparables;
     }
 
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T componentModifier) {
-        super.copyProperties(componentModifier);
-
-        CompareFieldCreateModifier compareFieldCreateModifierCopy = (CompareFieldCreateModifier) componentModifier;
-
-        compareFieldCreateModifierCopy.setDefaultOrderSequence(this.defaultOrderSequence);
-        compareFieldCreateModifierCopy.setGenerateCompareHeaders(this.generateCompareHeaders);
-
-        if(comparables != null) {
-            List<ComparableInfo> comparables = new ArrayList<ComparableInfo>();
-            for (ComparableInfo comparable : this.comparables) {
-                comparables.add((ComparableInfo)comparable.copy());
-            }
-            compareFieldCreateModifierCopy.setComparables(comparables);
-        }
-
-        if (this.headerFieldPrototype != null) {
-            compareFieldCreateModifierCopy.setHeaderFieldPrototype((Header)this.headerFieldPrototype.copy());
-        }
-    }
 }

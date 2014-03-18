@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -161,6 +161,7 @@ public class DataObjectAuthorizerBase implements DataObjectAuthorizer, Serializa
      *
      * @param primaryDataObjectOrDocument the primary data object (i.e. the main object instance behind
      * the lookup result row or inquiry) or the document
+     * @param principalId
      * @return a Map containing role qualifications
      */
     protected final Map<String, String> getRoleQualification(Object primaryDataObjectOrDocument, String principalId) {

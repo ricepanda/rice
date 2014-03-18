@@ -1,5 +1,5 @@
 --
--- Copyright 2005-2013 The Kuali Foundation
+-- Copyright 2005-2014 The Kuali Foundation
 --
 -- Licensed under the Educational Community License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -77,6 +77,22 @@ delete from krew_doc_typ_t where doc_typ_nm='WaiverRequest'
 delete from krew_doc_typ_t where doc_typ_nm='LoadTest'
 /
 delete from krew_doc_typ_t where doc_typ_nm='InterviewRequest'
+/
+delete from krew_doc_typ_t where doc_typ_nm='TravelAuthorization'
+/
+delete from krew_doc_typ_t where doc_typ_nm='FiscalOfficerInfoMaintenanceDocument'
+/
+delete from krew_doc_typ_t where doc_typ_nm='TravelDocument'
+/
+delete from krew_doc_typ_t where doc_typ_nm='TravelAttachmentSampleMaintenanceDocument'
+/
+delete from krew_doc_typ_t where doc_typ_nm='TravelCompanyMaintenanceDocument'
+/
+delete from krew_doc_typ_t where doc_typ_nm='TravelDestinationMaintenanceDocument'
+/
+delete from krew_doc_typ_t where doc_typ_nm='TravelMileageRateMaintenanceDocument'
+/
+delete from krew_doc_typ_t where doc_typ_nm='TravelerDetailMaintenanceDocument'
 /
 delete from krew_doc_typ_attr_t where DOC_TYP_ID not in (select doc_typ_id from KREW_DOC_TYP_T)
 /
@@ -300,6 +316,8 @@ delete from krim_grp_attr_data_t where grp_id not in (select grp_id from krim_gr
 /
 delete from krim_grp_mbr_t where grp_id not in (select grp_id from krim_grp_t)
 /
+delete from krim_grp_mbr_t where mbr_id = 'notsysadm'
+/
 
 -- delete all entity and principal data except for principalID/entityID = 1 which is the 'kr' system user
 -- and principalID=admin/entityID = 1100 which is the 'admin' user
@@ -370,6 +388,42 @@ BEGIN EXECUTE IMMEDIATE 'DROP TABLE TRV_MULTI_ATT_SAMPLE'; EXCEPTION WHEN OTHERS
 /
 BEGIN EXECUTE IMMEDIATE 'DROP TABLE TRV_ATT_SAMPLE'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;
 /
+BEGIN EXECUTE IMMEDIATE 'DROP TABLE TRVL_EXP_ITM_T'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;
+/
+BEGIN EXECUTE IMMEDIATE 'DROP SEQUENCE TRVL_EXP_ITM_ID_S'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -2289 THEN RAISE; END IF; END;
+/
+BEGIN EXECUTE IMMEDIATE 'DROP TABLE TRVL_PD_EXP_T'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;
+/
+BEGIN EXECUTE IMMEDIATE 'DROP SEQUENCE TRVL_PD_EXP_ID_S'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -2289 THEN RAISE; END IF; END;
+/
+BEGIN EXECUTE IMMEDIATE 'DROP TABLE TRVL_AUTH_DOC_T'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;
+/
+BEGIN EXECUTE IMMEDIATE 'DROP SEQUENCE TRVL_ID_SEQ'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -2289 THEN RAISE; END IF; END;
+/
+BEGIN EXECUTE IMMEDIATE 'DROP TABLE TRVL_CO_T'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;
+/
+BEGIN EXECUTE IMMEDIATE 'DROP SEQUENCE TRVL_CO_ID_S'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -2289 THEN RAISE; END IF; END;
+/
+BEGIN EXECUTE IMMEDIATE 'DROP TABLE TRVL_MLG_RT_T'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;
+/
+BEGIN EXECUTE IMMEDIATE 'DROP SEQUENCE TRVL_MLG_RT_ID_S'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -2289 THEN RAISE; END IF; END;
+/
+BEGIN EXECUTE IMMEDIATE 'DROP TABLE TRVL_DEST_T'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;
+/
+BEGIN EXECUTE IMMEDIATE 'DROP SEQUENCE TRVL_DEST_ID_S'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -2289 THEN RAISE; END IF; END;
+/
+BEGIN EXECUTE IMMEDIATE 'DROP TABLE TRVL_TRAVELER_DTL_T'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;
+/
+BEGIN EXECUTE IMMEDIATE 'DROP TABLE KRTST_PARENT_GEN_KEY_CHILD_T'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;
+/
+BEGIN EXECUTE IMMEDIATE 'DROP TABLE KRTST_PARENT_GEN_KEY_T'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;
+/
+BEGIN EXECUTE IMMEDIATE 'DROP TABLE KRTST_PARENT_OF_UPDATABLE_T'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;
+/
+BEGIN EXECUTE IMMEDIATE 'DROP TABLE KRTST_PARENT_WITH_MULTI_KEY_T'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;
+/
+BEGIN EXECUTE IMMEDIATE 'DROP TABLE KRTST_TEST_INDIR_LINK_T'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;
+/
 BEGIN EXECUTE IMMEDIATE 'DROP TABLE KRTST_TEST_TABLE_T'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;
 /
 BEGIN EXECUTE IMMEDIATE 'DROP TABLE KRTST_TEST_TABLE_EXT_T'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;
@@ -390,6 +444,12 @@ BEGIN EXECUTE IMMEDIATE 'DROP TABLE KRTST_TEST_INDIRECT_COLL_T'; EXCEPTION WHEN 
 /
 BEGIN EXECUTE IMMEDIATE 'DROP TABLE KRTST_TEST_REF_OBJ_T'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;
 /
+BEGIN EXECUTE IMMEDIATE 'DROP TABLE KRTST_TWO_KEY_CHILD_T'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;
+/
+BEGIN EXECUTE IMMEDIATE 'DROP TABLE KRTST_UPDATABLE_CHILD_T'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;
+/
+BEGIN EXECUTE IMMEDIATE 'DROP SEQUENCE KRTST_GENERATED_PK_S'; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -2289 THEN RAISE; END IF; END;
+/
 
 
 delete from krim_role_perm_t where perm_id in (select perm_id from krim_perm_t where nmspc_cd = 'KR-SAP')
@@ -401,6 +461,15 @@ delete from krim_perm_t where nmspc_cd = 'KR-SAP'
 delete from krim_role_mbr_t where role_id in (select role_id from krim_role_t where nmspc_cd = 'KR-SAP')
 /
 delete from krim_role_t where nmspc_cd = 'KR-SAP'
+/
+delete from krim_typ_t where nmspc_cd = 'KR-SAP'
+/
+
+delete from krim_role_rsp_t where rsp_id in (select rsp_id from krim_rsp_t where nmspc_cd = 'KR-SAP')
+/
+delete from krim_rsp_attr_data_t where rsp_id in (select rsp_id from krim_rsp_t where nmspc_cd = 'KR-SAP')
+/
+delete from krim_rsp_t where nmspc_cd = 'KR-SAP'
 /
 
 drop table kr_kim_test_bo
@@ -536,6 +605,8 @@ DELETE FROM krew_typ_attr_t
 DELETE FROM krew_typ_t
 /
 DELETE FROM krns_maint_doc_t
+/
+DELETE FROM krns_maint_lock_t
 /
 DELETE FROM krns_doc_hdr_t
 /

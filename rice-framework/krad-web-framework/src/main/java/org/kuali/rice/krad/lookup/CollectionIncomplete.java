@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import java.util.RandomAccess;
 /**
  * Wraps a {@link List} and if truncated keeps the complete size
  *
+ * @param <T> list item type
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 public class CollectionIncomplete<T> implements List<T>, RandomAccess, Serializable {

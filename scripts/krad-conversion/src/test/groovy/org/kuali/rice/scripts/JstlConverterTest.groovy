@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,20 +30,21 @@ class JstlConverterTest
 
 {
     static def testResourceDir = "./src/test/resources/"
-    static def jstlTestDir = testResourceDir + "JstlConverterTest/"
+    static def jstlTestDir = "JstlConverterTest/"
     def configFilePath
     def config
 
     @Before
     void setUp() {
-        configFilePath = testResourceDir + "test.config.properties"
+        configFilePath = "test.config.properties"
         config = ConversionUtils.getConfig(configFilePath)
     }
 
     @Test
     void testProcessJspFile() {
         def filePath = jstlTestDir + "DocumentPage.jsp"
-        def jspRoot = JspParserUtils.parseJspFile(filePath)
+        def jspFile = ConversionUtils.getResourceFile(filePath);
+        def jspRoot = JspParserUtils.parseJspFile(jspFile.absolutePath);
         def jspDataMap = JstlConverter.transformPage(jspRoot, config.map.convert.jsp_to_tag)
         // TODO start adding assertions to check structure and data
         // checkMapStructure("jsp data", config.map.binding.jsp_data, jspDataMap)
@@ -69,7 +70,7 @@ class JstlConverterTest
 
     @Test
     void testBuildUifView() {
-        def expectedFile = new File(jstlTestDir + "SampleUifView.xml")
+        def expectedFile = ConversionUtils.getResourceFile(jstlTestDir + "SampleUifView.xml");
         def expectedText = expectedFile.text
 
         def viewBinding = [beanId: "SampleView",

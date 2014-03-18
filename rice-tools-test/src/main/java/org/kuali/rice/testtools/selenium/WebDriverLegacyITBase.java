@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,36 +15,41 @@
  */
 package org.kuali.rice.testtools.selenium;
 
-import com.thoughtworks.selenium.SeleneseTestBase;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.RandomStringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestName;
-import org.kuali.rice.testtools.common.Failable;
-import org.kuali.rice.testtools.common.JiraAwareFailureUtil;
-import org.openqa.selenium.Alert;
+import org.kuali.rice.testtools.common.JiraAwareFailable;
+import org.kuali.rice.testtools.common.JiraAwareFailureUtils;
+import org.kuali.rice.testtools.common.PropertiesUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.NoSuchWindowException;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.remote.RemoteWebDriver;
-import org.openqa.selenium.support.ui.Select;
 
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Method;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * <p>
@@ -55,17 +60,16 @@ import static org.junit.Assert.assertEquals;
  *   Javadoc constant with constant value.
  *   <li>Extract duplicate waitAndClick...(CONSTANT) to waitAndClickConstant, Javadoc a <pre>{@link &#35;CONSTANT}</pre>.
  *   <li>Replace large chunks of duplication</li>
- *   <li><a href="https://jira.kuali.org/browse/KULRICE-9205">KULRICE-9205</a> Invert dependencies on fields and extract methods to WebDriverUtil
- *   so inheritance doesn't have to be used for
- * reuse.  See WebDriverUtil.waitFor </li>
+ *   <li><a href="https://jira.kuali.org/browse/KULRICE-9205">KULRICE-9205</a> Invert dependencies on fields and extract methods to WebDriverUtils
+ *   so inheritance doesn't have to be used for reuse.  See WebDriverUtils.waitFor </li>
  *   <li>Extract Nav specific code?</li>
- *   <li>Rename to WebDriverAbstractSmokeTestBase</li>
+ *   <li>Rename to SampleAppAftBase</li>
  * </ol>
  * </p>
  * <p>Calls to passed() probably don't belong in the methods reused here.</p>
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-public abstract class WebDriverLegacyITBase implements Failable { //implements com.saucelabs.common.SauceOnDemandSessionIdProvider {
+public abstract class WebDriverLegacyITBase extends JiraAwareAftBase {
 
     /**
      * Administration
@@ -78,9 +82,14 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     public static final String AGENDA_LOOKUP_LINK_TEXT = "Agenda Lookup";
 
     /**
-     * "//input[@aria-invalid]"
+     * backdoorId
      */
-    public static final String ARIA_INVALID_XPATH = "//input[@aria-invalid]";
+    public static final String BACKDOOR_ID_TEXT = "backdoorId";
+
+    /**
+     * "//input[@title='Click to login.']"
+     */
+    public static final String BACKDOOR_LOGIN_BUTTON_XPATH = "//input[@title='Click to login.']";
 
     /**
      * methodToCall.blanketApprove
@@ -98,6 +107,11 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
      * Different cancel than CANCEL_NAME
      */
     public static final String CANCEL2_XPATH = "//a[contains(text(), 'ancel')]";
+
+    /**
+     * "//a[@title='cancel']"
+     */
+    public static final String CANCEL3_XPATH = "//a[@title='cancel']";
 
     /**
      * //*[@title='close this window']
@@ -140,6 +154,16 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     public static final String CREATE_NEW_XPATH2 = "//a[@title='Create a new record']";
 
     /**
+     * div.dataTables_wrapper thead th
+     */
+    public static final String DATA_TABLE_TH_CSS = "div.dataTables_wrapper thead th";
+
+    /**
+     * div.dataTables_wrapper thead th
+     */
+    public static final String DATA_TABLE_TR_CSS = "div.dataTables_wrapper tbody tr";
+
+    /**
      * //div[@class='left-errmsg-tab']/div/div
      */
     public static final String DIV_LEFT_ERRMSG = "//div[@class='left-errmsg-tab']/div/div";
@@ -168,6 +192,11 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
      * //input[@id='document.documentHeader.documentDescription']
      */
     public static final String DOC_DESCRIPTION_XPATH ="//input[@id='document.documentHeader.documentDescription']";
+
+    /**
+     * //div[@id='headerarea']/div/table/tbody/tr[1]/td[1]
+     */
+    public static final String DOC_INITIATOR_XPATH = "//div[@id='headerarea']/div/table/tbody/tr[2]/td[1]";
 
     /**
      * "//img[@alt='doc search']
@@ -230,14 +259,14 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     public static final String KRAD_XPATH = "KRAD";
 
     /**
-     * KUALI - Kuali Systems
+     * Kuali :: Collection Totaling
      */
-    public static final String LABEL_KUALI_KUALI_SYSTEMS = "KUALI - Kuali Systems";
+    public static final String KUALI_COLLECTION_TOTALLING_WINDOW_XPATH = "Kuali :: Collection Totaling";
 
     /**
-     * KUALI : Default
+     * //a[text()='Collection Totaling']
      */
-    public static final String LABEL_KUALI_DEFAULT = "KUALI : Default";
+    public static final String KUALI_COLLECTION_TOTALLING_XPATH = "//a[text()='Collection Totaling']";
 
     /**
      * Kuali :: Uif Components
@@ -248,6 +277,16 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
      * "Kuali :: View Title"
      */
     public static final String KUALI_VIEW_WINDOW_TITLE = "Kuali :: View Title";
+
+    /**
+     * KUALI - Kuali Systems
+     */
+    public static final String LABEL_KUALI_KUALI_SYSTEMS = "KUALI - Kuali Systems";
+
+    /**
+     * KUALI : Default
+     */
+    public static final String LABEL_KUALI_DEFAULT = "KUALI : Default";
 
     /**
      * //input[@name='imageField' and @value='Logout']
@@ -267,7 +306,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     /**
      * ^[\s\S]*valid[\s\S]*$
      */
-    public static final String REGEX_VALID = "^.*\\bvalid\\b.*$";
+    public static final String REGEX_VALID = "^[\\s\\S]*valid[\\s\\S]*$";
 
     /**
      * return selected
@@ -326,6 +365,11 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     public static final String SEARCH_XPATH_3 = "//button[contains(text(),'earch')]";
 
     /**
+     * (//input[@name='methodToCall.search'])[2]
+     */
+    public static final String SEARCH_SECOND = "(//input[@name='methodToCall.search'])[2]";
+
+    /**
      * //input[@name='methodToCall.route' and @alt='submit']
      */
     public static final String SUBMIT_XPATH="//input[@name='methodToCall.route' and @alt='submit']";
@@ -357,16 +401,6 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     public static final String VALIDATION_FRAMEWORK_DEMO_XPATH = "(//a[contains(text(),'Validation Framework Demo')])";
 
     /**
-     * Kuali :: Collection Totaling
-     */
-    public static final String KUALI_COLLECTION_TOTALLING_WINDOW_XPATH = "Kuali :: Collection Totaling";
-
-    /**
-     * //a[text()='Collection Totaling']
-     */
-    public static final String KUALI_COLLECTION_TOTALLING_XPATH = "//a[text()='Collection Totaling']";
-    
-    /**
      * XML Ingester
      */
     public static final String XML_INGESTER_LINK_TEXT = "XML Ingester";
@@ -378,11 +412,26 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
 
     static ChromeDriverService chromeDriverService;
 
+    static {
+        if (System.getProperty(WebDriverUtils.REMOTE_PROPERTIES_PROPERTY) != null) {
+            PropertiesUtils propUtils = new PropertiesUtils();
+            try {
+                propUtils.loadPropertiesWithSystemAndOverridesIntoSystem(System.getProperty(WebDriverUtils.REMOTE_PROPERTIES_PROPERTY));
+            } catch (IOException ioe) {
+                System.out.println("Exception opening " + System.getProperty(WebDriverUtils.REMOTE_PROPERTIES_PROPERTY) + " " + ioe.getMessage());
+            }
+        }
+    }
+
     protected WebDriver driver;
+
+    protected String namespaceCode = "KR-WKFLW";
+
     protected String user = "admin";
     protected int waitSeconds;
-    protected boolean passed = false;
-    protected String uiFramework = ITUtil.REMOTE_UIF_KNS;   // default to KNS
+    protected String uiFramework = AutomatedFunctionalTestUtils.REMOTE_UIF_KNS;   // default to KNS
+
+    protected String uniqueString;
 
     public @Rule
     TestName testName = new TestName();
@@ -393,32 +442,95 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
 
     String sessionId = null;
 
+    private static final Map<String, String> actionRequestLabelMap;
+    private static Map<String, String> actionRequestButtonMap;
+    static{
+        actionRequestLabelMap = new HashMap();
+        actionRequestLabelMap.put("A","APPROVE");
+        actionRequestLabelMap.put("F","FYI");
+        actionRequestLabelMap.put("C","COMPLETE");
+        actionRequestLabelMap.put("K","ACKNOWLEDGE");
+        actionRequestLabelMap.put("D","APPROVE");
+        actionRequestButtonMap = new HashMap();
+        actionRequestButtonMap.put("A","methodToCall.approve");
+        actionRequestButtonMap.put("F","methodToCall.fyi");
+        actionRequestButtonMap.put("C","methodToCall.complete");
+        actionRequestButtonMap.put("K","methodToCall.acknowledge");
+        actionRequestButtonMap.put("D","methodToCall.disapprove");
+    }
+    
     /**
-     * If WebDriverUtil.chromeDriverCreateCheck() returns a ChromeDriverService, start it.
-     * {@link org.kuali.rice.testtools.selenium.WebDriverUtil#chromeDriverCreateCheck()}
+     * If WebDriverUtils.chromeDriverCreateCheck() returns a ChromeDriverService, start it.
+     * {@link WebDriverUtils#chromeDriverCreateCheck()}
      * @throws Exception
      */
     @BeforeClass
     public static void chromeDriverService() throws Exception {
-        chromeDriverService = WebDriverUtil.chromeDriverCreateCheck();
+        chromeDriverService = WebDriverUtils.chromeDriverCreateCheck();
         if (chromeDriverService != null)
             chromeDriverService.start();
     }
 
     /**
-     * Navigation tests should return ITUtil.PORTAL.
-     * Bookmark tests should return BOOKMARK_URL.
+     * <p>
+     * Logs in using the KRAD Login Page, if the JVM arg remote.autologin is set, auto login as admin will not be done.
+     * </p>
      *
-     * @return string
+     * @param driver to login with
+     * @param userName to login with
+     * @param failable to fail on if there is a login problem
+     * @throws InterruptedException
      */
-    public abstract String getTestUrl();
+    public static void loginKrad(WebDriver driver, String userName, JiraAwareFailable failable) throws InterruptedException {
+        driver.findElement(By.name("login_user")).clear();
+        driver.findElement(By.name("login_user")).sendKeys(userName);
+        driver.findElement(By.id("Rice-LoginButton")).click();
+        Thread.sleep(1000);
+        String contents = driver.getPageSource();
+        AutomatedFunctionalTestUtils.failOnInvalidUserName(userName, contents, failable);
+        AutomatedFunctionalTestUtils.checkForIncidentReport(driver.getPageSource(), "Krad Login",
+                "Krad Login failure", failable);
+    }
 
     /**
-     * SeleniumBaseTest.fail from navigateInternal results in the test not being recorded as a failure in CI.
-     * @throws Exception
+     * <p>
+     * Logs into the Rice portal using the KNS Style Login Page.
+     * </p>
+     *
+     * @param driver to login with
+     * @param userName to login with
+     * @param failable to fail on if there is a login problem
+     * @throws InterruptedException
      */
-    protected void navigateInternal() throws Exception {
-        // just a hook...for now...
+    public static void login(WebDriver driver, String userName, JiraAwareFailable failable) throws InterruptedException {
+        driver.findElement(By.name("__login_user")).clear();
+        driver.findElement(By.name("__login_user")).sendKeys(userName);
+        driver.findElement(By.cssSelector("input[type=\"submit\"]")).click();
+        Thread.sleep(1000);
+        String contents = driver.getPageSource();
+        AutomatedFunctionalTestUtils.failOnInvalidUserName(userName, contents, failable);
+        AutomatedFunctionalTestUtils.checkForIncidentReport(driver.getPageSource(), "KNS Login",
+                "KNS Login failure", failable);
+    }
+
+    /**
+     * <p>
+     * Login as KRAD or KNS if {@see #REMOTE_AUTOLOGIN_PROPERTY} is not set to true.
+     * </p>
+     *
+     * @param driver to login with
+     * @param user to login with
+     * @param failable to fail on if there is a login problem
+     * @throws InterruptedException
+     */
+    public static void loginKradOrKns(WebDriver driver, String user, JiraAwareFailable failable) throws InterruptedException {// login via either KRAD or KNS login page
+        if ("true".equalsIgnoreCase(System.getProperty(WebDriverUtils.REMOTE_AUTOLOGIN_PROPERTY, "true"))) {
+            if (AutomatedFunctionalTestUtils.isKradLogin()){
+                loginKrad(driver, user, failable);
+            } else {
+                login(driver, user, failable);
+            }
+        }
     }
 
     protected void startSession(Method method) throws Exception {
@@ -428,8 +540,8 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     /**
      * Failures in testSetup cause the test to not be recorded.  Future plans are to extract form @Before and call at the start of each test.
      * Setup the WebDriver properties, test, and login.  Named testSetUp so it runs after TestNG's startSession(Method)
-     * {@link WebDriverUtil#determineUser(String)}
-     * {@link WebDriverUtil#setUp(String, String, String, String)}
+     * {@link WebDriverUtils#determineUser(String)}
+     * {@link WebDriverUtils#setUp(String, String, String, String)}
      */
     @Before
     public void testSetUp() {
@@ -439,20 +551,21 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
                 testMethodName = testName.getMethodName();
             }
 
-            waitSeconds = WebDriverUtil.configuredImplicityWait();
-            String givenUser = WebDriverUtil.determineUser(this.toString());
+            waitSeconds = WebDriverUtils.configuredImplicityWait();
+            String givenUser = WebDriverUtils.determineUser(this.toString());
             if (givenUser != null) {
                 user = givenUser;
             }
 
             String testUrl = kulrice9804(); // https://jira.kuali.org/browse/KULRICE-9804 KNS Create new link absent when Bookmark URL requires Login
 
-            driver = WebDriverUtil.setUp(getUserName(), testUrl , getClass().getSimpleName(), testMethodName);
+            driver = WebDriverUtils.setUp(getUserName(), testUrl, getClass().getSimpleName(), testMethodName);
             this.sessionId = ((RemoteWebDriver) driver).getSessionId().toString();
 
             jGrowlHeader = getClass().getSimpleName() + "." + testMethodName;
             System.out.println(jGrowlHeader + " sessionId is " + sessionId);
-            WebDriverUtil.loginKradOrKns(driver, user, this);
+            WebDriverUtils.jGrowl(driver, "Open URL", false, "Open " + testUrl);
+            loginKradOrKns(driver, getUserName(), this);
 
             navigateInternal(); // SeleniumBaseTest.fail from navigateInternal results in the test not being recorded as a failure in CI.
 
@@ -469,8 +582,8 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
      */
     private String kulrice9804() {
         String testUrl = getTestUrl();
-        if (testUrl.contains(ITUtil.HIDE_RETURN_LINK) &&
-            !testUrl.contains("&showMaintenanceLinks=true")) {
+        if (testUrl.contains(AutomatedFunctionalTestUtils.HIDE_RETURN_LINK) &&
+                !testUrl.contains("&showMaintenanceLinks=true")) {
             testUrl += "&showMaintenanceLinks=true";
         }
         return testUrl;
@@ -478,19 +591,23 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
 
     /**
      * Tear down test as configured.  Do not allow exceptions to be thrown by tearDown, it kills the test run.
-     * {@link WebDriverUtil#tearDown(boolean, String, String, String)}
-     * {@link WebDriverUtil#REMOTE_PUBLIC_USERPOOL_PROPERTY}
-     * {@link org.kuali.rice.testtools.selenium.WebDriverUtil#dontTearDownPropertyNotSet()}
+     * {@link WebDriverUtils#tearDown(boolean, String, String, String)}
+     * {@link WebDriverUtils#REMOTE_PUBLIC_USERPOOL_PROPERTY}
+     * {@link WebDriverUtils#dontTearDownPropertyNotSet()}
      * @throws Exception
      */
     @After
     public void tearDown() {
         try {
-            if (!passed) { // TODO move to Failable.fail impl to included error message, when it is promoted to this class
-                jGrowlSticky("FAILURE!");
+            if (isPassed() && WebDriverUtils.dontTearDownPropertyNotSet() && WebDriverUtils.dontTearDownOnFailure(isPassed())) {
+                waitAndClickLogoutIfPresent();
+            } else {
+                System.out.println("Last AFT URL: " + driver.getCurrentUrl());
+                if ("true".equals(System.getProperty("remote.driver.failure.screenshot", "true")) || screenshotSteps()) {
+                    screenshot();
+                }
             }
-
-            WebDriverUtil.tearDown(passed, sessionId, this.toString().trim(), user);
+            WebDriverUtils.tearDown(isPassed(), sessionId, this.toString().trim(), user);
         } catch (Throwable t) {
             System.out.println("Exception in tearDown " + t.getMessage());
             t.printStackTrace();
@@ -500,16 +617,16 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
             try {
                 closeAndQuitWebDriver();
             } catch (Throwable t) {
-                System.out.println(t.getMessage() + " occured during tearDown, ignoring to avoid killing test run.");
+                System.out.println(t.getMessage() + " occurred during tearDown, ignoring to avoid killing test run.");
                 t.printStackTrace();
-                System.out.println(t.getMessage() + " occured during tearDown, ignoring to avoid killing test run.");
+                System.out.println(t.getMessage() + " occurred during tearDown, ignoring to avoid killing test run.");
             }
         }
     }
 
     private void closeAndQuitWebDriver() {
         if (driver != null) {
-            if (WebDriverUtil.dontTearDownPropertyNotSet() && WebDriverUtil.dontTearDownOnFailure(passed)) {
+            if (WebDriverUtils.dontTearDownPropertyNotSet() && WebDriverUtils.dontTearDownOnFailure(isPassed())) {
                 try {
                     driver.close();
                 } catch (NoSuchWindowException nswe) {
@@ -521,17 +638,87 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
                 }
             }
         } else {
-            System.out.println("WebDriver is null for " + this.getClass().toString() + ", if using saucelabs, has" +
-                    " sauceleabs been uncommented in WebDriverUtil.java?  If using a remote hub did you include the port?");
+            System.out.println("WebDriver is null for " + this.getClass().toString() + " if using a remote hub did you include the port?");
+        }
+    }
+
+    @Override
+    protected String getNavigationUrl() {
+        String classString = this.getClass().toString();
+        if (classString.contains("krad.demo")) {
+            return AutomatedFunctionalTestUtils.KRAD_PORTAL;
+        } else if (classString.contains("krad.labs")) {
+            return AutomatedFunctionalTestUtils.LABS;
+        } else {
+            return AutomatedFunctionalTestUtils.PORTAL;
+        }
+    }
+
+
+    @Override
+    protected void navigate() throws Exception {
+        // No-op for convenience
+    }
+
+    protected void impersonateUser(String user) throws InterruptedException {
+        waitAndTypeByName(BACKDOOR_ID_TEXT,user);
+        jGrowl("Click Backdoor Login");
+        waitAndClickByXpath(BACKDOOR_LOGIN_BUTTON_XPATH);
+    }
+
+    protected void addAdHocRecipientsGroup(String[] adHocRecipients) throws InterruptedException {
+        addAdHocRecipientsGroup(new String[][]{adHocRecipients});
+    }
+
+    protected void addAdHocRecipientsGroup(String[][] adHocRecipients) throws InterruptedException {
+        String today = getDateToday();
+        Calendar nextYearCal = Calendar.getInstance();
+        nextYearCal.add(Calendar.YEAR, 1);
+        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
+        String nextYear = sdf.format(nextYearCal.getTime());
+
+        waitAndClickByName("methodToCall.toggleTab.tabAdHocRecipients");
+        for (int i = 0, s = adHocRecipients.length; i < s; i++) {
+            selectOptionByName("newAdHocRouteWorkgroup.actionRequested", adHocRecipients[i][1]);
+            waitAndTypeByName("newAdHocRouteWorkgroup.recipientName", adHocRecipients[i][0]);
+            waitAndTypeByName("newAdHocRouteWorkgroup.recipientNamespaceCode", adHocRecipients[i][2]);
+            WebDriverUtils.jGrowl(getDriver(), "Click Add Group", false, "Click Add Group");
+            waitAndClickByName("methodToCall.insertAdHocRouteWorkgroup");
         }
     }
 
     /**
-     * Set the test state to passed, this method is required to be called at the conclusion of a test for the saucelabs state of a test to be updated.
+     * @param adHocRecipients user, action option value
+     * @throws InterruptedException
      */
-    protected void passed() {
-        passed = true;
-        jGrowlSticky("Passed");
+    protected void addAdHocRecipientsPerson(String[] adHocRecipients) throws InterruptedException {
+        addAdHocRecipientsPerson(new String[][]{adHocRecipients});
+    }
+
+    /**
+     * @param adHocRecipients user, action option value
+     * @throws InterruptedException
+     */
+    protected void addAdHocRecipientsPerson(String[][] adHocRecipients) throws InterruptedException {
+        String today = getDateToday();
+        Calendar nextYearCal = Calendar.getInstance();
+        nextYearCal.add(Calendar.YEAR, 1);
+        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
+        String nextYear = sdf.format(nextYearCal.getTime());
+
+        waitAndClickByName("methodToCall.toggleTab.tabAdHocRecipients");
+        for (int i = 0, s = adHocRecipients.length; i < s; i++) {
+            selectOptionByName("newAdHocRoutePerson.actionRequested", adHocRecipients[i][1]);
+            waitAndTypeByName("newAdHocRoutePerson.id", adHocRecipients[i][0]);
+//            if (isElementPresentByName("member.activeFromDate")) {
+//                waitAndTypeByName("member.activeFromDate", today);
+//            }
+//            if (isElementPresentByName("member.activeFromDate")) {
+//                waitAndTypeByName("member.activeFromDate", nextYear);
+//            }
+            WebDriverUtils.jGrowl(getDriver(), "Click Add Person", false, "Click Add Person");
+            waitAndClickByName("methodToCall.insertAdHocRoutePerson");
+        }
     }
 
     protected void agendaLookupAssertions() throws Exception {
@@ -542,25 +729,20 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
 
     /**
      * Accept the javascript alert (clicking OK)
-     *
      */
     protected void alertAccept() {
-        Alert alert = driver.switchTo().alert();
-        //update is executed
-        alert.accept();
+        WebDriverUtils.alertAccept(driver);
     }
 
     /**
      * Dismiss the javascript alert (clicking Cancel)
-     *
      */
     protected void alertDismiss() {
-        Alert alert = driver.switchTo().alert();
-        //update is executed
-        alert.dismiss();
+        WebDriverUtils.alertDismiss(driver);
     }
 
     protected boolean areAllMultiValueSelectsChecked() throws InterruptedException {
+        acceptAlertIfPresent();
         WebElement tbody = waitAndGetElementByAttributeValue("role", "alert"); // results table body
         List<WebElement> checkboxes = findElements(By.className("uif-checkboxControl"),tbody);
         for (WebElement checkbox: checkboxes) {
@@ -582,20 +764,60 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         return true;
     }
 
+    protected void assertActionList(String docId, String actionListOptionValue, String state) throws InterruptedException {
+        selectTopFrame();
+        waitAndClickActionList();
+        selectFrameIframePortlet();
+        while (!waitForIsTextPresent(docId)) {
+            waitAndClickByLinkText("Next");
+        }
+        WebElement docIdTr = findElement(By.xpath("//table/tbody/tr/td/a[contains(text(), '" + docId + "')]/../.."));
+        assertTrue(docIdTr.getText() + " does not contain " + docId, docIdTr.getText().contains(docId));
+        assertTrue(docIdTr.getText() + " does not contain " + state, docIdTr.getText().contains(state));
+        assertTrue(docIdTr.getText() + " does not contain " + actionRequestLabelMap.get(actionListOptionValue), docIdTr.getText().contains(actionRequestLabelMap.get(actionListOptionValue)));
+//        assertTextPresent(new String[]{docId, actionRequestLabelMap.get(actionListOptionValue)});
+        waitAndClickLinkContainingText(docId);
+        selectChildWindow();
+        waitAndClickByName(actionRequestButtonMap.get(actionListOptionValue));
+
+        // Disapprove requires another step before checking outbox
+        if ("D".equals(actionListOptionValue)) {
+            waitAndTypeByName("reason","disapproved for AFT");
+            jGrowl("Click yes button");
+            waitAndClickByName("methodToCall.processAnswer.button0");
+        } else if ("C".equals(actionListOptionValue)) {
+            waitAndClickByName("methodToCall.close");
+        }
+        waitForTextNotPresent(docId);
+        assertOutbox(docId);
+    }
+
+    protected void assertOutbox(String docId) throws InterruptedException {
+        // find it in outbox
+        waitAndClickLinkContainingText("Outbox");
+        while (!waitForIsTextPresent(docId)) {
+            waitAndClickByLinkText("Next");
+        }
+        waitForTextPresent(docId);
+
+//        // clear all items in the outbox
+//        waitAndClickAllByName("outboxItems");
+//        waitAndClickByName("methodToCall.removeOutboxItems");
+    }
+
     protected void assertAttributeClassRegexDoesntMatch(String field, String regex) throws InterruptedException {
         Thread.sleep(1000);
         String attribute = waitAndGetAttributeByName(field, "class");
-        SeleneseTestBase.assertTrue("waitAndGetAttributeByName(" + field + ", \"class\") should not be null", attribute != null);
-        SeleneseTestBase.assertFalse("attribute " + attribute + " matches regex " + regex + " and it should not",
-                attribute.matches(regex));
+        assertTrue("waitAndGetAttributeByName(" + field + ", \"class\") should not be null", attribute != null);
+        assertFalse("attribute " + attribute + " matches regex " + regex + " and it should not", attribute.matches(
+                regex));
     }
 
     protected void assertAttributeClassRegexMatches(String field, String regex) throws InterruptedException {
         Thread.sleep(1000);
         String attribute = waitAndGetAttributeByName(field, "class");
-        SeleneseTestBase.assertTrue("waitAndGetAttributeByName(" + field + ", \"class\") should not be null", attribute != null);
-        SeleneseTestBase.assertTrue("attribute " + attribute + " doesn't match regex " + regex, attribute.matches(
-                regex));
+        assertTrue("waitAndGetAttributeByName(" + field + ", \"class\") should not be null", attribute != null);
+        assertTrue("attribute " + attribute + " doesn't match regex " + regex, attribute.matches(regex));
     }
 
     protected void assertBlanketApproveButtonsPresent() {
@@ -606,79 +828,45 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         assertElementPresentByName(CANCEL_NAME);
     }
 
-    protected void assertButtonDisabledByText(String buttonText) {
-        jGrowl("Assert " + buttonText + " button is disabled");
-        SeleneseTestBase.assertTrue(!findButtonByText(buttonText).isEnabled());
-    }
-
-    protected void assertButtonEnabledByText(String buttonText) {
-        jGrowl("Assert " + buttonText + " button is enabled");
-        SeleneseTestBase.assertTrue(findButtonByText(buttonText).isEnabled());
-    }
-
     protected void assertCancelConfirmation() throws InterruptedException {
         waitAndClickByLinkText("Cancel");
         alertDismiss();
     }
 
     protected void assertDocFinal(String docId) throws InterruptedException {
-        jiraAwareWaitFor(By.linkText("spreadsheet"), "");
-
-        if (isElementPresent(By.linkText(docId))) {
-            SeleneseTestBase.assertEquals(DOC_STATUS_FINAL, getDocStatus());
-        } else {
-            SeleneseTestBase.assertEquals(docId,findElement(By.xpath(DOC_ID_XPATH_2)));
-            SeleneseTestBase.assertEquals(DOC_STATUS_FINAL, getDocStatus());
-        }
+        assertDocSearch(docId, DOC_STATUS_FINAL);
     }
 
-    protected void assertElementPresentByName(String name) {
-        assertElementPresentByName(name, "");
+    protected void assertDocSearch(String docId, String docStatus) throws InterruptedException {
+        docSearch(docId);
+        waitForElementPresentByXpath(DOC_ID_XPATH_3);
+        jGrowl("Is doc status for docId: " + docId + " " + docStatus + "?");
+        assertEquals(docId, getTextByXpath(DOC_ID_XPATH_3));
+        assertEquals(docStatus, getTextByXpath(DOC_STATUS_XPATH_2));
     }
 
-    protected void assertElementPresentByName(String name, String message) {
-        try {
-            findElement(By.name(name));
-        } catch (Exception e) {
-            failableFail(name + " not present " + message);
-        }
+    private void docSearch(String docId) throws InterruptedException {
+        selectParentWindow();
+        selectTopFrame();
+        waitAndClickDocSearchTitle();
+        waitForPageToLoad();
+        selectFrameIframePortlet();
+        waitAndTypeByName("documentId", docId);
+        waitAndClickSearch();
     }
 
-    protected void assertElementPresentByXpath(String locator) {
-        assertElementPresentByXpath(locator, "");
-    }
-
-    protected void assertElementPresentByXpath(String locator, String message) {
-        try {
-            findElement(By.xpath(locator));
-        } catch (Exception e) {
-            jiraAwareFail(By.xpath(locator), message, e);
-        }
-    }
-
-    protected void assertElementPresentByLinkText(String linkText) {
-        try {
-            findElement(By.linkText(linkText));
-        } catch (Exception e) {
-            jiraAwareFail(By.cssSelector(linkText), "", e);
-        }
-
-    }
-
-    protected void assertElementPresent(String locator) {
-        try {
-            findElement(By.cssSelector(locator));
-        } catch (Exception e) {
-            jiraAwareFail(By.cssSelector(locator), "", e);
-        }
+    protected void assertDocSearchNoResults(String docId) throws InterruptedException {
+        docSearch(docId);
+        waitForTextPresent("No values match this search.");
     }
 
     protected void assertFocusTypeBlurError(String field, String textToType) throws InterruptedException {
         fireEvent(field, "focus");
         waitAndTypeByName(field, textToType);
         fireEvent(field, "blur");
-        Thread.sleep(200);
+        Thread.sleep(500);
         assertAttributeClassRegexMatches(field, REGEX_ERROR);
+        clearTextByName(field);
     }
 
     protected void assertFocusTypeBlurError(String field, String[] errorInputs) throws InterruptedException {
@@ -695,6 +883,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         Thread.sleep(200);
         assertAttributeClassRegexMatches(field, REGEX_VALID);
         assertAttributeClassRegexDoesntMatch(field, REGEX_ERROR);
+        clearTextByName(field);
     }
 
     protected void assertFocusTypeBlurValid(String field, String[] validInputs) throws InterruptedException {
@@ -704,66 +893,43 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         }
     }
 
-    protected void assertIsVisible(By by, String message) {
-        if (!isVisible(by)) {
-            jiraAwareFail(by + " not visible " + message);
+    protected void assertJgrowlText(String jGrowlText) throws InterruptedException {
+        waitForElementPresentByClassName("jGrowl-message");
+
+        // wait for any flash not present errors to fade out
+        while (findElement(By.className("jGrowl-message")).getText().contains("Unable to load SWF file")) {
+            driver.findElement(By.className("jGrowl-close")).click(); // no wait, click quick
         }
+
+        // get growl texts
+        StringBuilder sb = new StringBuilder("");
+        List<WebElement> jGrowls = findElements(By.className("jGrowl-message"));
+        for (WebElement jGrowl : jGrowls) {
+            if (jGrowl.getText() != null) {
+                sb.append(jGrowl.getText()).append("\n");
+            }
+        }
+        String growlText = sb.toString();
+
+        WebDriverUtils.stepMessage("Do jGrowls contain text '" + jGrowlText + "'? " + growlText.contains(jGrowlText));
+
+        //check growl text is present
+        assertTrue(growlText + " does not contain " + jGrowlText, growlText.contains(jGrowlText));
     }
 
-    protected void assertIsVisibleByXpath(String xpath, String message) {
-        if (!isVisibleByXpath(xpath)) {
-            jiraAwareFail(xpath + " not visible " + message);
-        }
-    }
-
-    protected void assertIsNotVisibleByXpath(String xpath, String message) {
-        if (isVisibleByXpath(xpath)) {
-            jiraAwareFail(xpath + " visible and should not be " + message);
-        }
-    }
-
-    protected void assertIsVisible(String locator) {
-        if (!isVisible(locator)) {
-            jiraAwareFail(locator + " is not visible and should be");
-        }
-    }
-
-    protected void assertIsVisibleById(String id) {
-        if (!isVisibleById(id)) {
-            jiraAwareFail(id + " is not visible and should be");
-        }
-    }
-
-    protected void assertIsNotVisible(By by) {
-        assertIsNotVisible(by, "");
-    }
-
-    protected void assertIsNotVisible(By by, String message) {
-        if (isVisible(by)) {
-            jiraAwareFail(by + " is visible and should not be " + message);
-        }
-    }
-
-    protected void assertIsNotVisible(String locator) {
-        if (isVisible(locator)) {
-            jiraAwareFail(locator + " is visible and should not be");
-        }
-    }
-
-    protected void assertIsNotVisibleByXpath(String xpath) {
-        if (isVisible(By.xpath(xpath))) {
-            jiraAwareFail(xpath + " is visible and should not be");
-        }
+    protected void assertLabelWithTextPresent(String labelText) throws InterruptedException {
+        jGrowl("Assert Label containing the text " + labelText + " is present");
+        waitForElementPresentByXpath("//label[contains(text(), '" + labelText + "')]");
     }
 
     protected void assertLabelFor(String forElementId, String labelText) {
-        SeleneseTestBase.assertEquals(labelText, getForLabelText(forElementId));
+        assertEquals(labelText, getForLabelText(forElementId));
     }
 
     protected void assertMultiValueDeselectAllThisPage() throws InterruptedException {
         waitAndClickDropDown("deselect all items on this page");
         if (!areNoMultiValueSelectsChecked()) {
-            JiraAwareFailureUtil.fail("deselect all items on this page failure", this);
+            jiraAwareFail("deselect all items on this page failure");
         }
         assertButtonDisabledByText(RETURN_SELECTED_BUTTON_TEXT);
     }
@@ -771,7 +937,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     protected void assertMultiValueSelectAllThisPage() throws InterruptedException {
         waitAndClickDropDown("select all items on this page");
         if (!areAllMultiValueSelectsChecked()) {
-            JiraAwareFailureUtil.fail("select all items on this page failure", this);
+            JiraAwareFailureUtils.fail("select all items on this page failure", this);
         }
         assertButtonEnabledByText(RETURN_SELECTED_BUTTON_TEXT);
     }
@@ -788,67 +954,61 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         String parentWindowHandle = driver.getWindowHandle();
         // wait page to be loaded
         driver.switchTo().window(windowName).findElements(By.tagName("head"));
-        SeleneseTestBase.assertEquals(url, driver.getCurrentUrl());
+        assertEquals(url, driver.getCurrentUrl());
         driver.switchTo().window(parentWindowHandle);
     }
 
     protected void assertTableLayout() {
         String pageSource = driver.getPageSource();
-        SeleneseTestBase.assertTrue(pageSource.contains("Table Layout"));
-        SeleneseTestBase.assertTrue(pageSource.contains("Field 1"));
-        SeleneseTestBase.assertTrue(pageSource.contains("Field 2"));
-        SeleneseTestBase.assertTrue(pageSource.contains("Field 3"));
-        SeleneseTestBase.assertTrue(pageSource.contains("Field 4"));
-        SeleneseTestBase.assertTrue(pageSource.contains("Actions"));
+        assertTrue(pageSource.contains("Table Layout"));
+        assertTrue(pageSource.contains("Field 1"));
+        assertTrue(pageSource.contains("Field 2"));
+        assertTrue(pageSource.contains("Field 3"));
+        assertTrue(pageSource.contains("Field 4"));
+        assertTrue(pageSource.contains("Actions"));
     }
 
-    /**
-     * Warning, this only does a check against the page source.  The form url can have random character that match simple text
-     * @param text
-     */
-    protected void assertTextPresent(String text) {
-        assertTextPresent(text, "");
-    }
-
-    /**
-     * Warning, this only does a check against the page source.  The form url can have random character that match simple text
-     * @param text
-     */
-    protected void assertTextPresent(String text, String message) {
-        String pageSource = driver.getPageSource();
-        if (!pageSource.contains(text)) {
-            failableFail(text + " not present " + message);
+    protected void assertTextPresent(String[] text) throws InterruptedException {
+        StringBuilder missingText = new StringBuilder("");
+        boolean present = true;
+        for (int i = 0, s = text.length; i < s; i++) {
+            if (i == 0) {
+                present = waitForIsTextPresent(text[0]); // wait for the first check
+                if (!present) {
+                    missingText.append(text[0]);
+                }
+            } else {
+                if (!isTextPresent(text[i])) {
+                    present = false;
+                    missingText.append(" " + text[i]);
+                }
+            }
+        }
+        if (!present) {
+            jiraAwareFail(missingText + " not present for " + this.getClass().toString());
         }
     }
 
-    /**
-     * Warning, this only does a check against the page source.  The form url can have random character that match simple text
-     * @param text
-     */
-    protected void assertTextPresent(String text, String cssSelector, String message){
-        WebElement element = findElement(By.cssSelector(cssSelector));
-        if (!element.getText().contains(text)){
-            failableFail(text + " for " + cssSelector + " not present " + message);
+    protected void assertTextPresent(String[][] text) throws InterruptedException {
+        StringBuilder missingText = new StringBuilder("");
+        boolean present = true;
+        for (int i = 0, s = text.length; i < s; i++) {
+            for (int j = 0, t = text[i].length; j < t; j++) {
+                if (i == 0 && j == 0) {
+                    present = waitForIsTextPresent(text[0][0]); // wait for the first check
+                    if (!present) {
+                        missingText.append(text[0][0]);
+                    }
+                } else {
+                    if (!isTextPresent(text[i][j])) {
+                        present = false;
+                        missingText.append(" " + text[i][j]);
+                    }
+                }
+            }
         }
-    }
-
-    /**
-     * Asset that the given text does not occur in the page
-     * Warning, this only does a check against the page source.  The form url can have random character that match simple text
-     * @param text the text to search for
-     */
-    protected void assertTextNotPresent(String text) {
-        assertTextNotPresent(text, "");
-    }
-
-    /**
-     * Assert that the given text does not occur in the page, and add an additional message to the failure
-     * @param text the text to search for
-     * @param message the message to add to the failure
-     */
-    protected void assertTextNotPresent(String text, String message) {
-        if (driver.getPageSource().contains(text)) {
-            failableFail(text + " is present and should not be " + message);
+        if (!present) {
+            jiraAwareFail(missingText + " not present for " + this.getClass().toString());
         }
     }
 
@@ -856,21 +1016,15 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         driver.navigate().back();
     }
 
-    private void blanketApproveAssert() throws InterruptedException {
+    private void blanketApproveAssert(String docId) throws InterruptedException {
         checkForDocError();
-        ITUtil.checkForIncidentReport(driver.getPageSource(), DOC_SEARCH_XPATH, this, "Blanket Approve failure");
-        waitAndClickDocSearch();
-        waitForElementsPresentByClassName("footer-copyright", "footer-copyright");
-        SeleneseTestBase.assertEquals("Kuali Portal Index", driver.getTitle());
-        selectFrameIframePortlet();
-        waitAndClickSearch();
+        assertDocSearch(docId, DOC_STATUS_FINAL);
     }
 
     protected void blanketApproveCheck() throws InterruptedException {
-        ITUtil.checkForIncidentReport(driver.getPageSource(), BLANKET_APPROVE_NAME, this, "");
         waitAndClickByName(BLANKET_APPROVE_NAME,
                 "No blanket approve button does the user " + getUserName() + " have permission?");
-        Thread.sleep(2000);
+        checkForIncidentReport();
     }
 
     /**
@@ -880,13 +1034,13 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
      *
      * @throws InterruptedException
      */
-    protected void blanketApproveTest() throws InterruptedException {
-        ITUtil.checkForIncidentReport(driver.getPageSource(), BLANKET_APPROVE_NAME, this, "");
+    protected void blanketApproveTest(String docId) throws InterruptedException {
+        jGrowl("Click Blanket Approve");
         waitAndClickByName(BLANKET_APPROVE_NAME,
                 "No blanket approve button does the user " + getUserName() + " have permission?");
         Thread.sleep(2000);
-
-        blanketApproveAssert();
+        checkForIncidentReport();
+        blanketApproveAssert(docId);
     }
 
     protected void check(By by) throws InterruptedException {
@@ -921,7 +1075,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         }
 
         if (errorText != null && errorText.contains("errors")) {
-            failableFail(errorText + message);
+            jiraAwareFail(errorText + message);
         }
     }
 
@@ -929,22 +1083,23 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
      * Uses Selenium's findElements method which does not throw a test exception if not found.
      */
     public void checkForDocError() {
-        checkForIncidentReport();
         if (hasDocError()) {
             String errorText = extractErrorText();
-            failableFail(errorText);
+            jiraAwareFail(errorText);
         }
     }
 
     protected String extractErrorText() {
-        String errorText = driver.findElement(By.xpath(ITUtil.DIV_ERROR_LOCATOR)).getText(); // don't highlight
-        errorText = ITUtil.blanketApprovalCleanUpErrorText(errorText);
-        if (driver.findElements(By.xpath(ITUtil.DIV_EXCOL_LOCATOR)).size() > 0) { // not present if errors are at the bottom of the page (see left-errmsg below)
-            errorText = ITUtil.blanketApprovalCleanUpErrorText(driver.findElement( // don't highlight
-                    By.xpath(ITUtil.DIV_EXCOL_LOCATOR)).getText()); // replacing errorText as DIV_EXCOL_LOCATOR includes the error count
+        String errorText = driver.findElement(By.xpath(AutomatedFunctionalTestUtils.DIV_ERROR_LOCATOR)).getText(); // don't highlight
+        errorText = AutomatedFunctionalTestUtils.blanketApprovalCleanUpErrorText(errorText);
+        if (driver.findElements(By.xpath(AutomatedFunctionalTestUtils.DIV_EXCOL_LOCATOR)).size() > 0) { // not present if errors are at the bottom of the page (see left-errmsg below)
+            errorText = AutomatedFunctionalTestUtils.blanketApprovalCleanUpErrorText(driver.findElement(
+                    // don't highlight
+                    By.xpath(AutomatedFunctionalTestUtils.DIV_EXCOL_LOCATOR)).getText()); // replacing errorText as DIV_EXCOL_LOCATOR includes the error count
         }
         if (driver.findElements(By.xpath(DIV_LEFT_ERRMSG)).size() > 0) {
-            errorText = errorText + ITUtil.blanketApprovalCleanUpErrorText(driver.findElement(By.xpath(DIV_LEFT_ERRMSG)).getText()); // don't highlight
+            errorText = errorText + AutomatedFunctionalTestUtils.blanketApprovalCleanUpErrorText(driver.findElement(
+                    By.xpath(DIV_LEFT_ERRMSG)).getText()); // don't highlight
         }
         return errorText;
     }
@@ -954,8 +1109,8 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
      * @return
      */
     public boolean hasDocError() {
-        if (driver.findElements(By.xpath(ITUtil.DIV_ERROR_LOCATOR)).size() > 0) {
-            String errorText = driver.findElement(By.xpath(ITUtil.DIV_ERROR_LOCATOR)).getText(); // don't highlight
+        if (driver.findElements(By.xpath(AutomatedFunctionalTestUtils.DIV_ERROR_LOCATOR)).size() > 0) {
+            String errorText = driver.findElement(By.xpath(AutomatedFunctionalTestUtils.DIV_ERROR_LOCATOR)).getText(); // don't highlight
             if (errorText != null && errorText.contains("error(s) found on page.")) {
                 return true;
             }
@@ -969,8 +1124,8 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
      * @return
      */
     public boolean hasDocError(String errorTextToMatch) {
-        if (driver.findElements(By.xpath(ITUtil.DIV_ERROR_LOCATOR)).size() > 0) {
-            String errorText = driver.findElement(By.xpath(ITUtil.DIV_ERROR_LOCATOR)).getText(); // don't highlight
+        if (driver.findElements(By.xpath(AutomatedFunctionalTestUtils.DIV_ERROR_LOCATOR)).size() > 0) {
+            String errorText = driver.findElement(By.xpath(AutomatedFunctionalTestUtils.DIV_ERROR_LOCATOR)).getText(); // don't highlight
             if (errorText != null && errorText.contains("error(s) found on page.")) {
                 WebElement errorDiv = driver.findElement(By.xpath("//div[@class='left-errmsg']/div[2]/div")); // don't highlight
                 if (errorDiv != null) {
@@ -983,19 +1138,26 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     }
 
     protected void checkForIncidentReport() {
-        checkForIncidentReport("", "");
+        checkForIncidentReport("", this.getClass().toString());
+    }
+
+    protected String incidentReportMessage() {
+        return AutomatedFunctionalTestUtils.incidentReportMessage(driver.getPageSource(), "", this.getClass().toString());
     }
 
     protected void checkForIncidentReport(String locator) {
-        checkForIncidentReport(locator, "");
+        checkForIncidentReport(locator, this.getClass().toString());
     }
 
     protected void checkForIncidentReport(String locator, String message) {
-        ITUtil.checkForIncidentReport(driver.getPageSource(), locator, this, message);
+        AutomatedFunctionalTestUtils.checkForIncidentReport(driver.getPageSource(), locator, message, this);
     }
 
-    protected void checkForIncidentReport(String locator, Failable failable, String message) {
-        ITUtil.checkForIncidentReport(driver.getPageSource(), locator, failable, message);
+    /**
+     * @deprecated {@see #checkForIncidentReport(String, String)}
+     */
+    protected void checkForIncidentReport(String locator, JiraAwareFailable failable, String message) {
+        AutomatedFunctionalTestUtils.checkForIncidentReport(driver.getPageSource(), locator, message, failable);
     }
 
     protected void clearText(By by) throws InterruptedException {
@@ -1027,8 +1189,9 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
 
     protected String configNameSpaceBlanketApprove() throws Exception {
         String docId = waitForDocId();
-        String dtsPlusTwoChars = ITUtil.createUniqueDtsPlusTwoRandomChars();
-        waitAndTypeByXpath(DOC_DESCRIPTION_XPATH, "Validation Test Namespace " + ITUtil.createUniqueDtsPlusTwoRandomCharsNot9Digits());
+        String dtsPlusTwoChars = AutomatedFunctionalTestUtils.createUniqueDtsPlusTwoRandomChars();
+        waitAndTypeByXpath(DOC_DESCRIPTION_XPATH, "Validation Test Namespace " + AutomatedFunctionalTestUtils
+                .createUniqueDtsPlusTwoRandomCharsNot9Digits());
         assertBlanketApproveButtonsPresent();
         waitAndTypeByXpath(DOC_CODE_XPATH, "VTN" + dtsPlusTwoChars);
         waitAndTypeByXpath("//input[@id='document.newMaintainableObject.name']",
@@ -1042,38 +1205,37 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         testLookUp();
         assertTextPresent("Notes and Attachments");
         waitAndClick(By.xpath(CANCEL2_XPATH));
-        passed();
     }
 
-//    protected void deleteSubCollectionLine() throws Exception {
-//        // click on collections page link
-//        waitAndClickByLinkText(COLLECTIONS_LINK_TEXT);
-//        Thread.sleep(5000);
-//
-//        // wait for collections page to load by checking the presence of a sub collection line item
-//        waitForElementPresentByName("list4[0].subList[0].field1");
-//
-//        // change a value in the line to be deleted
-//        waitAndTypeByName("list4[0].subList[0].field1", "selenium");
-//
-//        // click the delete button
-//        waitAndClickByXpath("//div[@id='collection4_disclosureContent']/div[@class='uif-stackedCollectionLayout']/div[@class='uif-group uif-gridGroup uif-collectionItem uif-gridCollectionItem']/table/tbody/tr[5]/td/div/fieldset/div/div[@class='uif-disclosureContent']/div[@class='dataTables_wrapper']/table/tbody/tr[2]/td[6]/div/fieldset/div/div[@class='uif-boxLayout uif-horizontalBoxLayout clearfix']/button");
-//        Thread.sleep(2000);
-//
-//        // confirm that the input box containing the modified value is not present
-//        for (int second = 0;; second++) {
-//            if (second >= waitSeconds)
-//                failableFail(TIMEOUT_MESSAGE);
-//            try {
-//                if (!"selenium".equals(waitAndGetAttributeByName("list4[0].subList[0].field1", "value")))
-//                    break;
-//            } catch (Exception e) {}
-//            Thread.sleep(1000);
-//        }
-//
-//        // verify that the value has changed for the input box in the line that has replaced the deleted one
-//        assertNotSame("selenium", waitAndGetAttributeByName("list4[0].subList[0].field1", "value"));
-//    }
+    //    protected void deleteSubCollectionLine() throws Exception {
+    //        // click on collections page link
+    //        waitAndClickByLinkText(COLLECTIONS_LINK_TEXT);
+    //        Thread.sleep(5000);
+    //
+    //        // wait for collections page to load by checking the presence of a sub collection line item
+    //        waitForElementPresentByName("list4[0].subList[0].field1");
+    //
+    //        // change a value in the line to be deleted
+    //        waitAndTypeByName("list4[0].subList[0].field1", "selenium");
+    //
+    //        // click the delete button
+    //        waitAndClickByXpath("//div[@id='collection4_disclosureContent']/div[@class='uif-stackedCollectionLayout']/div[@class='uif-group uif-gridGroup uif-collectionItem uif-gridCollectionItem']/table/tbody/tr[5]/td/div/fieldset/div/div[@class='uif-disclosureContent']/div[@class='dataTables_wrapper']/table/tbody/tr[2]/td[6]/div/fieldset/div/div[@class='uif-boxLayout uif-horizontalBoxLayout clearfix']/button");
+    //        Thread.sleep(2000);
+    //
+    //        // confirm that the input box containing the modified value is not present
+    //        for (int second = 0;; second++) {
+    //            if (second >= waitSeconds)
+    //                jiraAwareFail(TIMEOUT_MESSAGE);
+    //            try {
+    //                if (!"selenium".equals(waitAndGetAttributeByName("list4[0].subList[0].field1", "value")))
+    //                    break;
+    //            } catch (Exception e) {}
+    //            Thread.sleep(1000);
+    //        }
+    //
+    //        // verify that the value has changed for the input box in the line that has replaced the deleted one
+    //        assertNotSame("selenium", waitAndGetAttributeByName("list4[0].subList[0].field1", "value"));
+    //    }
 
     protected void expandColapseByXpath(String clickLocator, String visibleLocator) throws InterruptedException {
         waitAndClickByXpath(clickLocator);
@@ -1082,6 +1244,28 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         waitNotVisibleByXpath(visibleLocator);
     }
 
+    protected String getDescriptionBase() {
+        return this.getClass().toString().substring(this.getClass().toString().lastIndexOf(".") + 1,
+                this.getClass().toString().length()) +
+                "." + testMethodName + " description";
+    }
+
+    protected String getDescriptionUnique() {
+        if (uniqueString == null) {
+            uniqueString = AutomatedFunctionalTestUtils.createUniqueDtsPlusTwoRandomCharsNot9Digits();
+        }
+        return getDescriptionBase() + " " + uniqueString;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return WebDriver
+     */
+    @Override
+    protected WebDriver getDriver() {
+        return driver;
+    }
 
     /**
      * {@link org.openqa.selenium.WebDriver#getWindowHandles()}
@@ -1093,7 +1277,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
 
     protected String waitAndGetAttribute(By by, String attribute) throws InterruptedException {
         jiraAwareWaitFor(by, attribute);
-        
+
         return findElement(by).getAttribute(attribute);
     }
 
@@ -1118,28 +1302,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     }
 
     protected WebElement waitAndGetElementByAttributeValue(String attribute, String attributeValue) throws InterruptedException {
-        // jenkins implies that implicitlyWait is worse than sleep loop for finding elements by 100+ test failures on the old sampleapp
-        //        driver.manage().timeouts().implicitlyWait(waitSeconds, TimeUnit.SECONDS);
-        //        driver.manage().timeouts().implicitlyWait(1, TimeUnit.SECONDS);
-
-        driver.manage().timeouts().implicitlyWait(1, TimeUnit.SECONDS);
-
-        boolean failed = false;
-
-        for (int second = 0;; second++) {
-            Thread.sleep(1000);
-            if (second >= waitSeconds)
-                failed = true;
-            try {
-                if (failed || (getElementByAttributeValue(attribute, attributeValue) != null)) {
-                    break;
-                }
-            } catch (Exception e) {}
-        }
-
-        WebElement element = getElementByAttributeValue(attribute, attributeValue);
-        driver.manage().timeouts().implicitlyWait(WebDriverUtil.configuredImplicityWait(), TimeUnit.SECONDS);
-        return element;
+        return WebDriverUtils.waitAndGetElementByAttributeValue(driver, attribute, attributeValue, waitSeconds);
     }
 
     protected List<WebElement> waitAndGetElementsByAttributeValue(String attribute, String attributeValue) throws InterruptedException {
@@ -1163,12 +1326,12 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         }
 
         List<WebElement> elements = getElementsByAttributeValue(attribute, attributeValue);
-        driver.manage().timeouts().implicitlyWait(WebDriverUtil.configuredImplicityWait(), TimeUnit.SECONDS);
+        driver.manage().timeouts().implicitlyWait(WebDriverUtils.configuredImplicityWait(), TimeUnit.SECONDS);
         return elements;
     }
 
     protected String[] waitAndGetText(By by) throws InterruptedException {
-        WebDriverUtil.waitFors(driver, WebDriverUtil.configuredImplicityWait(), by, "");
+        WebDriverUtils.waitFors(driver, WebDriverUtils.configuredImplicityWait(), by, this.getClass().toString());
         List<WebElement> found = findElements(by);
         String[] texts = new String[found.size()];
         int i = 0;
@@ -1186,7 +1349,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
 
 
     protected String getBaseUrlString() {
-        return WebDriverUtil.getBaseUrlString();
+        return WebDriverUtils.getBaseUrlString();
     }
 
     protected int getCssCount(String selector) {
@@ -1272,7 +1435,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     }
 
     /**
-     * "admin" by default.  Can be overridden using {@see WebDriverUtil#REMOTE_PUBLIC_USER_PROPERTY}
+     * "admin" by default.  Can be overridden using {@see WebDriverUtils#REMOTE_PUBLIC_USER_PROPERTY}
      * @return string
      */
     public String getUserName() {
@@ -1299,42 +1462,29 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         driver.manage().timeouts().implicitlyWait(waitSeconds, TimeUnit.SECONDS);
     }
 
+    protected void gotoIframeById(final String iframeId) {
+        if (driver.findElements(By.id(iframeId)).size() > 0) { // find elements so an exception isn't thrown if not found
+            WebElement contentFrame = driver.findElement(By.id(iframeId)); // don't highlight
+            driver.switchTo().frame(contentFrame);
+        } else {
+            System.out.println("Unable to find " + iframeId);
+        }
+    }
     protected void gotoIframeByXpath(final String iframeXpath) {
-        if (driver.findElements(By.xpath(iframeXpath)).size() > 0) {
+        if (driver.findElements(By.xpath(iframeXpath)).size() > 0) {  // find elements so an exception isn't thrown if not found
             WebElement contentFrame = driver.findElement(By.xpath(iframeXpath)); // don't highlight
             driver.switchTo().frame(contentFrame);
+        } else {
+            System.out.println("Unable to find " + iframeXpath);
         }
     }
 
-    /**
-     * <p>
-     * Set passed to false, call jGrowlSticky with the given message, then fail using the Failable fail method.
-     * </p>
-     * @param message to display with failure
-     */
-    public void failableFail(String message) {
-        passed = false;
-        jGrowlSticky(message);
-        fail(message); // Failable.fail
+    protected void gotoLightBox() {
+        driver.switchTo().frame(driver.findElement(By.cssSelector(".fancybox-iframe")));
     }
 
     protected WebElement findButtonByText(String buttonText) {
-        return findElement(By.xpath("//button[contains(text(), '" + buttonText + "')]"));
-    }
-
-    protected WebElement findElement(By by) {
-        return WebDriverUtil.findElement(driver, by);
-    }
-
-    protected WebElement findElement(By by, WebElement elementToFindOn) {
-        try {
-            WebElement found = elementToFindOn.findElement(by);
-            WebDriverUtil.highlightElement(driver, found);
-            return found;
-        } catch (Exception e) {
-            jiraAwareFail(e.getMessage());
-        }
-        return null; // requred by compiler, never reached
+        return WebDriverUtils.findButtonByText(driver, buttonText);
     }
 
     protected List<WebElement> findVisibleElements(By by) {
@@ -1355,6 +1505,10 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     }
 
     protected List<WebElement> findElements(By by, WebElement element) {
+        if (element == null) {
+            checkForIncidentReport();
+            throw new AssertionError("element to findElements on for " + by.toString() + " is null in class " + this.getClass().toString());
+        }
         List<WebElement> found = element.findElements(by);
         return found;
     }
@@ -1498,37 +1652,11 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     }
 
     protected Boolean isTextPresent(String text) {
-        if (driver.getPageSource().contains(text)) {
-            return Boolean.TRUE;
-        }
-
-        return Boolean.FALSE;
-    }
-
-    protected boolean isVisible(String locator) {
-        return isVisible(By.cssSelector(locator));
-    }
-
-    protected boolean isVisible(By by) {
-        List<WebElement> elements = driver.findElements(by);
-        for (WebElement element: elements) {
-            if (element.isDisplayed()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    protected boolean isVisibleById(String id) {
-        return isVisible(By.id(id));
-    }
-
-    protected boolean isVisibleByXpath(String locator) {
-        return isVisible(By.xpath(locator));
+        return WebDriverUtils.isTextPresent(driver, driver.getPageSource(), text);
     }
 
     protected void jGrowl(String message) {
-        WebDriverUtil.jGrowl(driver, jGrowlHeader, false, message);
+        WebDriverUtils.jGrowl(driver, jGrowlHeader, false, message);
     }
 
     /**
@@ -1536,80 +1664,35 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
      * in an infinite loop if JGROWL_ERROR_FAILURE is true so please don't.
      */
     protected void jGrowlSticky(String message) {
-        WebDriverUtil.jGrowl(driver, jGrowlHeader, true, message);
-    }
-
-    private void jiraAwareFail(By by, String message, Throwable t) {
-        JiraAwareFailureUtil.failOnMatchedJira(by.toString(), message, this);
-        // if there isn't a matched jira to fail on, then fail
-        checkForIncidentReport(by.toString(), message);
-        failableFail(t.getMessage() + "\n" + by.toString() + " " + message + " " + driver.getCurrentUrl());
-    }
-
-    private void jiraAwareFail(String message) {
-        JiraAwareFailureUtil.failOnMatchedJira(message, message, this);
-        // if there isn't a matched jira to fail on, then fail
-        checkForIncidentReport(message, message);
-        failableFail(message + " " + driver.getCurrentUrl());
-    }
-
-    protected void jiraAwareWaitAndClick(By by, String message) throws InterruptedException {
-        jiraAwareWaitAndClick(by, message, this);
-    }
-
-    protected void jiraAwareWaitAndClick(By by, String message, Failable failable) throws InterruptedException {
-        try {
-            jiraAwareWaitFor(by, message, failable);
-            WebElement element = findElement(by);
-            element.click();
-        } catch (Exception e) {
-            jiraAwareFail(by, message, e);
-        }
-    }
-
-    protected WebElement jiraAwareWaitFor(By by, String message) throws InterruptedException {
-        try {
-            return WebDriverUtil.waitFor(this.driver, this.waitSeconds, by, message);
-        } catch (Throwable t) {
-            jiraAwareFail(by, message, t);
-        }
-        return null; // required, but the jiraAwareFail will will end test before this statement is reached
-    }
-
-    protected void jiraAwareWaitFors(By by, String message) throws InterruptedException {
-        try {
-            WebDriverUtil.waitFors(this.driver, this.waitSeconds, by, message);
-        } catch (Throwable t) {
-            jiraAwareFail(by, message, t);
-        }
-    }
-
-    protected void jiraAwareWaitFor(By by, String message, Failable failable) throws InterruptedException {
-        try {
-            WebDriverUtil.waitFor(this.driver, this.waitSeconds, by, message);
-        } catch (Throwable t) {
-            jiraAwareFail(by, message, t);
-        }
-    }
-    
-    protected WebElement jiraAwareWaitFor(By by, int seconds, String message) throws InterruptedException {
-        try {
-            return WebDriverUtil.waitFor(this.driver, seconds, by, message);
-        } catch (Throwable t) {
-            jiraAwareFail(by, message, t);
-        }
-        return null; // required, but the jiraAwareFail will will end test before this statement is reached
+        WebDriverUtils.jGrowl(driver, jGrowlHeader, true, message);
     }
 
     protected String multiValueResultCount() throws InterruptedException {
-        List<WebElement> resultLi = waitAndGetElementsByAttributeValue("class", "uif-infoMessageItem");
-        String resultsCount = resultLi.get(0).getText();
-        resultsCount = resultsCount.substring(0, resultsCount.indexOf((" ")));
+        WebElement dataTableInfo = waitAndGetElementByAttributeValue("class", "dataTables_info");
+        String resultsCount = dataTableInfo.getText();
+        resultsCount = resultsCount.substring(resultsCount.indexOf(" of ") + 4, resultsCount.indexOf(" entries")).trim();
         return resultsCount;
+    }
+
+    protected boolean noAffilication() {
+        return !isElementPresentByName("document.affiliations[0].dflt");
     }
 
     protected void open(String url) {
         driver.get(url);
+    }
+
+    public void screenshot() throws IOException {
+        if (driver instanceof TakesScreenshot) {
+            File scrFile = ((TakesScreenshot)driver).getScreenshotAs(OutputType.FILE);
+            FileUtils.copyFile(scrFile, new File(System.getProperty("remote.driver.screenshot.dir", "." + File.separator),
+                    System.getProperty("remote.driver.screenshot.filename", this.getClass().toString().replace("class ", "")
+                            + "." + testMethodName + "-" + getDateTimeStampFormatted() + ".png")));
+        }
+    }
+
+    public boolean screenshotSteps() {
+        return "true".equals(System.getProperty("remote.driver.step.screenshot", "true"));
     }
 
     protected void selectFrameIframePortlet() {
@@ -1617,11 +1700,11 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     }
 
     protected void selectFrame(String locator) {
-        
+
         if (IFRAMEPORTLET_NAME.equals(locator)) {
             gotoNestedFrame();
         } else {
-           WebDriverUtil.selectFrameSafe(driver, locator);
+            WebDriverUtils.selectFrameSafe(driver, locator);
         }
     }
 
@@ -1631,6 +1714,14 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
 
     protected void selectWindow(String locator) {
         driver.switchTo().window(locator);
+    }
+
+    protected void selectChildWindow() {
+        selectWindow(driver.getWindowHandles().toArray()[1].toString());
+    }
+
+    protected void selectParentWindow() {
+        selectWindow(driver.getWindowHandles().toArray()[0].toString());
     }
 
     protected void selectByXpath(String locator, String selectText) throws InterruptedException {
@@ -1648,44 +1739,16 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
      * @throws InterruptedException
      */
     protected void select(By by, String selectText) throws InterruptedException {
-        checkForIncidentReport(by.toString(), "trying to select text " + selectText);
+//        checkForIncidentReport(by.toString(), "trying to select text " + selectText); // I think a report will now be picked-up by the jiraAwareFail
         WebElement select1 = findElement(by);
+        String name = select1.getAttribute("name");
+        WebDriverUtils.jGrowl(getDriver(), "Select " + selectText, false, "Select " + selectText + " from " + name);
         List<WebElement> options = select1.findElements(By.tagName("option"));
 
         for (WebElement option : options) {
             if (option.getText().equals(selectText)) {
                 option.click();
-                break;
-            }
-        }
-    }
-
-    protected void selectOptionByName(String name, String optionValue) throws InterruptedException {
-        selectOption(By.name(name), optionValue);
-    }
-
-    protected void selectOptionByXpath(String locator, String optionValue) throws InterruptedException {
-        selectOption(By.name(locator), optionValue);
-    }
-
-    /**
-     * Uses Selenium's findElements method which does not throw a test exception if not found.
-     * @param by
-     * @param optionValue
-     * @throws InterruptedException
-     */
-    protected void selectOption(By by, String optionValue) throws InterruptedException {
-        WebElement select1 = findElement(by);
-        List<WebElement> options = select1.findElements(By.tagName("option"));
-
-        if (options == null || options.size() == 0) {
-            failableFail("No options for select " + select1.toString() + " was looking for value " + optionValue + " using " + by.toString());
-        }
-
-        for (WebElement option : options) {
-            if (option.getAttribute("value").equals(optionValue)) {
-                option.click();
-                break;
+//                break; // seems to be causing a hang?
             }
         }
     }
@@ -1698,7 +1761,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         Set<String> windows = driver.getWindowHandles();
 
         for (String window : windows) {
-            driver.switchTo().window(window);            
+            driver.switchTo().window(window);
             if (driver.getTitle().contains(title)) {
                 return;
             }
@@ -1711,11 +1774,10 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     }
 
     // TODO move method to AddingNameSpaceAbstractSmokeTestBase after locators are extracted
-    protected void testAddingNamespace(Failable failable) throws Exception {
+    protected void testAddingNamespace(JiraAwareFailable failable) throws Exception {
         selectFrameIframePortlet();
         waitAndCreateNew();
-        waitForPageToLoad();
-        assertElementPresentByXpath(SAVE_XPATH_2, "save button does not exist on the page");
+        waitForElementPresentByXpath(SAVE_XPATH_2, "save button does not exist on the page");
 
         //Enter details for Namespace.
         waitAndTypeByXpath(DOC_DESCRIPTION_XPATH, "Adding PEANUTS");
@@ -1724,72 +1786,111 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         waitAndTypeByXpath("//input[@id='document.newMaintainableObject.name']", "The Peanuts Gang");
         checkByXpath("//input[@id='document.newMaintainableObject.active']");
         waitAndClickByXpath(SAVE_XPATH_2);
-        waitForPageToLoad();
-        checkForIncidentReport();
-        assertDocumentStatusSaved();
+        waitForElementPresentByXpath(SAVE_SUCCESSFUL_XPATH, "Document is not saved successfully");
 
         //checks it is saved and initiator is admin.
-        SeleneseTestBase.assertEquals(DOC_STATUS_SAVED, findElement(By.xpath(
-                "//table[@class='headerinfo']/tbody/tr[1]/td[2]")).getText());
-        SeleneseTestBase.assertEquals("admin", findElement(By.xpath(
-                "//table[@class='headerinfo']/tbody/tr[2]/td[1]/a")).getText());
-    }
-
-    protected void assertDocumentStatusSaved() {
-        assertElementPresentByXpath(SAVE_SUCCESSFUL_XPATH,
-                "Document is not saved successfully");
+        assertEquals(DOC_STATUS_SAVED, findElement(By.xpath("//table[@class='headerinfo']/tbody/tr[1]/td[2]")).getText());
+        assertEquals("admin", findElement(By.xpath("//table[@class='headerinfo']/tbody/tr[2]/td[1]/a")).getText());
     }
 
     protected void testAddingBrownGroup() throws Exception {
         selectFrameIframePortlet();
         waitAndCreateNew();
-        waitForPageToLoad();
         String docId = waitForDocId();
+        String random = RandomStringUtils.randomNumeric(4);
+        String organizationDocumentNumber = "ORD" + random;
+        String groupDescription = "GD" + random;
+        String groupName = "BrownGroup " + AutomatedFunctionalTestUtils.createUniqueDtsPlusTwoRandomChars();
+        String nameSpace = "KR-IDM";
+        String today = getDateToday();
+        Calendar nextYearCal = Calendar.getInstance();
+        nextYearCal.add(Calendar.YEAR, 1);
+        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
+        String nextYear = sdf.format(nextYearCal.getTime());
 
         //Enter details for BrownGroup.
         waitAndTypeByName("document.documentHeader.documentDescription", "Adding Brown Group");
         waitAndTypeByName("document.documentHeader.explanation", "I want to add Brown Group to test KIM");
-        selectOptionByName("document.groupNamespace", "KR-IDM");
-        waitForPageToLoad();
-        String groupName = "BrownGroup " + ITUtil.createUniqueDtsPlusTwoRandomChars();
+        waitAndTypeByName("document.documentHeader.organizationDocumentNumber", organizationDocumentNumber);
+        selectOptionByName("document.groupNamespace", nameSpace);
         waitAndTypeByName("document.groupName", groupName);
+        waitAndTypeByName("document.groupDescription", groupDescription);
+
+        // Add Ad hoc Recipient
+        addAdHocRecipientsPerson(new String[]{"dev1", "F"}); // "One, Developer"
+
+        // Add Ad hoc Workgroup
+        waitAndClickByName("methodToCall.performLookup.(!!org.kuali.rice.kim.impl.group.GroupBo!!).(((namespaceCode:newAdHocRouteWorkgroup.recipientNamespaceCode,name:newAdHocRouteWorkgroup.recipientName))).((`newAdHocRouteWorkgroup.recipientNamespaceCode:namespaceCode,newAdHocRouteWorkgroup.recipientName:name`)).((<>)).(([])).((**)).((^^)).((&&)).((//)).((~~)).(::::;;::::).anchor");
+        waitForElementPresentByXpath(SEARCH_XPATH);
+        selectOptionByName("namespaceCode", nameSpace);
+        waitAndClickSearch();
+        Thread.sleep(2000);
+        String adHocWrkGrp = null;
+        if (isTextPresent("No values match this search.")) {
+            waitAndClickByXpath(CANCEL3_XPATH);
+        } else {
+            waitAndClickReturnValue();
+            waitAndClickByName("methodToCall.insertAdHocRouteWorkgroup");
+            adHocWrkGrp = findElement(By.name("adHocRouteWorkgroup[0].recipientName")).getAttribute("value");
+        }
+
         checkByName("document.active");
         waitAndClickByXpath(SAVE_XPATH_2);
-        waitForPageToLoad();
-        assertElementPresentByXpath(SAVE_SUCCESSFUL_XPATH,"Document is not saved successfully");
-        checkForIncidentReport();
+        waitForTextPresent("Document was successfully saved.");
 
         //checks it is saved and initiator is admin.
-        SeleneseTestBase.assertEquals(DOC_STATUS_SAVED, findElement(By.xpath("//table[@class='headerinfo']/tbody/tr[1]/td[2]")).getText());
-        SeleneseTestBase.assertEquals("admin", findElement(By.xpath("//table[@class='headerinfo']/tbody/tr[2]/td[1]/a")).getText());
+        assertEquals(DOC_STATUS_SAVED, findElement(By.xpath("//table[@class='headerinfo']/tbody/tr[1]/td[2]")).getText());
+        assertEquals("admin", findElement(By.xpath("//table[@class='headerinfo']/tbody/tr[2]/td[1]/a")).getText());
         waitAndClickByName("methodToCall.performLookup.(!!org.kuali.rice.kim.impl.identity.PersonImpl!!).(((principalId:member.memberId,principalName:member.memberName))).((``)).((<>)).(([])).((**)).((^^)).((&&)).((//)).((~~)).(::::;;::::).anchorAssignees");
-        waitForPageToLoad();
         waitAndClickSearch();
-        waitForPageToLoad();
+        String adHocPerson = waitForElementPresentByXpath("//table[@id='row']/tbody/tr/td[2]/a").getText();
         waitAndClickReturnValue();
-        waitForPageToLoad();
         waitAndClickByName("methodToCall.addMember.anchorAssignees");
-        waitForPageToLoad();
         waitAndClickSave();
         waitAndClickSubmit();
-        waitForPageToLoad();
-        Thread.sleep(2000);
-        assertElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH,"Document is not submitted successfully");
+        waitForElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH, "Document is not submitted successfully");
         selectTopFrame();
+
+        // Verify Document Overview info
+        docSearch(docId);
+        waitAndClickByLinkText(docId);
+        switchToWindow("Kuali :: Group");
+        assertTextPresent(new String[]{"Adding Brown Group", "I want to add Brown Group to test KIM", organizationDocumentNumber});
+        waitAndClickByName("methodToCall.close");
+
         waitAndClickByLinkText("Administration");
-        waitForPageToLoad();
         waitAndClickByLinkText("Group");
-        waitForPageToLoad();
         selectFrameIframePortlet();
         waitAndTypeByName("name", groupName);
         waitAndClickSearch();
-        isElementPresentByLinkText(groupName);
+        waitForElementPresent(By.linkText(groupName), docId + " with groupName "+ groupName + " not present!");
+        waitAndClickByLinkText("edit");
+        waitAndClickByName("methodToCall.showAllTabs");
+        assertTextPresent(new String[]{adHocPerson, groupDescription, nameSpace, groupName});
+    }
+
+    protected String getDateTimeStampFormatted() {
+        Date now = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
+        return sdf.format(now);
+    }
+
+    protected String getDateToday() {
+        Date now = Calendar.getInstance().getTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
+        return sdf.format(now);
+    }
+
+    protected String getDateTomorrow() {
+        Calendar now = Calendar.getInstance();
+        now.add(Calendar.DATE, 1);
+        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
+        return sdf.format(now.getTime());
     }
 
     protected void testAttributeDefinitionLookUp() throws Exception {
         waitForPageToLoad();
         selectFrameIframePortlet();
-        checkForIncidentReport("testAttributeDefinitionLookUp");
         waitAndClickByXpath("//button[contains(.,'earch')]");
         Thread.sleep(3000);
         waitForPageToLoad();
@@ -1826,18 +1927,18 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
 
     protected void testConfigParamaterBlanketApprove() throws Exception {
         selectFrameIframePortlet();
-        waitAndCreateNew("Probably KULRICE-10766 Parameter 500 Error Lookup not defined for business object class org.kuali.rice.coreservice.impl.parameter.ParameterBo");
+        waitAndCreateNew();
         String docId = waitForDocId();
         waitAndTypeByXpath(DOC_DESCRIPTION_XPATH, "Validation Test Parameter ");
         assertBlanketApproveButtonsPresent();
-        SeleneseTestBase.assertEquals("", getTextByName(CANCEL_NAME));
+        assertEquals("", getTextByName(CANCEL_NAME));
         selectByXpath("//select[@id='document.newMaintainableObject.namespaceCode']", "KR-NS - Kuali Nervous System");
         String componentLookUp = "//input[@name='methodToCall.performLookup.(!!org.kuali.rice.coreservice.impl.component.ComponentBo!!).(((code:document.newMaintainableObject.componentCode,namespaceCode:document.newMaintainableObject.namespaceCode,))).((`document.newMaintainableObject.componentCode:code,document.newMaintainableObject.namespaceCode:namespaceCode,`)).((<>)).(([])).((**)).((^^)).((&&)).((//)).((~~)).(::::;"
                 + getBaseUrlString() + "/kr/lookup.do;::::).anchor4']";
         waitAndClickByXpath(componentLookUp);
         waitAndClickSearch();
         waitAndClickReturnValue();
-        String dtsTwo = ITUtil.createUniqueDtsPlusTwoRandomChars();
+        String dtsTwo = AutomatedFunctionalTestUtils.createUniqueDtsPlusTwoRandomChars();
         String parameterName = "ValidationTestParameter" + dtsTwo;
         waitAndTypeByXpath("//input[@id='document.newMaintainableObject.name']", parameterName);
         waitAndTypeByXpath("//textarea[@id='document.newMaintainableObject.description']",
@@ -1845,8 +1946,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         selectByXpath("//select[@id='document.newMaintainableObject.parameterTypeCode']", "Document Validation");
         waitAndClickByXpath("//input[@id='document.newMaintainableObject.evaluationOperatorCodeAllowed']");
         waitForPageToLoad();
-        blanketApproveTest();
-        assertDocFinal(docId);
+        blanketApproveTest(docId);
     }
 
     protected void testCreateNewAgenda() throws Exception {
@@ -1854,27 +1954,27 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         selectByName("document.newMaintainableObject.dataObject.namespace", "Kuali Rules Test");
         String agendaName = "Agenda Date :" + Calendar.getInstance().getTime().toString();
         waitAndTypeByName("document.newMaintainableObject.dataObject.agenda.name", "Agenda " + agendaName);
+        fireEvent("document.newMaintainableObject.dataObject.contextName", "focus");
         waitAndTypeByName("document.newMaintainableObject.dataObject.contextName", "Context1");
         fireEvent("document.newMaintainableObject.dataObject.contextName", "blur");
+        Thread.sleep(1000);
+        // extra focus and blur to work around KULRICE-11534 Create New Agenda requires two blur events to fully render Type when Context is typed in (first renders label, second renders select)
         fireEvent("document.newMaintainableObject.dataObject.contextName", "focus");
+        fireEvent("document.newMaintainableObject.dataObject.contextName", "blur");
         waitForElementPresentByName("document.newMaintainableObject.dataObject.agenda.typeId");
         selectByName("document.newMaintainableObject.dataObject.agenda.typeId", "Campus Agenda");
         waitForElementPresentByName("document.newMaintainableObject.dataObject.customAttributesMap[Campus]");
         waitAndTypeByName("document.newMaintainableObject.dataObject.customAttributesMap[Campus]", "BL");
-        waitAndClickByXpath("//div[2]/button");
-        waitForPageToLoad();
-        waitAndClickByXpath("//div[2]/button[3]");
-        waitForPageToLoad();
-        selectTopFrame();
-        waitAndClickByXpath("(//input[@name='imageField'])[2]");
+        waitAndClickButtonByText("submit");
+        assertTextPresent(new String[] {"Document was successfully submitted.", "ENROUTE"});
         passed();
     }
 
     protected void testCreateDocType() throws Exception {
         selectFrameIframePortlet();
         waitAndCreateNew();
-        assertElementPresentByXpath("//*[@name='methodToCall.route' and @alt='submit']","save button does not exist on the page");
-        
+        assertElementPresentByXpath("//*[@name='methodToCall.route' and @alt='submit']","submit button does not exist on the page");
+
         //waitForElementPresentByXpath(DOC_ID_XPATH);
         //String docId = findElement(By.xpath(DOC_ID_XPATH)).getText();
         String docId = waitForDocId();
@@ -1885,16 +1985,16 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         waitForPageToLoad();
         Thread.sleep(2000);
         waitAndClickSearch();
-        waitForPageToLoad();
         waitAndClickReturnValue();
-        String docTypeName = "TestDocType" + ITUtil.createUniqueDtsPlusTwoRandomChars();
+        String docTypeName = "TestDocType" + AutomatedFunctionalTestUtils.createUniqueDtsPlusTwoRandomChars();
         waitForElementPresentByXpath("//input[@id='document.newMaintainableObject.name']");
         waitAndTypeByXpath("//input[@id='document.newMaintainableObject.name']", docTypeName);
         waitAndTypeByXpath("//input[@id='document.newMaintainableObject.unresolvedDocHandlerUrl']","${kr.url}/maintenance.do?methodToCall=docHandler");
-        
+
         //waitAndTypeByXpath("//input[@id='document.newMaintainableObject.actualNotificationFromAddress']", "NFA");
         waitAndTypeByXpath("//input[@id='document.newMaintainableObject.label']", "Label for " + docTypeName);
         waitAndTypeByXpath("//input[@id='document.newMaintainableObject.unresolvedHelpDefinitionUrl']","default.htm?turl=WordDocuments%2Fdocumenttype.htm");
+        jGrowl("Click Submit button");
         waitAndClickByXpath("//*[@name='methodToCall.route' and @alt='submit']");
         checkForIncidentReport();
         waitForPageToLoad();
@@ -1904,13 +2004,31 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         selectFrameIframePortlet();
         waitAndClickSearch();
         Thread.sleep(2000);
-        SeleneseTestBase.assertEquals(docId, findElement(By.xpath(DOC_ID_XPATH_2)).getText());
+        assertEquals(docId, findElement(By.xpath(DOC_ID_XPATH_2)).getText());
+    }
+
+    protected String testCreateNew() throws InterruptedException {
+        selectFrameIframePortlet();
+        waitAndCreateNew();
+        String docId = verifyDocInitiated();
+        createNewEnterDetails();
+        return docId;
     }
 
     protected void testCreateNewCancel() throws Exception {
         selectFrameIframePortlet();
         waitAndCreateNew();
+        String docId = verifyDocInitiated();
+        createNewEnterDetails();
         testCancelConfirmation();
+        assertDocSearchNoResults(docId);
+    }
+
+    private String verifyDocInitiated() throws InterruptedException {
+        String docId = waitForDocId();
+        assertEquals("INITIATED", waitForDocStatus());
+        assertEquals(getUserName(), waitForDocInitiator());
+        return docId;
     }
 
     protected List<String> testCreateNewParameter(String docId, String parameterName) throws Exception {
@@ -1921,7 +2039,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         selectOptionByName("document.newMaintainableObject.namespaceCode", "KR-WKFLW");
         waitAndTypeByName("document.newMaintainableObject.componentCode", "ActionList");
         waitAndTypeByName("document.newMaintainableObject.applicationId", "KUALI");
-        parameterName = "TestIndicator" + ITUtil.createUniqueDtsPlusTwoRandomChars();
+        parameterName = "TestIndicator" + AutomatedFunctionalTestUtils.createUniqueDtsPlusTwoRandomChars();
         waitAndTypeByName("document.newMaintainableObject.name", parameterName);
         waitAndTypeByName("document.newMaintainableObject.value", "Y");
         waitAndTypeByName("document.newMaintainableObject.description", "for testing");
@@ -1929,16 +2047,10 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         waitAndClickByXpath("//input[@name='document.newMaintainableObject.evaluationOperatorCode' and @value='A']");
         waitAndClickSave();
         waitAndClickSubmit();
-        waitForPageToLoad();
-        assertElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH,"Document is not submitted successfully");
-        selectTopFrame();
-        waitAndClickDocSearchTitle();
-        waitForPageToLoad();
-        selectFrameIframePortlet();
-        waitAndClickSearch();
-        Thread.sleep(2000);
-        SeleneseTestBase.assertEquals(docId, getTextByXpath(DOC_ID_XPATH_3));
-        SeleneseTestBase.assertEquals(DOC_STATUS_FINAL, getTextByXpath(DOC_STATUS_XPATH_2));
+        waitForElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH, "Document is not submitted successfully");
+
+
+        assertDocSearch(docId, DOC_STATUS_FINAL);
         selectTopFrame();
         List<String> params = new ArrayList<String>();
         params.add(docId);
@@ -1955,20 +2067,12 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         waitAndTypeByName("document.documentHeader.documentDescription", "Adding Test Parameter Type");
         parameterCode = RandomStringUtils.randomAlphabetic(4).toLowerCase();
         waitAndTypeByName("document.newMaintainableObject.code", parameterCode);
-        parameterType = "testing " + ITUtil.createUniqueDtsPlusTwoRandomChars();
+        parameterType = "testing " + AutomatedFunctionalTestUtils.createUniqueDtsPlusTwoRandomChars();
         waitAndTypeByName("document.newMaintainableObject.name", parameterType);
         waitAndClickSave();
         waitAndClickSubmit();
-        waitForPageToLoad();
-        assertElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH, "Document is not submitted successfully");
-        selectTopFrame();
-        waitAndClickDocSearchTitle();
-        waitForPageToLoad();
-        selectFrameIframePortlet();
-        waitAndClickSearch();
-        Thread.sleep(2000);
-        SeleneseTestBase.assertEquals(docId, getTextByXpath(DOC_ID_XPATH_3));
-        SeleneseTestBase.assertEquals(DOC_STATUS_FINAL, getTextByXpath(DOC_STATUS_XPATH_2));
+        waitForElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH, "Document is not submitted successfully");
+        assertDocSearch(docId, DOC_STATUS_FINAL);
         selectTopFrame();
         List<String> params = new ArrayList<String>();
         params.add(docId);
@@ -1996,20 +2100,12 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         selectOptionByName("document.newMaintainableObject.namespaceCode", "KR-WKFLW");
         waitAndTypeByName("document.newMaintainableObject.componentCode", "ActionList");
         waitAndTypeByName("document.newMaintainableObject.applicationId", "KUALI");
-        parameterName = "TestIndicator" + ITUtil.createUniqueDtsPlusTwoRandomChars();
+        parameterName = "TestIndicator" + AutomatedFunctionalTestUtils.createUniqueDtsPlusTwoRandomChars();
         waitAndTypeByName("document.newMaintainableObject.name", parameterName);
         waitAndClickSave();
         waitAndClickSubmit();
-        waitForPageToLoad();
-        assertElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH,"Document is not submitted successfully");
-        selectTopFrame();
-        waitAndClickDocSearchTitle();
-        waitForPageToLoad();
-        selectFrameIframePortlet();
-        waitAndClickSearch();
-        Thread.sleep(2000);
-        SeleneseTestBase.assertEquals(docId, getTextByXpath(DOC_ID_XPATH_3));
-        SeleneseTestBase.assertEquals(DOC_STATUS_FINAL, getTextByXpath(DOC_STATUS_XPATH_2));
+        waitForElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH, "Document is not submitted successfully");
+        assertDocSearch(docId, DOC_STATUS_FINAL);
         selectTopFrame();
         List<String> params = new ArrayList<String>();
         params.add(docId);
@@ -2027,20 +2123,12 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         parameterCode = RandomStringUtils.randomAlphabetic(4).toLowerCase();
         waitAndTypeByName("document.newMaintainableObject.code", parameterCode);
         clearTextByName("document.newMaintainableObject.name");
-        parameterType = "testing " + ITUtil.createUniqueDtsPlusTwoRandomChars();
+        parameterType = "testing " + AutomatedFunctionalTestUtils.createUniqueDtsPlusTwoRandomChars();
         waitAndTypeByName("document.newMaintainableObject.name", parameterType);
         waitAndClickSave();
         waitAndClickSubmit();
-        waitForPageToLoad();
-        assertElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH, "Document is not submitted successfully");
-        selectTopFrame();
-        waitAndClickDocSearchTitle();
-        waitForPageToLoad();
-        selectFrameIframePortlet();
-        waitAndClickSearch();
-        Thread.sleep(2000);
-        SeleneseTestBase.assertEquals(docId, getTextByXpath(DOC_ID_XPATH_3));
-        SeleneseTestBase.assertEquals(DOC_STATUS_FINAL, getTextByXpath(DOC_STATUS_XPATH_2));
+        waitForElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH, "Document is not submitted successfully");
+        assertDocSearch(docId, DOC_STATUS_FINAL);
         selectTopFrame();
         List<String> params = new ArrayList<String>();
         params.add(docId);
@@ -2054,12 +2142,10 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     protected void testDocTypeLookup() throws Exception {
         selectFrameIframePortlet();
         waitAndClickByXpath("//input[@title='Search Parent Name']");
-        waitForPageToLoad();
         waitAndClickByXpath(SAVE_XPATH_3);
         waitAndClickByXpath("//table[@id='row']/tbody/tr[contains(td[3],'RiceDocument')]/td[1]/a");
-        waitForPageToLoad();
         waitAndClickByXpath(SAVE_XPATH_3);
-        SeleneseTestBase.assertEquals("RiceDocument", getTextByXpath("//table[@id='row']/tbody/tr/td[4]/a"));
+        assertEquals("RiceDocument", getTextByXpath("//table[@id='row']/tbody/tr/td[4]/a"));
         waitAndClickByName("methodToCall.clearValues");
         waitAndTypeByName("name", "Kuali*D");
         waitAndClickByXpath(SAVE_XPATH_3);
@@ -2083,20 +2169,12 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         docId = waitForDocId();
         waitAndTypeByName("document.documentHeader.documentDescription", "Editing Test Parameter");
         clearTextByName("document.newMaintainableObject.name");
-        parameterType = "testing " + ITUtil.createUniqueDtsPlusTwoRandomChars();
+        parameterType = "testing " + AutomatedFunctionalTestUtils.createUniqueDtsPlusTwoRandomChars();
         waitAndTypeByName("document.newMaintainableObject.name", parameterType);
         waitAndClickSave();
         waitAndClickSubmit();
-        waitForPageToLoad();
-        assertElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH, "Document is not submitted successfully");
-        selectTopFrame();
-        waitAndClickDocSearchTitle();
-        waitForPageToLoad();
-        selectFrameIframePortlet();
-        waitAndClickSearch();
-        Thread.sleep(2000);
-        SeleneseTestBase.assertEquals(docId, getTextByXpath(DOC_ID_XPATH_3));
-        SeleneseTestBase.assertEquals(DOC_STATUS_FINAL, getTextByXpath(DOC_STATUS_XPATH_2));
+        waitForElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH, "Document is not submitted successfully");
+        assertDocSearch(docId, DOC_STATUS_FINAL);
         selectTopFrame();
         List<String> params = new ArrayList<String>();
         params.add(docId);
@@ -2106,8 +2184,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         return params;
     }
 
-    protected List<String> testEditParameter(String docId, String parameterName) throws Exception
-    {
+    protected List<String> testEditParameter(String docId, String parameterName) throws Exception {
         selectFrameIframePortlet();
         waitAndClickEdit();
         waitForPageToLoad();
@@ -2117,16 +2194,8 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         waitAndTypeByName("document.newMaintainableObject.value", "N");
         waitAndClickSave();
         waitAndClickSubmit();
-        waitForPageToLoad();
-        assertElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH, "Document is not submitted successfully");
-        selectTopFrame();
-        waitAndClickDocSearchTitle();
-        waitForPageToLoad();
-        selectFrameIframePortlet();
-        waitAndClickSearch();
-        Thread.sleep(2000);
-        SeleneseTestBase.assertEquals(docId, getTextByXpath(DOC_ID_XPATH_3));
-        SeleneseTestBase.assertEquals(DOC_STATUS_FINAL, getTextByXpath(DOC_STATUS_XPATH_2));
+        waitForElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH, "Document is not submitted successfully");
+        assertDocSearch(docId, DOC_STATUS_FINAL);
         selectTopFrame();
         List<String> params = new ArrayList<String>();
         params.add(docId);
@@ -2137,18 +2206,14 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     protected void testEditRouteRulesDelegation() throws Exception {
         waitForPageToLoad();
         Thread.sleep(3000);
-        SeleneseTestBase.assertEquals("Kuali Portal Index", getTitle());
+        assertEquals("Kuali Portal Index", getTitle());
         selectFrameIframePortlet();
         waitAndClickSearch();
-        waitForPageToLoad();
-        Thread.sleep(3000);
         waitAndClickEdit();
         waitForPageToLoad();
         Thread.sleep(3000);
-        SeleneseTestBase.assertTrue(isElementPresentByName(CANCEL_NAME));
+        assertTrue(isElementPresentByName(CANCEL_NAME));
         waitAndClickCancel();
-        waitForPageToLoad();
-        Thread.sleep(3000);
         waitAndClickByName("methodToCall.processAnswer.button0");
         waitForPageToLoad();
         passed();
@@ -2156,15 +2221,14 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
 
     protected void testFiscalOfficerInfoMaintenanceNew() throws Exception {
         selectFrameIframePortlet();
-        checkForIncidentReport("", "https://jira.kuali.org/browse/KULRICE-7723 FiscalOfficerInfoMaintenanceNewIT.testUntitled need a better name and user permission error");
+        checkForIncidentReport();
         String docId = getTextByXpath("//*[@id='u13_control']");
         waitAndTypeByXpath("//input[@name='document.documentHeader.documentDescription']", "New FO Doc");
         waitAndTypeByXpath("//input[@name='document.newMaintainableObject.dataObject.id']", "5");
         waitAndTypeByXpath("//input[@name='document.newMaintainableObject.dataObject.userName']", "Jigar");
         waitAndClickByXpath("//button[@id='usave']");
         Integer docIdInt = Integer.valueOf(docId).intValue();
-        selectTopFrame();
-        waitAndClickByXpath("//img[@alt='action list']");
+        waitAndClickActionList();
         selectFrameIframePortlet();
 
         if(isElementPresentByLinkText("Last")){
@@ -2211,9 +2275,9 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
 
     protected void testIdentityGroupBlanketApprove() throws Exception {
         selectFrameIframePortlet();
-        waitAndCreateNew();                
+        waitAndCreateNew();
         String docId = waitForDocId();
-        String dtsTwo = ITUtil.createUniqueDtsPlusTwoRandomCharsNot9Digits();
+        String dtsTwo = AutomatedFunctionalTestUtils.createUniqueDtsPlusTwoRandomCharsNot9Digits();
         waitAndTypeByXpath(DOC_DESCRIPTION_XPATH, "Validation Test Group " + dtsTwo);
         assertBlanketApproveButtonsPresent();
         selectByXpath("//select[@id='document.groupNamespace']", LABEL_KUALI_KUALI_SYSTEMS);
@@ -2224,15 +2288,14 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         waitAndClickReturnValue();
         waitAndClickByName("methodToCall.addMember.anchorAssignees");
         waitForPageToLoad();
-        blanketApproveTest();
-        assertDocFinal(docId);
+        blanketApproveTest(docId);
     }
 
     protected void testIdentityPermissionBlanketApprove() throws Exception {
         selectFrameIframePortlet();
-        waitAndCreateNew();        
+        waitAndCreateNew();
         String docId = waitForDocId();
-        String dtsTwo = ITUtil.createUniqueDtsPlusTwoRandomCharsNot9Digits();
+        String dtsTwo = AutomatedFunctionalTestUtils.createUniqueDtsPlusTwoRandomCharsNot9Digits();
         waitAndTypeByXpath("//input[@name='document.documentHeader.documentDescription']",
                 "Validation Test Permission " + dtsTwo);
         assertBlanketApproveButtonsPresent();
@@ -2241,13 +2304,12 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         selectByXpath("//select[@name='document.newMaintainableObject.templateId']", LABEL_KUALI_DEFAULT);
         waitAndTypeByXpath("//input[@name='document.newMaintainableObject.name']",
                 "ValidationTestPermission" + dtsTwo);
-        blanketApproveTest();
-        assertDocFinal(docId);
+        blanketApproveTest(docId);
     }
 
     protected void testIdentityPersonBlanketApprove() throws Exception {
         selectFrameIframePortlet();
-        waitAndCreateNew();        
+        waitAndCreateNew();
         String docId = waitForDocId();
         waitAndTypeByXpath(DOC_DESCRIPTION_XPATH, "Validation Test Person");
         assertBlanketApproveButtonsPresent();
@@ -2266,15 +2328,14 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         waitAndClickByName("newName.dflt");
         waitAndClickByName("methodToCall.addName.anchor");
         waitForPageToLoad();
-        blanketApproveTest();
-        assertDocFinal(docId);
+        blanketApproveTest(docId);
     }
 
     protected void testIdentityResponsibilityBlanketApprove() throws Exception {
         selectFrameIframePortlet();
         waitAndCreateNew();
         String docId = waitForDocId();
-        String dtsTwo = ITUtil.createUniqueDtsPlusTwoRandomCharsNot9Digits();
+        String dtsTwo = AutomatedFunctionalTestUtils.createUniqueDtsPlusTwoRandomCharsNot9Digits();
         waitAndTypeByXpath(DOC_DESCRIPTION_XPATH, "Validation Test Responsibility " + dtsTwo);
         assertBlanketApproveButtonsPresent();
         selectByXpath("//select[@id='document.newMaintainableObject.namespaceCode']", LABEL_KUALI_KUALI_SYSTEMS);
@@ -2284,17 +2345,16 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         waitAndTypeByXpath("//input[@id='document.newMaintainableObject.routeNodeName']", "Test " + dtsTwo);
         waitAndClickByXpath("//input[@id='document.newMaintainableObject.actionDetailsAtRoleMemberLevel']");
         waitAndClickByXpath("//input[@id='document.newMaintainableObject.required']");
-        blanketApproveTest();
-        assertDocFinal(docId);
+        blanketApproveTest(docId);
     }
 
     protected void testIdentityRoleBlanketApprove() throws Exception {
         selectFrameIframePortlet();
         waitAndCreateNew();
         waitAndClickByXpath(SEARCH_XPATH, "No search button to click.");
-        waitAndClickByLinkText(RETURN_VALUE_LINK_TEXT, "No return value link");        
+        waitAndClickReturnValue();
         String docId = waitForDocId();
-        String dtsTwo = ITUtil.createUniqueDtsPlusTwoRandomCharsNot9Digits();
+        String dtsTwo = AutomatedFunctionalTestUtils.createUniqueDtsPlusTwoRandomCharsNot9Digits();
         waitAndTypeByXpath(DOC_DESCRIPTION_XPATH, "Validation Test Role " + dtsTwo);
         assertBlanketApproveButtonsPresent();
         selectByXpath("//select[@id='document.roleNamespace']", LABEL_KUALI_KUALI_SYSTEMS);
@@ -2303,53 +2363,38 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         waitAndClickByName(
                 "methodToCall.performLookup.(!!org.kuali.rice.kim.impl.identity.PersonImpl!!).(((principalId:member.memberId,principalName:member.memberName))).((``)).((<>)).(([])).((**)).((^^)).((&&)).((//)).((~~)).(::::;;::::).anchorAssignees");
         waitAndClickByXpath(SEARCH_XPATH, "No search button to click.");
-        waitAndClickByLinkText(RETURN_VALUE_LINK_TEXT, "No return value link");
+        waitAndClickReturnValue();
         waitAndClickByName("methodToCall.addMember.anchorAssignees");
         waitForPageToLoad();
-        blanketApproveTest();
-        assertDocFinal(docId);
-    }
-
-    protected void testLocationCampusBlanketApprove() throws Exception {
-        selectFrameIframePortlet();
-        waitAndCreateNew();        
-        String docId = waitForDocId();
-        String twoLetters = RandomStringUtils.randomAlphabetic(2);
-        waitAndTypeByName("document.documentHeader.documentDescription", "Validation Test Campus " + twoLetters);
-        assertBlanketApproveButtonsPresent();
-        waitAndTypeByName("document.newMaintainableObject.code", RandomStringUtils.randomAlphabetic(2));
-        waitAndTypeByName("document.newMaintainableObject.name", "Validation Test Campus" + ITUtil.createUniqueDtsPlusTwoRandomChars());
-        waitAndTypeByName("document.newMaintainableObject.shortName", "VTC " + twoLetters);
-        selectByName("document.newMaintainableObject.campusTypeCode", "B - BOTH");
-        blanketApproveTest();
-        assertDocFinal(docId);
+        blanketApproveTest(docId);
     }
 
     protected void testLocationCountryBlanketApprove() throws InterruptedException {
         selectFrameIframePortlet();
-        waitAndCreateNew();        
+        String randomCode = searchForAvailableCode(2);
+
+        waitAndCreateNew();
         String docId = waitForDocId();
-        assertBlanketApproveButtonsPresent();
-        String twoUpperCaseLetters = RandomStringUtils.randomAlphabetic(2).toUpperCase();
-        String countryName = "Validation Test Country " + ITUtil.createUniqueDtsPlusTwoRandomCharsNot9Digits();
+        String countryName = "Validation Test Country " + randomCode + " " + AutomatedFunctionalTestUtils.createUniqueDtsPlusTwoRandomCharsNot9Digits();
         waitAndTypeByXpath(DOC_DESCRIPTION_XPATH, countryName);
-        waitAndTypeByXpath(DOC_CODE_XPATH, twoUpperCaseLetters);
+        waitAndTypeByXpath(DOC_CODE_XPATH, randomCode);
         waitAndTypeByXpath("//input[@id='document.newMaintainableObject.name']", countryName);
-        waitAndTypeByXpath("//input[@id='document.newMaintainableObject.alternateCode']", "V" + twoUpperCaseLetters);
-        int attemptCount = 0;
+        waitAndTypeByXpath("//input[@id='document.newMaintainableObject.alternateCode']", "V" + randomCode);
+
+        finishBlanketApprovalTest(docId);
+    }
+
+    protected void finishBlanketApprovalTest(String docId) throws InterruptedException {
+        assertBlanketApproveButtonsPresent();
         blanketApproveCheck();
-        while (hasDocError("same primary key already exists") && attemptCount < 25) {
-            clearTextByXpath(DOC_CODE_XPATH);
-            waitAndTypeByXpath(DOC_CODE_XPATH, twoUpperCaseLetters.substring(0, 1) + Character.toString((char) ('A' + attemptCount++)));
-            blanketApproveCheck();
+        if (!hasDocError("same primary key already exists")) { // don't fail as to still have the same key after 25 sequential attempts we've created many today already
+            blanketApproveAssert(docId);
         }
-        blanketApproveAssert();
-        assertDocFinal(docId);
     }
 
     protected void testLocationCountyBlanketApprove() throws Exception {
         selectFrameIframePortlet();
-        waitAndCreateNew();        
+        waitAndCreateNew();
         String docId = waitForDocId();
         waitAndTypeByXpath(DOC_DESCRIPTION_XPATH, "Validation Test County");
         assertBlanketApproveButtonsPresent();
@@ -2366,16 +2411,15 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         waitAndTypeByName("code", "IN");
         waitAndClickSearch();
         waitAndClickReturnValue();
-        String countyName = "Validation Test County" + ITUtil.createUniqueDtsPlusTwoRandomChars();
+        String countyName = "Validation Test County" + AutomatedFunctionalTestUtils.createUniqueDtsPlusTwoRandomChars();
         waitAndTypeByXpath("//input[@id='document.newMaintainableObject.name']", countyName);
         waitAndClickByXpath("//input[@id='document.newMaintainableObject.active']");
-        blanketApproveTest();
-        assertDocFinal(docId);
+        blanketApproveTest(docId);
     }
 
     protected void testLocationPostBlanketApprove() throws Exception {
         selectFrameIframePortlet();
-        waitAndCreateNew("Probably KULRICE-10768 Postal Code 500 Error Lookup not defined for business object class org.kuali.rice.location.impl.postalcode.PostalCodeBo");
+        waitAndCreateNew();
         String docId = waitForDocId();
         waitAndTypeByXpath(DOC_DESCRIPTION_XPATH, "Validation Test Postal Code");
         assertBlanketApproveButtonsPresent();
@@ -2394,8 +2438,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         waitAndClickByXpath("//table[@id='row']/tbody/tr[4]/td[1]/a");
         String cityName = "Validation Test Postal Code " + code;
         waitAndTypeByXpath("//input[@id='document.newMaintainableObject.cityName']", cityName);
-        blanketApproveTest();
-        assertDocFinal(docId);
+        blanketApproveTest(docId);
     }
 
     protected void testLocationStateBlanketApprove() throws Exception {
@@ -2404,7 +2447,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         String docId = waitForDocId();
         waitAndTypeByXpath(DOC_DESCRIPTION_XPATH, "Validation Test State");
         assertBlanketApproveButtonsPresent();
-        
+
         //jiraAwareWaitAndClick("methodToCall.performLookup.(!!org.kuali.rice.location.impl.country.CountryBo!!).(((code:document.newMaintainableObject.countryCode,))).((`document.newMaintainableObject.countryCode:code,`)).((<>)).(([])).((**)).((^^)).((&&)).((//)).((~~)).(::::;" + getBaseUrlString() + "/kr/lookup.do;::::).anchor4");
         String countryLookUp = "//input[@name='methodToCall.performLookup.(!!org.kuali.rice.location.impl.country.CountryBo!!).(((code:document.newMaintainableObject.countryCode,))).((`document.newMaintainableObject.countryCode:code,`)).((<>)).(([])).((**)).((^^)).((&&)).((//)).((~~)).(::::;"
                 + getBaseUrlString() + "/kr/lookup.do;::::).anchor4']";
@@ -2416,8 +2459,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         String state = "Validation Test State " + code;
         waitAndTypeByXpath("//input[@id='document.newMaintainableObject.name']", state);
         waitAndClickByXpath("//input[@id='document.newMaintainableObject.active']");
-        blanketApproveTest();
-        assertDocFinal(docId);
+        blanketApproveTest(docId);
     }
 
     protected void testLookUp() throws Exception {
@@ -2427,13 +2469,25 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         // Mixed capitalization
         waitAndClick(By.xpath(SEARCH_XPATH_3));
         waitAndClickByLinkText(EDIT_LINK_TEXT, "edit button not present does user " + user + " have permission?");
-        Thread.sleep(3000);
-        checkForIncidentReport("submit");
-        assertTextPresent("ubmit");
+        waitForTextPresent("ubmit");
         assertTextPresent("ave");
         assertTextPresent("pprove");
         assertTextPresent("lose");
         assertTextPresent("ancel");
+    }
+
+    protected void testReferenceCampusTypeBlanketApprove() throws Exception {
+        selectFrameIframePortlet();
+        String randomCode = searchForAvailableCode(1);
+
+        waitAndCreateNew();
+        String docId = waitForDocId();
+        String dtsTwo = AutomatedFunctionalTestUtils.createUniqueDtsPlusTwoRandomCharsNot9Digits();
+        waitAndTypeByXpath(DOC_DESCRIPTION_XPATH, "Validation Test Campus Type " + randomCode + " " + dtsTwo);
+        waitAndTypeByXpath(DOC_CODE_XPATH, randomCode);
+        waitAndTypeByXpath("//input[@id='document.newMaintainableObject.name']", "Indianapolis"  + randomCode + dtsTwo);
+
+        finishBlanketApprovalTest(docId);
     }
 
     protected void performParameterInquiry(String parameterField) throws Exception {
@@ -2449,8 +2503,8 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
 
     protected List<String> testLookUpParameterType(String docId, String parameterType, String parameterCode) throws Exception {
         performParameterInquiry(parameterType);
-        SeleneseTestBase.assertEquals(parameterCode, getTextByXpath("//div[@class='tab-container']/table//span[@id='code.div']").trim().toLowerCase());
-        SeleneseTestBase.assertEquals(parameterType, getTextByXpath("//div[@class='tab-container']/table//span[@id='name.div']").trim().toLowerCase());
+        assertEquals(parameterCode, getTextByXpath("//div[@class='tab-container']/table//span[@id='code.div']").trim().toLowerCase());
+        assertEquals(parameterType, getTextByXpath("//div[@class='tab-container']/table//span[@id='name.div']").trim().toLowerCase());
         waitAndClickCloseWindow();
         switchToWindow("null");
         List<String> params = new ArrayList<String>();
@@ -2463,10 +2517,9 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
 
     protected List<String> testLookUpParameter(String docId, String parameterName) throws Exception {
         performParameterInquiry(parameterName);
-        checkForIncidentReport();
-        SeleneseTestBase.assertEquals(parameterName, getTextByXpath(
+        assertEquals(parameterName, getTextByXpath(
                 "//div[@class='tab-container']/table//span[@id='name.div']").trim());
-        SeleneseTestBase.assertEquals("Y", getTextByXpath("//div[@class='tab-container']/table//span[@id='value.div']")
+        assertEquals("Y", getTextByXpath("//div[@class='tab-container']/table//span[@id='value.div']")
                 .trim());
         waitAndClickCloseWindow();
         switchToWindow("null");
@@ -2475,63 +2528,6 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         params.add(parameterName);
 
         return params;
-    }
-
-    protected void testPeopleFlow() throws Exception {
-        selectFrameIframePortlet();
-        
-        //Click Main Menu and Create New
-        // waitAndCreateNew();
-        // waitForPageToLoad();
-        jGrowl("Create New");
-        waitAndClickByLinkText("Create New");
-        
-        //jiraAwareWaitAndClick(By.linkText("Create New"));
-        //Save docId
-        waitForElementPresent("div[data-header_for='PeopleFlow-MaintenanceView'] div[data-label='Document Number'] > span");
-        String docId = getText("div[data-header_for='PeopleFlow-MaintenanceView'] div[data-label='Document Number'] > span");
-        jGrowlSticky("Doc Id is " + docId);
-        findElement(By.name("document.documentHeader.documentDescription")).clear();
-        findElement(By.name("document.documentHeader.documentDescription")).sendKeys("Description for Document");
-        new Select(findElement(By.name("document.newMaintainableObject.dataObject.namespaceCode"))).selectByVisibleText("KUALI - Kuali Systems");
-        findElement(By.name("document.newMaintainableObject.dataObject.name")).clear();
-        findElement(By.name("document.newMaintainableObject.dataObject.name")).sendKeys("Document Name" + ITUtil.DTS);
-
-        jGrowl("Add Member kr");
-        findElement(By.name("newCollectionLines['document.newMaintainableObject.dataObject.members'].memberName")).clear();
-        findElement(By.name("newCollectionLines['document.newMaintainableObject.dataObject.members'].memberName")).sendKeys("kr");
-        findElement(By.cssSelector("button[data-loadingmessage='Adding Line...']")).click();
-        Thread.sleep(3000);
-        checkForIncidentReport();
-
-        jGrowl("Add Member admin");
-        findElement(By.name("newCollectionLines['document.newMaintainableObject.dataObject.members'].memberName")).clear();
-        findElement(By.name("newCollectionLines['document.newMaintainableObject.dataObject.members'].memberName")).sendKeys("admin");
-        findElement(By.cssSelector("button[data-loadingmessage='Adding Line...']")).click();
-        Thread.sleep(3000);
-
-        findElement(By.cssSelector("div[data-parent='PeopleFlow-MaintenanceView'] > div.uif-footer button~button~button")).click();
-        Thread.sleep(3000);
-        checkForIncidentReport();
-        jGrowl("Blanket Approve");
-        Thread.sleep(5000);
-        
-        //Close the Doc
-        //findElement(By.id("uif-close")).click();
-        //Thread.sleep(3000);
-        driver.switchTo().window(driver.getWindowHandles().toArray()[0].toString());
-        findElement(By.cssSelector("img[alt=\"doc search\"]")).click();
-        Thread.sleep(5000);
-        jGrowl("Document Search is " + docId + " present?");
-        selectFrameIframePortlet();
-        findElement(By.cssSelector("td.infoline > input[name=\"methodToCall.search\"]")).click();
-        Thread.sleep(5000);
-        jGrowl("Is doc status final?");
-        SeleneseTestBase.assertEquals(DOC_STATUS_FINAL, findElement(By.xpath("//table[@id='row']/tbody/tr/td[4]")).getText());
-        driver.switchTo().defaultContent();
-        findElement(By.name("imageField")).click();
-        Thread.sleep(5000);
-        // TODO open the document and verify data is as we expect.
     }
 
     protected void testTermLookupAssertions() throws Exception {
@@ -2550,8 +2546,8 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
 
     protected List<String> testVerifyModifiedParameter(String docId, String parameterName) throws Exception {
         performParameterInquiry(parameterName);
-        SeleneseTestBase.assertEquals(parameterName, getTextByXpath("//div[@class='tab-container']/table//span[@id='name.div']").trim());
-        SeleneseTestBase.assertEquals("N", getTextByXpath("//div[@class='tab-container']/table//span[@id='value.div']").trim());
+        assertEquals(parameterName, getTextByXpath("//div[@class='tab-container']/table//span[@id='name.div']").trim());
+        assertEquals("N", getTextByXpath("//div[@class='tab-container']/table//span[@id='value.div']").trim());
         waitAndClickCloseWindow();
         switchToWindow("null");
         List<String> params = new ArrayList<String>();
@@ -2564,86 +2560,73 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     protected List<String> testVerifyCopyParameterType(String docId, String parameterType, String parameterCode) throws Exception
     {
         performParameterInquiry(parameterType);
-        SeleneseTestBase.assertEquals(parameterType, getTextByXpath("//div[@class='tab-container']/table//span[@id='name.div']").trim().toLowerCase());
+        assertEquals(parameterType, getTextByXpath("//div[@class='tab-container']/table//span[@id='name.div']").trim().toLowerCase());
         waitAndClickCloseWindow();
         switchToWindow("null");
         List<String> params = new ArrayList<String>();
         params.add(docId);
         params.add(parameterType);
         params.add(parameterCode);
-        
+
         return params;
     }
 
-    protected List<String> testCreateNewPermission(String docId, String permissionName) throws Exception
-    {
+    protected List<String> testCreateNewPermission(String docId, String permissionName) throws Exception {
         waitForPageToLoad();
         Thread.sleep(2000);
         docId = waitForDocId();
         waitAndClickSave();
-        waitForPageToLoad();
-        assertElementPresentByXpath("//div[contains(.,'Document Description (Description) is a required field.')]/img[@alt='error']");
+        waitForElementPresentByXpath("//div[contains(.,'Document Description (Description) is a required field.')]/img[@alt='error']");
         waitAndTypeByXpath(DOC_DESCRIPTION_XPATH, "Adding Permission removeme");
         waitAndClickSubmit();
-        waitForPageToLoad();
-        assertElementPresentByXpath("//div[@class='error']");
+        waitForElementPresentByXpath("//div[@class='error']");
         assertElementPresentByXpath("//div[contains(.,'Template (Template) is a required field.')]/img[@alt='error']");
         assertElementPresentByXpath("//div[contains(.,'Permission Namespace (Permission Namespace) is a required field.')]/img[@alt='error']");
         assertElementPresentByXpath("//div[contains(.,'Permission Name (Permission Name) is a required field.')]/img[@alt='error']");
         selectOptionByName("document.newMaintainableObject.templateId", "36");
         selectOptionByName("document.newMaintainableObject.namespaceCode", "KR-SYS");
-        permissionName = "removeme" + ITUtil.createUniqueDtsPlusTwoRandomChars();
+        permissionName = "removeme" + AutomatedFunctionalTestUtils.createUniqueDtsPlusTwoRandomChars();
         waitAndTypeByName("document.newMaintainableObject.name", permissionName);
         waitAndTypeByName("document.newMaintainableObject.description", "namespaceCode=KR*");
         checkByName("document.newMaintainableObject.active");
         waitAndClickSave();
-        waitForPageToLoad();
-        assertElementPresentByXpath(SAVE_SUCCESSFUL_XPATH);
-        SeleneseTestBase.assertEquals(DOC_STATUS_SAVED, getTextByXpath(DOC_STATUS_XPATH));
+        waitForElementPresentByXpath(SAVE_SUCCESSFUL_XPATH);
+        assertEquals(DOC_STATUS_SAVED, getTextByXpath(DOC_STATUS_XPATH));
         waitAndClickSubmit();
-        waitForPageToLoad();
-        assertElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH,"Document is not submitted successfully");
-        SeleneseTestBase.assertEquals(DOC_STATUS_ENROUTE, getTextByXpath(DOC_STATUS_XPATH));
+        waitForElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH, "Document is not submitted successfully");
+        assertEquals(DOC_STATUS_ENROUTE, getTextByXpath(DOC_STATUS_XPATH));
         List<String> params = new ArrayList<String>();
         params.add(docId);
         params.add(permissionName);
-        
+
         return params;
     }
 
-    protected List<String> testLookUpPermission(String docId, String permissionName) throws Exception
-    {
-        waitForPageToLoad();
+    protected List<String> testLookUpPermission(String docId, String permissionName) throws Exception {
         waitAndTypeByName("name", permissionName);
         waitAndClickSearch();
         isElementPresentByLinkText(permissionName);
         List<String> params = new ArrayList<String>();
         params.add(docId);
         params.add(permissionName);
-        
+
         return params;
     }
 
-    protected List<String> testEditPermission(String docId, String permissionName) throws Exception
-    {
+    protected List<String> testEditPermission(String docId, String permissionName) throws Exception {
         waitAndClickEdit();
-        waitForPageToLoad();
-        Thread.sleep(2000);
         waitAndTypeByXpath(DOC_DESCRIPTION_XPATH, "Editing Permission removeme");
         uncheckByName("document.newMaintainableObject.active");
         waitAndClickSubmit();
-        waitForPageToLoad();
-        assertElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH, "Document is not submitted successfully");
+        waitForElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH, "Document is not submitted successfully");
         List<String> params = new ArrayList<String>();
         params.add(docId);
         params.add(permissionName);
-        
+
         return params;
     }
 
-    protected List<String> testVerifyPermission(String docId, String permissionName) throws Exception
-    {
-        waitForPageToLoad();
+    protected List<String> testVerifyPermission(String docId, String permissionName) throws Exception {
         waitAndTypeByName("name", permissionName);
         waitAndClickByXpath("//input[@title='Active Indicator - No']");
         waitAndClickSearch();
@@ -2651,55 +2634,46 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         List<String> params = new ArrayList<String>();
         params.add(docId);
         params.add(permissionName);
-        
+
         return params;
     }
 
-    protected List<String> testCreateNewPerson(String docId, String personName) throws Exception
-    {
+    protected List<String> testCreateNewPerson(String docId, String personName) throws Exception  {
         waitForPageToLoad();
         docId = waitForDocId();
         waitAndTypeByXpath(DOC_DESCRIPTION_XPATH, "Adding Charlie Brown");
         waitAndTypeByName("document.documentHeader.explanation", "I want to add Charlie Brown to test KIM");
-        
+
         //here You should also check for lower case validation for principalName, but it is skipped for now as there is an incident report error there.
-        personName = "cbrown" + ITUtil.createUniqueDtsPlusTwoRandomChars();
+        personName = "cbrown" + AutomatedFunctionalTestUtils.createUniqueDtsPlusTwoRandomChars();
         waitAndTypeByName("document.principalName", personName);
         waitAndClickSave();
-        waitForPageToLoad();
-        assertElementPresentByXpath(SAVE_SUCCESSFUL_XPATH);
-        SeleneseTestBase.assertEquals(DOC_STATUS_SAVED, getTextByXpath(DOC_STATUS_XPATH));
+        waitForElementPresentByXpath(SAVE_SUCCESSFUL_XPATH);
+        assertEquals(DOC_STATUS_SAVED, getTextByXpath(DOC_STATUS_XPATH));
         waitAndClickSubmit();
-        waitForPageToLoad();
-        assertElementPresentByXpath("//div[contains(.,'At least one affiliation must be entered.')]/img[@alt='error']");
+        waitForElementPresentByXpath("//div[contains(.,'At least one affiliation must be entered.')]/img[@alt='error']");
         assertElementPresentByXpath("//div[contains(.,'At least one name must be entered.')]/img[@alt='error']");
         selectOptionByName("newAffln.affiliationTypeCode", "STDNT");
         selectOptionByName("newAffln.campusCode", "BL");
         checkByName("newAffln.dflt");
         waitAndClickByName("methodToCall.addAffln.anchor");
-        waitForPageToLoad();
-        Thread.sleep(3000);
-        selectOptionByName("newName.nameCode", "PRM");
+        waitAndSelectByName("newName.nameCode", "PRM");
         selectOptionByName("newName.namePrefix", "Mr");
         waitAndTypeByName("newName.firstName", "Charlie");
         waitAndTypeByName("newName.lastName", "Brown");
         checkByName("newName.dflt");
         waitAndClickByName("methodToCall.addName.anchor");
-        waitForPageToLoad();
         waitAndClickSubmit();
-        waitForPageToLoad();
-        assertElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH, "Document is not submitted successfully");
-        SeleneseTestBase.assertEquals(DOC_STATUS_ENROUTE, getTextByXpath(DOC_STATUS_XPATH));
+        waitForElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH, "Document is not submitted successfully");
+        assertEquals(DOC_STATUS_ENROUTE, getTextByXpath(DOC_STATUS_XPATH));
         List<String> params = new ArrayList<String>();
         params.add(docId);
         params.add(personName);
-        
+
         return params;
     }
 
-    protected List<String> testLookUpPerson(String docId, String personName) throws Exception
-    {
-        waitForPageToLoad();
+    protected List<String> testLookUpPerson(String docId, String personName) throws Exception {
         waitAndTypeByName("principalName", personName);
         waitAndClickSearch();
         isElementPresentByLinkText(personName);
@@ -2718,33 +2692,30 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         List<String> params = new ArrayList<String>();
         params.add(docId);
         params.add(personName);
-        
+
         return params;
     }
 
-    protected List<String> testVerifyPerson(String docId, String personName) throws Exception
-    {
+    protected List<String> testVerifyPerson(String docId, String personName) throws Exception {
         waitAndClickByLinkText(personName);
         waitForPageToLoad();
         Thread.sleep(5000);
         switchToWindow("Kuali :: Person");
         Thread.sleep(2000);
-        SeleneseTestBase.assertEquals(personName, getTextByXpath("//div[@class='tab-container']/table//tr[2]/td[1]/div").trim());
-        SeleneseTestBase.assertEquals("BL - BLOOMINGTON", getTextByXpath("//div[@class='tab-container']/table[3]//tr[2]/td[2]/div").trim());
-        SeleneseTestBase.assertEquals("Student", getTextByXpath("//select/option[@selected]").trim());
+        assertEquals(personName, getTextByXpath("//div[@class='tab-container']/table//tr[2]/td[1]/div").trim());
+        assertEquals("BL - BLOOMINGTON", getTextByXpath("//div[@class='tab-container']/table[3]//tr[2]/td[2]/div").trim());
+        assertEquals("Student", getTextByXpath("//select/option[@selected]").trim());
         assertElementPresentByXpath("//table[@class='tab']//input[@title='close Overview']");
         assertElementPresentByXpath("//table[@class='tab']//input[@title='open Contact']");
         assertElementPresentByXpath("//table[@class='tab']//input[@title='open Privacy Preferences']");
         assertElementPresentByXpath("//table[@class='tab']//input[@title='open Membership']");
         waitAndClickByName("methodToCall.showAllTabs");
-        Thread.sleep(3000);
-        assertElementPresentByXpath("//table[@class='tab']//input[@title='close Overview']");
+        waitForElementPresentByXpath("//table[@class='tab']//input[@title='close Overview']");
         assertElementPresentByXpath("//table[@class='tab']//input[@title='close Contact']");
         assertElementPresentByXpath("//table[@class='tab']//input[@title='close Privacy Preferences']");
         assertElementPresentByXpath("//table[@class='tab']//input[@title='close Membership']");
         waitAndClickByName("methodToCall.hideAllTabs");
-        Thread.sleep(3000);
-        assertElementPresentByXpath("//table[@class='tab']//input[@title='open Overview']");
+        waitForElementPresentByXpath("//table[@class='tab']//input[@title='open Overview']");
         assertElementPresentByXpath("//table[@class='tab']//input[@title='open Contact']");
         assertElementPresentByXpath("//table[@class='tab']//input[@title='open Privacy Preferences']");
         assertElementPresentByXpath("//table[@class='tab']//input[@title='open Membership']");
@@ -2753,47 +2724,8 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         List<String> params = new ArrayList<String>();
         params.add(docId);
         params.add(personName);
-        
+
         return params;
-    }
-
-    protected void testUifTooltip(String NAME_FIELD_1, String NAME_FIELD_2) throws Exception {
-        // check if tooltip opens on focus
-        fireEvent(NAME_FIELD_1, "focus");
-        fireMouseOverEventByName(NAME_FIELD_1);
-        
-        // SeleneseTestBase.assertTrue(isVisible("div.jquerybubblepopup.jquerybubblepopup-black") && isVisible("td.jquerybubblepopup-innerHtml"));
-        SeleneseTestBase.assertEquals("This tooltip is triggered by focus or and mouse over.", getText(
-                "td.jquerybubblepopup-innerHtml"));
-
-        // check if tooltip closed on blur
-        fireEvent(NAME_FIELD_1, "blur");
-        SeleneseTestBase.assertFalse(isVisible("div.jquerybubblepopup.jquerybubblepopup-black") && isVisible(
-                "td.jquerybubblepopup-innerHtml"));
-        Thread.sleep(5000);
-        fireEvent("field119", "focus");
-        
-        // check if tooltip opens on mouse over
-        fireMouseOverEventByName(NAME_FIELD_2);        
-        SeleneseTestBase.assertTrue(isVisibleByXpath("//td[contains(.,\"This is a tool-tip with different position and tail options\")]"));
-
-        // check if tooltip closed on mouse out
-        waitAndTypeByName(NAME_FIELD_2, "a");
-        Thread.sleep(5000);
-        SeleneseTestBase.assertFalse(isVisibleByXpath(
-                "//td[contains(.,\"This is a tool-tip with different position and tail options\")]"));
-
-        // check that default tooltip does not display when there are an error message on the field
-        waitAndTypeByName(NAME_FIELD_1, "1");
-        fireEvent(NAME_FIELD_1, "blur");
-        fireMouseOverEventByName(NAME_FIELD_1);
-        Thread.sleep(10000);
-        SeleneseTestBase.assertTrue("https://jira.kuali.org/browse/KULRICE-8141 Investigate why UifTooltipIT.testTooltip fails around jquerybubblepopup",
-                        isVisibleByXpath("//div[@class='jquerybubblepopup jquerybubblepopup-kr-error-cs']") &&
-                                !(isVisibleByXpath("//div[@class='jquerybubblepopup jquerybubblepopup-black']")));
-       
-        // TODO figure out this last assert     
-        passed();
     }
 
     protected void testValidCharsConstraintIT() throws Exception {
@@ -2805,23 +2737,23 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         assertFocusTypeBlurValidation("field52", new String[]{"5551112222"},new String[]{"555-111-1111"});
         assertFocusTypeBlurValidation("field53", new String[]{"1ClassName.java"},new String[]{"ClassName.java"});
         assertFocusTypeBlurValidation("field54", new String[]{"aaaaa"},new String[]{"aaaaa@kuali.org"});
-        assertFocusTypeBlurValidation("field84", new String[]{"aaaaa"},new String[]{"http://www.kuali.org"});       
+        assertFocusTypeBlurValidation("field84", new String[]{"aaaaa"},new String[]{"http://www.kuali.org"});
         assertFocusTypeBlurValidation("field55", new String[]{"023512"},new String[]{"022812"});
         assertFocusTypeBlurValidation("field75", new String[]{"02/35/12"},new String[]{"02/28/12"});
         assertFocusTypeBlurValidation("field82", new String[]{"13:22"},new String[]{"02:33"});
         assertFocusTypeBlurValidation("field83", new String[]{"25:22"},new String[]{"14:33"});
-        assertFocusTypeBlurValidation("field57", new String[]{"0"},new String[]{"2020"});      
-        assertFocusTypeBlurValidation("field58", new String[]{"13"},new String[]{"12"});  
-        assertFocusTypeBlurValidation("field61", new String[]{"5555-444"},new String[]{"55555-4444"});
-        assertFocusTypeBlurValidation("field62", new String[]{"aa5bb6_a"},new String[]{"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890"});       
-        assertFocusTypeBlurValidation("field63", new String[]{"fff555"},new String[]{"aa22 _/"});       
-        assertFocusTypeBlurValidation("field64", new String[]{"AABB55"},new String[]{"ABCDEFGHIJKLMNOPQRSTUVWXY,Z abcdefghijklmnopqrstuvwxy,z"});       
-        assertFocusTypeBlurValidation("field76", new String[]{"AA~BB%"},new String[]{"abcABC %$#@&<>\\{}[]*-+!=.()/\"\"',:;?"});       
-        assertFocusTypeBlurValidation("field65", new String[]{"sdfs$#$# dsffs"},new String[]{"sdfs$#$#sffs"});      
-        assertFocusTypeBlurValidation("field66", new String[]{"abcABCD"},new String[]{"ABCabc"});
-        assertFocusTypeBlurValidation("field67", new String[]{"(111)B-(222)A"},new String[]{"(12345)-(67890)"});  
-        assertFocusTypeBlurValidation("field68", new String[]{"A.66"},new String[]{"a.4"});
         assertFocusTypeBlurValidation("field56", new String[]{"2020-06-02"},new String[]{"2020-06-02 03:30:30.22"});
+        assertFocusTypeBlurValidation("field57", new String[]{"0"},new String[]{"2020"});
+        assertFocusTypeBlurValidation("field58", new String[]{"13"},new String[]{"12"});
+        assertFocusTypeBlurValidation("field61", new String[]{"5555-444"},new String[]{"55555-4444"});
+        assertFocusTypeBlurValidation("field62", new String[]{"aa5bb6_a"},new String[]{"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890"});
+        assertFocusTypeBlurValidation("field63", new String[]{"#fff555"},new String[]{"aa22 _/"});
+        assertFocusTypeBlurValidation("field64", new String[]{"AABB55"},new String[]{"ABCDEFGHIJKLMNOPQRSTUVWXY,Z abcdefghijklmnopqrstuvwxy,z"});
+        assertFocusTypeBlurValidation("field76", new String[]{"AA~BB%"},new String[]{"abcABC %$#@&<>\\{}[]*-+!=.()/\"\"',:;?"});
+        assertFocusTypeBlurValidation("field65", new String[]{"sdfs$#$# dsffs"},new String[]{"sdfs$#$#sffs"});
+        assertFocusTypeBlurValidation("field66", new String[]{"abcABCD"},new String[]{"ABCabc"});
+        assertFocusTypeBlurValidation("field67", new String[]{"(111)B-(222)A"},new String[]{"(12345)-(67890)"});
+        assertFocusTypeBlurValidation("field68", new String[]{"A.66"},new String[]{"a.4"});
     }
 
     protected void assertFocusTypeBlurValidation(String field, String[] errorInputs, String[] validInputs) throws InterruptedException {
@@ -2831,146 +2763,83 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     }
 
     protected void testSubCollectionSize() throws Exception {
-        checkForIncidentReport(COLLECTIONS_LINK_TEXT);
-        
         // click on collections page link
         waitAndClickByLinkText(COLLECTIONS_LINK_TEXT);
-        
+
         // wait for collections page to load by checking the presence of a sub collection line item
-        for (int second = 0;; second++) {                   
+        for (int second = 0;; second++) {
             if (second >= waitSeconds)
-                failableFail(TIMEOUT_MESSAGE + " looking for " + SUB_COLLECTION_UIF_DISCLOSURE_SPAN_UIF_HEADER_TEXT_SPAN_XPATH);
-            try {                
-                if (getText(SUB_COLLECTION_UIF_DISCLOSURE_SPAN_UIF_HEADER_TEXT_SPAN_XPATH).equals("SubCollection - (3 lines)"))
+                jiraAwareFail(TIMEOUT_MESSAGE
+                        + " looking for "
+                        + SUB_COLLECTION_UIF_DISCLOSURE_SPAN_UIF_HEADER_TEXT_SPAN_XPATH);
+            try {
+                if (isElementPresentByXpath("//span[@class='uif-headerText-span' and contains(text(),'SubCollection - (3 lines)')]"))
                 {
                     break;
                 }
             } catch (Exception e) {}
             Thread.sleep(1000);
         }
-        
+
         // verify that sub collection sizes are displayed as expected
-        SeleneseTestBase.assertEquals("SubCollection - (3 lines)", getText(SUB_COLLECTION_UIF_DISCLOSURE_SPAN_UIF_HEADER_TEXT_SPAN_XPATH));
-        SeleneseTestBase.assertEquals("SubCollection - (2 lines)", getTextByXpath(
-                "//a[@id='subCollection1_line1_toggle']/span"));
+        waitForElementPresentByXpath("//section[@id='subCollection1_line0']/header/div/label/a/span[contains(text(),'SubCollection - (3 lines)')]]");
+        waitForElementPresentByXpath("//a[@id='subCollection1_line1_toggle']/span");
     }
 
     protected void testConfigurationTestView(String idPrefix) throws Exception {
-        waitForElementPresentByXpath("//span[@id='" + idPrefix + "TextInputField_label_span']");
-        
+        waitForElementPresentByXpath("//label[@id='" + idPrefix + "TextInputField_label']");
+
         // testing for https://groups.google.com/a/kuali.org/group/rice.usergroup.krad/browse_thread/thread/1e501d07c1141aad#
-        String styleValue = waitAndGetAttributeByXpath("//span[@id='" + idPrefix + "TextInputField_label_span']",
+        String styleValue = waitAndGetAttributeByXpath("//label[@id='" + idPrefix + "TextInputField_label']",
                 "style");
-        
+
         // log.info("styleValue is " + styleValue);
-        SeleneseTestBase.assertTrue(idPrefix + "textInputField label does not contain expected style", styleValue.replace(" ", "").contains("color:red"));
-        
+        assertTrue(idPrefix + "textInputField label does not contain expected style", styleValue.replace(" ", "").contains("color:red"));
+
         // get current list of options
         String refreshTextSelectLocator = "//select[@id='" + idPrefix + "RefreshTextField_control']";
         String[] options1 = getSelectOptionsByXpath(refreshTextSelectLocator);
         String dropDownSelectLocator = "//select[@id='" + idPrefix + "DropDown_control']";
         selectByXpath(dropDownSelectLocator, "Vegetables");
         Thread.sleep(3000);
-        
+
         //get list of options after change
         String[] options2 = getSelectOptionsByXpath(refreshTextSelectLocator);
-        
+
         //verify that the change has occurred
-        SeleneseTestBase.assertFalse(
-                "Field 1 selection did not change Field 2 options https://jira.kuali.org/browse/KULRICE-8163 Configuration Test View Conditional Options doesn't change Field 2 options based on Field 1 selection",
+        assertFalse("Field 1 selection did not change Field 2 options https://jira.kuali.org/browse/KULRICE-8163 Configuration Test View Conditional Options doesn't change Field 2 options based on Field 1 selection",
                 options1[options1.length - 1].equalsIgnoreCase(options2[options2.length - 1]));
-        
+
         //confirm that control gets disabled
         selectByXpath(dropDownSelectLocator, "None");
         Thread.sleep(3000);
-        SeleneseTestBase.assertEquals("true", waitAndGetAttributeByXpath(refreshTextSelectLocator, "disabled"));
+        assertEquals("true", waitAndGetAttributeByXpath(refreshTextSelectLocator, "disabled"));
     }
 
-    /**
-     * verify that add line controls are present
-     */
-    protected void confirmAddLineControlsPresent(String idPrefix, String addLineIdSuffix) {
-        String[] addLineIds = {"StartTime", "StartTimeAmPm", "AllDay"};
-
-        for (String id : addLineIds) {
-            String tagId = "//*[@id='" + idPrefix + id + addLineIdSuffix + "']";
-            SeleneseTestBase.assertTrue("Did not find id " + tagId, isElementPresentByXpath(tagId));
-        }
-    }
-
-    protected void testAddLineWithSpecificTime(String idPrefix, String addLineIdSuffix) throws Exception {
-        waitForElementPresentByXpath("//span[@id='" + idPrefix + "TextInputField_label_span']");
-        confirmAddLineControlsPresent(idPrefix, addLineIdSuffix);
-        String startTimeId = "//*[@id='" + idPrefix + "StartTime" + addLineIdSuffix + "']";
-        String inputTime = "7:06";
-        waitAndTypeByXpath(startTimeId, inputTime);
-        String amPmSelectLocator = "//*[@id='" + idPrefix + "StartTimeAmPm" + addLineIdSuffix + "']";
-        selectByXpath(amPmSelectLocator, "PM");
-        SeleneseTestBase.assertEquals("PM", waitAndGetAttributeByXpath(amPmSelectLocator, "value"));
-        Thread.sleep(5000); //allow for ajax refresh        
-        waitAndClickByXpath("//button");
-        Thread.sleep(5000); //allow for line to be added
-        
-        //confirm that line has been added
-        SeleneseTestBase.assertTrue("line (//input[@value='7:06'])is not present https://jira.kuali.org/browse/KULRICE-8162 Configuration Test View Time Info add line button doesn't addline",
-                        isElementPresentByXpath("//input[@value='7:06']"));
-    }
-
-    protected void testAddLineWithAllDay(String idPrefix, String addLineIdSuffix) throws Exception {
-        waitForElementPresentByXpath("//span[@id='" + idPrefix + "TextInputField_label_span']");
-        confirmAddLineControlsPresent(idPrefix, addLineIdSuffix);
-        String startTimeId = "//*[@id='" + idPrefix + "StartTime" + addLineIdSuffix + "']";
-        String inputTime = "5:20";
-        waitAndTypeByXpath(startTimeId, inputTime);
-        String allDaySelector = "//*[@id='" + idPrefix + "AllDay" + addLineIdSuffix + "']";
-        Thread.sleep(5000); //allow for ajax refresh
-        waitAndClickByXpath(allDaySelector);
-        Thread.sleep(5000); //allow for ajax refresh
-        waitAndClick("div#ConfigurationTestView-ProgressiveRender-TimeInfoSection button");
-        Thread.sleep(5000); //allow for line to be added           
-    }
-
-    protected void testAddLineAllDay(String idPrefix, String addLineIdSuffix) throws Exception {
-        waitForElementPresentByXpath("//span[@id='" + idPrefix + "TextInputField_label_span']");
-        confirmAddLineControlsPresent(idPrefix, addLineIdSuffix);
-        
-        //store number of rows before adding the lines
-        String cssCountRows = "div#ConfigurationTestView-ProgressiveRender-TimeInfoSection.uif-group div#ConfigurationTestView-ProgressiveRender-TimeInfoSection_disclosureContent.uif-disclosureContent table tbody tr";
-        int rowCount = (getCssCount(cssCountRows));
-        String allDayId = "//*[@id='" + idPrefix + "AllDay" + addLineIdSuffix + "']";
-        Thread.sleep(5000); //allow for ajax refresh
-        waitAndClickByXpath(allDayId);
-        waitAndClick("div#ConfigurationTestView-ProgressiveRender-TimeInfoSection button");
-        Thread.sleep(5000); //allow for line to be added
-        
-        //confirm that line has been added (by checking for the new delete button)
-        assertEquals("line was not added", rowCount + 1, (getCssCount(cssCountRows)));
-    }
-
-//    protected void testTravelAccountTypeLookup() throws Exception {
-//        selectFrameIframePortlet();
-//
-//        //Blank Search
-//        waitAndClickByXpath("//*[contains(button,\"earch\")]/button[1]");
-//        Thread.sleep(4000);
-//        assertElementPresentByXpath("//table[@class='uif-tableCollectionLayout dataTable']//tr[contains(td[1],'CAT')]");
-//        assertElementPresentByXpath("//table[@class='uif-tableCollectionLayout dataTable']//tr[contains(td[1],'EAT')]");
-//        assertElementPresentByXpath("//table[@class='uif-tableCollectionLayout dataTable']//tr[contains(td[1],'IAT')]");
-//
-//        //search with each field
-//        waitAndTypeByName("lookupCriteria[accountTypeCode]", "CAT");
-//        waitAndClickByXpath("//*[contains(button,\"earch\")]/button[1]");
-//        Thread.sleep(2000);
-//        assertElementPresentByXpath("//table[@class='uif-tableCollectionLayout dataTable']//tr[contains(td[1],'CAT')]");
-//        waitAndClickByXpath("//*[contains(button,\"earch\")]/button[2]");
-//        Thread.sleep(2000);
-//        waitAndTypeByName("lookupCriteria[name]", "Expense Account Type");
-//        waitAndClickByXpath("//*[contains(button,\"earch\")]/button[1]");
-//        Thread.sleep(4000);
-//        assertElementPresentByXpath("//table[@class='uif-tableCollectionLayout dataTable']//tr[contains(td[1],'EAT')]");
-//
-//        //Currently No links available for Travel Account Type Inquiry so cant verify heading and values.
-//    }
+    //    protected void testTravelAccountTypeLookup() throws Exception {
+    //        selectFrameIframePortlet();
+    //
+    //        //Blank Search
+    //        waitAndClickByXpath("//*[contains(button,\"earch\")]/button[1]");
+    //        Thread.sleep(4000);
+    //        assertElementPresentByXpath("//table[@class='uif-tableCollectionLayout dataTable']//tr[contains(td[1],'CAT')]");
+    //        assertElementPresentByXpath("//table[@class='uif-tableCollectionLayout dataTable']//tr[contains(td[1],'EAT')]");
+    //        assertElementPresentByXpath("//table[@class='uif-tableCollectionLayout dataTable']//tr[contains(td[1],'IAT')]");
+    //
+    //        //search with each field
+    //        waitAndTypeByName("lookupCriteria[accountTypeCode]", "CAT");
+    //        waitAndClickByXpath("//*[contains(button,\"earch\")]/button[1]");
+    //        Thread.sleep(2000);
+    //        assertElementPresentByXpath("//table[@class='uif-tableCollectionLayout dataTable']//tr[contains(td[1],'CAT')]");
+    //        waitAndClickByXpath("//*[contains(button,\"earch\")]/button[2]");
+    //        Thread.sleep(2000);
+    //        waitAndTypeByName("lookupCriteria[name]", "Expense Account Type");
+    //        waitAndClickByXpath("//*[contains(button,\"earch\")]/button[1]");
+    //        Thread.sleep(4000);
+    //        assertElementPresentByXpath("//table[@class='uif-tableCollectionLayout dataTable']//tr[contains(td[1],'EAT')]");
+    //
+    //        //Currently No links available for Travel Account Type Inquiry so cant verify heading and values.
+    //    }
 
     protected void testCategoryLookUp() throws Exception {
         waitForPageToLoad();
@@ -2979,7 +2848,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         Thread.sleep(3000);
         waitForPageToLoad();
         findElement(By.tagName("body")).getText().contains("Actions"); // there are no actions, but the header is the only unique text from searching
-        
+
         // Category's don't have actions (yet)
         //waitAndClick("id=u80");
         //waitForPageToLoad();
@@ -2994,11 +2863,11 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     protected void testCreateSampleEDocLite() throws Exception {
         waitForPageToLoad();
         Thread.sleep(3000);
-        SeleneseTestBase.assertEquals("Kuali Portal Index", getTitle());
+        assertEquals("Kuali Portal Index", getTitle());
         selectFrameIframePortlet();
         waitAndClickByXpath("//input[@name='methodToCall.search' and @alt='search']");
         waitForPageToLoad();
-        
+
         // click on the create new.
         waitAndClickByLinkText("Create Document");
         waitForPageToLoad();
@@ -3009,19 +2878,17 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         checkByName("fundedBy");
         waitAndTypeByName("addText", "Note Added.");
         waitAndClickByXpath("//td[@class='datacell']/div/img");
-        waitForPageToLoad();
         waitAndClickByXpath("//input[@value='submit']");
-        SeleneseTestBase.assertEquals(Boolean.FALSE,(Boolean) isElementPresentByXpath("//input[@value='submit']"));
-        SeleneseTestBase.assertEquals(Boolean.FALSE, (Boolean) isElementPresentByXpath("//input[@value='save']"));
-        SeleneseTestBase.assertEquals(Boolean.FALSE,(Boolean) isElementPresentByXpath("//input[@value='cancel']"));
+        assertEquals(Boolean.FALSE,(Boolean) isElementPresentByXpath("//input[@value='submit']"));
+        assertEquals(Boolean.FALSE, (Boolean) isElementPresentByXpath("//input[@value='save']"));
+        assertEquals(Boolean.FALSE, (Boolean) isElementPresentByXpath("//input[@value='cancel']"));
         waitForPageToLoad();
         selectTopFrame();
         waitAndClickDocSearch();
         waitForPageToLoad();
         selectFrameIframePortlet();
         waitAndClickByXpath("//input[@name='methodToCall.search' and @alt='search']");
-        waitForPageToLoad();
-        isElementPresent(By.linkText(docId));
+        waitForElementPresent(By.linkText(docId));
     }
 
     protected void testTermLookUp() throws Exception {
@@ -3031,157 +2898,46 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         passed();
     }
 
-    protected void testWorkFlowRouteRulesBlanketApp() throws Exception {
-        String random = ITUtil.createUniqueDtsPlusTwoRandomCharsNot9Digits();
-        waitForPageToLoad();
-        Thread.sleep(3000);
-        SeleneseTestBase.assertEquals("Kuali Portal Index", getTitle());
-        selectFrameIframePortlet();
-        
-        // click on the create new button
-        waitAndClickCreateNew();
-        waitForPageToLoad();
-        
-        // lookup on the Document Type Name
-        waitAndClickByName("methodToCall.performLookup.(!!org.kuali.rice.kew.doctype.bo.DocumentType!!).(((name:documentTypeName))).((``)).((<>)).(([])).((**)).((^^)).((&&)).((//)).((~~)).(::::;;::::).anchor");
-        waitForPageToLoad();
-        
-        // type in the name field the text RoutingRuleDocument
-        waitAndTypeByName("name", "RoutingRuleDocument");
-        
-        // click the search button
-        waitAndClickSearch();
-        waitForPageToLoad();
-        
-        // click the return value link
-        waitAndClickReturnValue();
-        waitForPageToLoad();
-        
-        // lookup on the Rule Template Name
-        waitAndClickByName("methodToCall.performLookup.(!!org.kuali.rice.kew.rule.bo.RuleTemplateBo!!).(((name:ruleTemplateName))).((``)).((<>)).(([])).((**)).((^^)).((&&)).((//)).((~~)).(::::;;::::).anchor");
-        waitForPageToLoad();
-        
-        // type in the name field the text RuleRoutingTemplate
-        waitAndTypeByName("name", "RuleRoutingTemplate");
-        
-        // click the search button
-        waitAndClickSearch();
-        waitForPageToLoad();
-        
-        // click the return value link
-        waitAndClickReturnValue();
-        waitForPageToLoad();
-        
-        // click the create new button
-        waitAndClickByName("methodToCall.createRule");
-        waitForPageToLoad();
-        String docId = waitForDocId();
-        SeleneseTestBase.assertTrue(isElementPresentByName(CANCEL_NAME));
-       
-        // type in the Document Overview Description the text Test Routing Rule
-        waitAndTypeByXpath(DOC_DESCRIPTION_XPATH, "Test Routing Rule " + random);
-       
-        // click the Force Action checkbox
-        waitAndClickByXpath("//input[@id='document.newMaintainableObject.forceAction']");
-       
-        // type in the Description text area the text Test Routing Rule1
-        waitAndTypeByXpath("//textarea[@id='document.newMaintainableObject.description']", "Test Routing Rule1 "
-                + random);
-       
-        // type in the Document type name field the text DocumentTypeDocument
-        waitAndTypeByXpath("//input[@id='document.newMaintainableObject.fieldValues(1321~docTypeFullName)']",
-                "DocumentTypeDocument");
-        
-        // lookup on Person
-        waitAndClickByName("methodToCall.performLookup.(!!org.kuali.rice.kim.impl.identity.PersonImpl!!).(((principalName:document.newMaintainableObject.add.personResponsibilities.principalName,))).((`document.newMaintainableObject.add.personResponsibilities.principalName:principalName,`)).((<>)).(([])).((**)).((^^)).((&&)).((/personImpl/)).((~~)).(::::;"
-                + getBaseUrlString() + "/kr/lookup.do;::::).anchor15");
-        waitForPageToLoad();
-       
-        // click the search button
-        waitAndClickSearch();
-        waitForPageToLoad();
-        
-        // click the return value
-        waitAndClickReturnValue();
-        waitForPageToLoad();
-        
-        // select from the Action Request ACKNOWLEDGE
-        selectByXpath("//select[@id='document.newMaintainableObject.add.personResponsibilities.actionRequestedCd']",
-                "ACKNOWLEDGE");
-        
-        // type in the Priority field the text 1
-        waitAndTypeByXpath("//input[@id='document.newMaintainableObject.add.personResponsibilities.priority']", "1");
-       
-        // click the add button
-        waitAndClickByName("methodToCall.addLine.personResponsibilities.(!!org.kuali.rice.kew.rule.PersonRuleResponsibility!!).(:::;15;:::).anchor15");
-        waitForPageToLoad();
-
-        checkForIncidentReport(BLANKET_APPROVE_NAME);
-
-        // click Blanket Approve
-        waitAndClickByName(BLANKET_APPROVE_NAME);
-
-        // doc search for the docId
-        waitForPageToLoad();
-        driver.switchTo().defaultContent(); //selectWindow("null");
-        waitAndClickDocSearch();
-        waitForPageToLoad();
-        SeleneseTestBase.assertEquals("Kuali Portal Index", getTitle());
-        selectFrameIframePortlet();
-        waitAndTypeByName("documentId", docId);
-        waitAndClickSearch();
-
-        // Expect the doc status to be FINAL
-        waitForElementPresent(By.linkText(docId));
-        if (isElementPresent(By.linkText(docId))) {
-            if (!DOC_STATUS_FINAL.equalsIgnoreCase(getTextByXpath(DOC_STATUS_XPATH_2))) {
-                jiraAwareFail("WorkFlowRouteRulesBlanketApp expected:<[FINAL]> but was " + getTextByXpath(DOC_STATUS_XPATH_2));
-            }
-        } else {
-            SeleneseTestBase.assertEquals(docId, getTextByXpath(DOC_ID_XPATH_2));
-            SeleneseTestBase.assertEquals(DOC_STATUS_FINAL, getTextByXpath(DOC_STATUS_XPATH_2));
-        }
-    }
-
     protected void testCreateNewRRDTravelRequestDestRouting() throws Exception {
         selectFrameIframePortlet();
+
+        // Create new Routing Rules Delegation
         waitAndClick("img[alt=\"create new\"]");
-        waitForPageToLoad();
-        waitAndClickByName("methodToCall.performLookup.(!!org.kuali.rice.kew.rule.RuleBaseValues!!).(((id:parentRuleId))).((``)).((<>)).(([])).((**)).((^^)).((&&)).((//)).((~~)).(::::;;::::).anchor");
-        waitForPageToLoad();
+
+        // Lookup parent rule, click lookup icon
+        waitAndClickByName(
+                "methodToCall.performLookup.(!!org.kuali.rice.kew.rule.RuleBaseValues!!).(((id:parentRuleId))).((``)).((<>)).(([])).((**)).((^^)).((&&)).((//)).((~~)).(::::;;::::).anchor");
+
+        // Search
         waitAndClickByXpath("//td[@class='infoline']/input[@name='methodToCall.search']");
-        waitForPageToLoad();
+
+        // return value for 1046 TravelRequest.Destination.LasVegas TravelRequest-DestinationRouting
         waitAndClick("a[title=\"return valueRule Id=1046 \"]");
-        waitForPageToLoad();
+
+        // Select the parent rule we just returned
         waitAndClickByName("parentResponsibilityId");
+
+        // Click continue
         waitAndClickByName("methodToCall.createDelegateRule");
-        waitForPageToLoad();
-        Thread.sleep(3000);
+
         waitAndClickCancel();
-        waitForPageToLoad();
         waitAndClickByName("methodToCall.processAnswer.button0");
         waitForPageToLoad();
         driver.switchTo().defaultContent();
         waitAndClickByXpath("(//input[@name='imageField'])[2]");
-        waitForPageToLoad();
         passed();
     }
 
     protected void testWorkFlowRouteRulesCreateNew() throws Exception {
         waitForPageToLoad();
         Thread.sleep(5000);
-        SeleneseTestBase.assertEquals("Kuali Portal Index", getTitle());
+        assertEquals("Kuali Portal Index", getTitle());
         selectFrameIframePortlet();
         waitAndClickCreateNew();
-        waitForPageToLoad();
-        Thread.sleep(3000);
-        waitAndClickByName(CANCEL_NAME,"https://jira.kuali.org/browse/KULRICE-8161 Work Flow Route Rules cancel new yields 404 not found");
-   
+        waitAndClickByName(CANCEL_NAME, "https://jira.kuali.org/browse/KULRICE-8161 Work Flow Route Rules cancel new yields 404 not found");
+
         // KULRICE-7753 : WorkFlowRouteRulesIT cancel confirmation missing from create new Route Rules.
-        waitForPageToLoad();
-        Thread.sleep(3000);
-        waitAndClickByName("methodToCall.processAnswer.button0",
-                "https://jira.kuali.org/browse/KULRICE-7753 : WorkFlowRouteRulesIT cancel confirmation missing from create new Route Rules.");
+        waitAndClickByName("methodToCall.processAnswer.button0");
         passed();
     }
 
@@ -3191,51 +2947,64 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
      */
     protected void testWorkFlowRouteRulesEditRouteRules() throws Exception {
         waitForPageToLoad();
-        SeleneseTestBase.assertEquals("Kuali Portal Index", getTitle());
+        assertEquals("Kuali Portal Index", getTitle());
         selectFrameIframePortlet();
         waitAndClickSearch();
         waitAndClickEdit();
         waitForPageToLoad();
         selectFrameIframePortlet();
-        Thread.sleep(3000);
         waitAndClickCancel();
-        waitForPageToLoad();
-        Thread.sleep(3000);
         waitAndClickByName("methodToCall.processAnswer.button0");
         passed();
     }
 
-    protected String testCreateNewComponent(String componentName, String componentCode) throws Exception {
-        return testCreateNewComponent(componentName, componentCode, "");
+    protected void createNewEnterDetails() throws InterruptedException {
+        // overload to utilize
+        fail("createNewEnterDetails must be implemented by test class");
     }
 
-    protected String testCreateNewComponent(String componentName, String componentCode, String message) throws Exception {
-        waitForPageToLoad();
-        String docId = waitForDocId();
-        
-        //Enter details for Parameter.
-        waitAndTypeByName("document.documentHeader.documentDescription", "Adding Test Component");
-        selectOptionByName("document.newMaintainableObject.namespaceCode", "KR-IDM");
-        waitAndTypeByName("document.newMaintainableObject.code", componentCode);
-        waitAndTypeByName("document.newMaintainableObject.name", componentName);
-        checkByName("document.newMaintainableObject.active");
-        waitAndClickSave();
-        waitAndClickSubmit();
-        waitForPageToLoad();
-        assertElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH, CREATE_NEW_DOCUMENT_NOT_SUBMITTED_SUCCESSFULLY_MESSAGE_TEXT  + message);
+//    protected String createNewTemplateMethod() throws InterruptedException {
+//        waitAndCreateNew();
+//        String docId = waitForDocId();
+//
+//        createNewEnterDetails();
+//
+//        // Ad Hoc Recipients with current user to test Action List
+//        addAdHocRecipientsPerson(new String[]{getUserName(), "F"}); // FYI
+//
+//        waitAndClickSave();
+//        waitAndClickSubmit();
+//        waitForElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH, CREATE_NEW_DOCUMENT_NOT_SUBMITTED_SUCCESSFULLY_MESSAGE_TEXT);
+//
+//        // Action List
+//        assertActionList(docId, "F", "ENROUTE"); // FYI
+//
+//        assertDocSearch(docId, DOC_STATUS_FINAL);
+//        selectTopFrame();
+//        return docId;
+//    }
+//
+//    protected String createNewTemplateMethodNoAction() throws InterruptedException {
+//        waitAndCreateNew();
+//        String docId = waitForDocId();
+//
+//        createNewEnterDetails();
+//
+//        waitAndClickSave();
+//        waitAndClickSubmit();
+//        waitForElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH, CREATE_NEW_DOCUMENT_NOT_SUBMITTED_SUCCESSFULLY_MESSAGE_TEXT);
+//
+//        assertDocSearch(docId, DOC_STATUS_FINAL);
+//        selectTopFrame();
+//        return docId;
+//    }
+
+    protected void waitAndClickActionList() throws InterruptedException {
+        WebDriverUtils.jGrowl(driver, "Click Action List", false, "Click Action List");
         selectTopFrame();
-        waitAndClickDocSearchTitle();
-        waitForPageToLoad();
-        selectFrameIframePortlet();
-        waitAndClickSearch();
-        Thread.sleep(2000);
-        SeleneseTestBase.assertEquals(docId, getTextByXpath(DOC_ID_XPATH_3));
-        SeleneseTestBase.assertEquals(DOC_STATUS_FINAL, getTextByXpath(DOC_STATUS_XPATH_2));
-        selectTopFrame();
-        return docId;
+        waitAndClickByXpath("//img[@alt='action list']");
     }
-    
-    
+
     protected void testLookUpComponent(String docId, String componentName, String componentCode) throws Exception {
         selectFrameIframePortlet();
         //Lookup
@@ -3247,12 +3016,12 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         Thread.sleep(2000);
         switchToWindow("Kuali :: Inquiry");
         Thread.sleep(2000);
-        SeleneseTestBase.assertEquals(componentName, getTextByXpath("//div[@class='tab-container']/table//span[@id='name.div']").trim());
-        SeleneseTestBase.assertEquals(componentCode, getTextByXpath("//div[@class='tab-container']/table//span[@id='code.div']").trim());
+        assertEquals(componentName, getTextByXpath("//div[@class='tab-container']/table//span[@id='name.div']").trim());
+        assertEquals(componentCode, getTextByXpath("//div[@class='tab-container']/table//span[@id='code.div']").trim());
         waitAndClickCloseWindow();
         switchToWindow("null");
     }
-    
+
     protected void testEditComponent(String docId, String componentName, String componentCode) throws Exception {
         selectFrameIframePortlet();
         waitAndClickEdit();
@@ -3263,19 +3032,11 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         waitAndTypeByName("document.newMaintainableObject.name", componentName);
         waitAndClickSave();
         waitAndClickSubmit();
-        waitForPageToLoad();
-        assertElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH,"Document is not submitted successfully");
-        selectTopFrame();
-        waitAndClickDocSearchTitle();
-        waitForPageToLoad();
-        selectFrameIframePortlet();
-        waitAndClickSearch();
-        Thread.sleep(2000);
-        SeleneseTestBase.assertEquals(docId, getTextByXpath(DOC_ID_XPATH_3));
-        SeleneseTestBase.assertEquals(DOC_STATUS_FINAL, getTextByXpath(DOC_STATUS_XPATH_2));
+        waitForElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH, "Document is not submitted successfully");
+        assertDocSearch(docId, DOC_STATUS_FINAL);
         selectTopFrame();
     }
-    
+
     protected void testCopyComponent(String docId, String componentName, String componentCode) throws Exception {
         selectFrameIframePortlet();
         waitAndClickCopy();
@@ -3290,15 +3051,8 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         waitAndClickSubmit();
         waitForPageToLoad();
         checkForDocError();
-        assertElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH,"Document is not submitted successfully");
-        selectTopFrame();
-        waitAndClickDocSearchTitle();
-        waitForPageToLoad();
-        selectFrameIframePortlet();
-        waitAndClickSearch();
-        Thread.sleep(2000);
-        SeleneseTestBase.assertEquals(docId, getTextByXpath(DOC_ID_XPATH_3));
-        SeleneseTestBase.assertEquals(DOC_STATUS_FINAL, getTextByXpath(DOC_STATUS_XPATH_2));
+        waitForElementPresentByXpath(DOC_SUBMIT_SUCCESS_MSG_XPATH, "Document is not submitted successfully");
+        assertDocSearch(docId, DOC_STATUS_FINAL);
         selectTopFrame();
     }
 
@@ -3312,208 +3066,22 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         Thread.sleep(2000);
         switchToWindow("Kuali :: Inquiry");
         Thread.sleep(2000);
-        SeleneseTestBase.assertEquals(componentName, getTextByXpath("//div[@class='tab-container']/table//span[@id='name.div']").trim());
-        SeleneseTestBase.assertEquals(componentCode, getTextByXpath("//div[@class='tab-container']/table//span[@id='code.div']").trim());
+        assertEquals(componentName, getTextByXpath("//div[@class='tab-container']/table//span[@id='name.div']").trim());
+        assertEquals(componentCode, getTextByXpath("//div[@class='tab-container']/table//span[@id='code.div']").trim());
         waitAndClickCloseWindow();
         switchToWindow("null");
-    }
-    
-    /**
-     * Test the tooltip and external help on the page
-     */
-    protected void testPageHelp() throws Exception {
-        // test tooltip help
-        fireMouseOverEventByXpath("//h2/span[@class='uif-headerText-span']");
-        SeleneseTestBase.assertEquals("Sample text for page help", getText("td.jquerybubblepopup-innerHtml"));
-
-        // test external help
-        waitAndClickByXpath("//input[@alt='Help for Help Page']");
-        Thread.sleep(5000);
-        switchToWindow("Kuali Foundation");
-        Thread.sleep(5000);      
-        switchToWindow(CONFIGURATION_VIEW_WINDOW_TITLE);
-    }
-
-    /**
-     * Test the tooltip help on the section and fields
-     */
-    protected void testTooltipHelp() throws Exception {
-        // verify that no tooltips are displayed initially
-        if (isElementPresentByXpath("//td[contains(text(),'Sample text for section help - tooltip help')]")) {
-            SeleneseTestBase.assertFalse(isVisibleByXpath("//td[contains(text(),'Sample text for section help - tooltip help')]"));
-        }
-        
-        if (isElementPresentByXpath("//td[contains(text(),'Sample text for field help - label left')]")) {
-            SeleneseTestBase.assertFalse(isVisibleByXpath("//td[contains(text(),'Sample text for field help - label left')]"));
-        }
-        
-        if (isElementPresentByXpath("//td[contains(text(),'Sample text for field help - label right')]")) {
-            SeleneseTestBase.assertFalse(isVisibleByXpath("//td[contains(text(),'Sample text for field help - label right')]"));
-        }
-        
-        if (isElementPresentByXpath("//td[contains(text(),'Sample text for field help - label top')]")) {
-            SeleneseTestBase.assertFalse(isVisibleByXpath("//td[contains(text(),'Sample text for field help - label top')]"));
-        }
-        
-        if (isElementPresentByXpath("//td[contains(text(),'Sample text for standalone help widget tooltip which will never be rendered')]")) {
-            SeleneseTestBase.assertFalse(isVisibleByXpath("//td[contains(text(),'Sample text for standalone help widget tooltip which will never be rendered')]"));
-        }
-        
-        if (isElementPresentByXpath("//td[contains(text(),'Sample text for field help - there is also a tooltip on the label but it is overridden by the help tooltip')]")) {
-            SeleneseTestBase.assertFalse(isVisibleByXpath("//td[contains(text(),'Sample text for field help - there is also a tooltip on the label but it is overridden by the help tooltip')]"));
-        }
-        
-        if (isElementPresentByXpath("//td[contains(text(),'Sample text for label tooltip - this will not be rendered as it is overridden by the help tooltip')]")) {
-            SeleneseTestBase.assertFalse(isVisibleByXpath("//td[contains(text(),'Sample text for label tooltip - this will not be rendered as it is overridden by the help tooltip')]"));
-        }
-        
-        if (isElementPresentByXpath("//td[contains(text(),'Sample text for field help - there is also an on-focus tooltip')]")) {
-            SeleneseTestBase.assertFalse(isVisibleByXpath("//td[contains(text(),'Sample text for field help - there is also an on-focus tooltip')]"));
-        }
-        
-        if (isElementPresentByXpath("//td[contains(text(),'Sample text for on-focus event tooltip')]")) {
-            SeleneseTestBase.assertFalse(isVisibleByXpath("//td[contains(text(),'Sample text for on-focus event tooltip')]"));
-        }
-        
-        if (isElementPresentByXpath("//td[contains(text(),'Sample text for check box help')]")) {
-            SeleneseTestBase.assertFalse(isVisibleByXpath("//td[contains(text(),'Sample text for check box help')]"));
-        }
-       
-        // test tooltip help of section header
-        fireMouseOverEventByXpath("//div[@id='ConfigurationTestView-Help-Section1']/div/h3[@class='uif-headerText']");
-        SeleneseTestBase.assertTrue(isVisibleByXpath("//td[contains(text(),'Sample text for section help - tooltip help')]"));
-        String javascript="var element = document.getElementsByClassName('jquerybubblepopup jquerybubblepopup-black');" + "element[0].style.display='none'"; 
-        ((JavascriptExecutor) driver).executeScript(javascript);
-        Thread.sleep(3000);
-        SeleneseTestBase.assertFalse(isVisibleByXpath("//td[contains(text(),'Sample text for section help - tooltip help')]"));
-        
-        // verify that no external help exist
-        SeleneseTestBase.assertFalse(isElementPresent("#ConfigurationTestView-Help-Section1 input.uif-helpImage"));
-    
-        // test tooltip help of field with label to the left
-        fireMouseOverEventByXpath("//label[@id='field-label-left_label']");
-        Thread.sleep(3000);
-        SeleneseTestBase.assertTrue(isVisibleByXpath("//td[contains(text(),'Sample text for field help - label left')]"));
-        javascript="var element = document.getElementsByClassName('jquerybubblepopup jquerybubblepopup-black');" +
-                "element[1].style.display='none'"; 
-        Thread.sleep(3000);
-        ((JavascriptExecutor) driver).executeScript(javascript);
-        SeleneseTestBase.assertFalse(isVisibleByXpath("//td[contains(text(),'Sample text for field help - label left')]"));
-        
-        // test tooltip help of field with label to the right
-        fireMouseOverEventByXpath("//label[@id='field-label-right_label']");
-        Thread.sleep(3000);
-        SeleneseTestBase.assertTrue(isVisibleByXpath("//td[contains(text(),'Sample text for field help - label righ')]"));
-        javascript="var element = document.getElementsByClassName('jquerybubblepopup jquerybubblepopup-black');" +"element[2].style.display='none'"; 
-        ((JavascriptExecutor) driver).executeScript(javascript);
-        Thread.sleep(3000);
-        SeleneseTestBase.assertFalse(isVisibleByXpath("//td[contains(text(),'Sample text for field help - label righ')]"));
-
-        // test tooltip help of field with label to the top
-        fireMouseOverEventByXpath("//label[@id='field-label-top_label']");
-        Thread.sleep(3000);
-        SeleneseTestBase.assertTrue(isVisibleByXpath("//td[contains(text(),'Sample text for field help - label top')]"));
-        javascript="var element = document.getElementsByClassName('jquerybubblepopup jquerybubblepopup-black');" + "element[3].style.display='none'"; 
-        ((JavascriptExecutor) driver).executeScript(javascript);
-        Thread.sleep(3000);
-        SeleneseTestBase.assertFalse(isVisibleByXpath("//td[contains(text(),'Sample text for field help - label top')]"));
-
-        // verify that standalone help with tooltip is not rendered
-        SeleneseTestBase.assertFalse(isElementPresentByXpath("//*[@id='standalone-help-not-rendered']"));
-
-        // test tooltip help when it overrides a tooltip
-        fireMouseOverEventByXpath("//label[@id='override-tooltip_label']");
-        Thread.sleep(3000);
-        SeleneseTestBase.assertTrue(isVisibleByXpath("//td[contains(text(),'Sample text for field help - there is also a tooltip on the label but it is overridden by the help tooltip')]"));
-        if (isElementPresentByXpath("//td[contains(text(),'Sample text for label tooltip - this will not be rendered as it is overridden by the help tooltip')]")) {
-            SeleneseTestBase.assertFalse(isVisibleByXpath("//td[contains(text(),'Sample text for label tooltip - this will not be rendered as it is overridden by the help tooltip')]"));
-        }        
-        javascript="var element = document.getElementsByClassName('jquerybubblepopup jquerybubblepopup-black');" + "element[4].style.display='none'"; 
-        ((JavascriptExecutor) driver).executeScript(javascript);
-        Thread.sleep(3000);
-        SeleneseTestBase.assertFalse(isVisibleByXpath("//td[contains(text(),'Sample text for field help - there is also a tooltip on the label but it is overridden by the help tooltip')]"));
-
-        // test tooltip help in conjunction with a focus event tooltip
-        fireMouseOverEventByXpath("//input[@id='on-focus-tooltip_control']");
-        SeleneseTestBase.assertTrue(isVisibleByXpath("//td[contains(text(),'Sample text for on-focus event tooltip')]"));
-        fireMouseOverEventByXpath("//label[@id='on-focus-tooltip_label']");
-        SeleneseTestBase.assertTrue(isVisibleByXpath("//td[contains(text(),'Sample text for field help - there is also an on-focus tooltip')]"));
-        javascript="var element = document.getElementsByClassName('jquerybubblepopup jquerybubblepopup-black');" +"element[5].style.display='none'"; 
-        ((JavascriptExecutor) driver).executeScript(javascript);
-        Thread.sleep(3000);                
-        javascript="var element = document.getElementsByClassName('jquerybubblepopup jquerybubblepopup-black');" + "element[6].style.display='none'"; 
-        ((JavascriptExecutor) driver).executeScript(javascript);
-        Thread.sleep(3000);    
-        SeleneseTestBase.assertFalse(isVisibleByXpath("//td[contains(text(),'Sample text for field help - there is also an on-focus tooltip')]"));
-        SeleneseTestBase.assertFalse(isVisibleByXpath("//td[contains(text(),'Sample text for on-focus event tooltip')]"));
-
-        // test tooltip help against a check box - help contains html
-        fireMouseOverEventByXpath("//label[@id='checkbox_label']");
-        SeleneseTestBase.assertTrue(isVisibleByXpath("//td[contains(text(),'Sample text for check box help')]"));
-        javascript="var element = document.getElementsByClassName('jquerybubblepopup jquerybubblepopup-black');" + "element[7].style.display='none'"; 
-        ((JavascriptExecutor) driver).executeScript(javascript);
-        Thread.sleep(3000);
-        SeleneseTestBase.assertFalse(isVisibleByXpath("//td[contains(text(),'Sample text for check box help')]"));
-    }
-
-    /**
-     * Test the tooltip help on the sub-section and fields that are display only
-     */
-     protected void testDisplayOnlyTooltipHelp() throws Exception {
-        // verify that no tooltips are displayed initially
-        if (isElementPresentByXpath("//td[contains(text(),'Sample text for sub-section help')]")) {
-            SeleneseTestBase.assertFalse(isVisible("//td[contains(text(),'Sample text for sub-section help')]"));
-        }
-        
-        if (isElementPresentByXpath("//td[contains(text(),'Sample text for read only field help')]")) {
-            SeleneseTestBase.assertFalse(isVisible("//td[contains(text(),'Sample text for read only field help')]"));
-        }
-
-        // test tooltip help of sub-section header
-        fireMouseOverEventByXpath("//span[contains(text(),'Display only fields')]");
-        SeleneseTestBase.assertTrue(isVisibleByXpath("//td[contains(text(),'Sample text for sub-section help')]"));
-        String javascript="var element = document.getElementsByClassName('jquerybubblepopup jquerybubblepopup-black');" +
-                "element[0].style.display='none'"; 
-        ((JavascriptExecutor) driver).executeScript(javascript);
-        SeleneseTestBase.assertFalse(isVisibleByXpath("//td[contains(text(),'Sample text for sub-section help')]"));
-
-        // test tooltip help of display only data field
-        fireMouseOverEventByXpath("//label[@for='display-field_control']");
-        SeleneseTestBase.assertTrue(isVisibleByXpath("//td[contains(text(),'Sample text for read only field help')]"));
-        javascript="var element = document.getElementsByClassName('jquerybubblepopup jquerybubblepopup-black');" +
-                "element[0].style.display='none'"; 
-        ((JavascriptExecutor) driver).executeScript(javascript);
-    }
-
-    /**
-     * Test the tooltip help on the section and fields with no content
-     */
-    protected void testMissingTooltipHelp() throws Exception {
-        // verify that no tooltips are displayed initially
-        SeleneseTestBase.assertFalse(isElementPresentByXpath("//*[@class='jquerybubblepopup jquerybubblepopup-black']"));
-
-        // verify that no external help exist
-        SeleneseTestBase.assertFalse(isElementPresent("#ConfigurationTestView-Help-Section2 input.uif-helpImage"));
-       
-        // test tooltip help of section header
-        fireMouseOverEventByXpath("//div[@id='ConfigurationTestView-Help-Section2']/div");
-        SeleneseTestBase.assertFalse(isElementPresentByXpath("//*[@class='jquerybubblepopup jquerybubblepopup-black']"));
-        SeleneseTestBase.assertFalse(isElementPresentByXpath("//*[@class='jquerybubblepopup jquerybubblepopup-black']"));
-
-        // test tooltip help of field
-        fireMouseOverEventByXpath("//label[@id='missing-tooltip-help_label']");
-        SeleneseTestBase.assertFalse(isElementPresentByXpath("//*[@class='jquerybubblepopup jquerybubblepopup-black']"));
-        SeleneseTestBase.assertFalse(isElementPresentByXpath("//*[@class='jquerybubblepopup jquerybubblepopup-black']"));
     }
 
     protected void testMultiValueSelectAllPages() throws InterruptedException {
         waitAndClickButtonByText(SEARCH);
+        acceptAlertIfPresent();
         assertButtonDisabledByText(RETURN_SELECTED_BUTTON_TEXT);
 
         // select all, all checkboxes should be checked and return button enabled
         waitAndClickDropDown("select all items");
+        acceptAlertIfPresent();
         if (!areAllMultiValueSelectsChecked()) {
-            JiraAwareFailureUtil.fail("select all items failure", this);
+            JiraAwareFailureUtils.fail("select all items failure", this);
         }
         assertButtonEnabledByText(RETURN_SELECTED_BUTTON_TEXT);
 
@@ -3524,39 +3092,44 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
 
         // all should be checked and button enabled on the next page as well (server side paging)
         if (!anotherPageOfResults) {
-            JiraAwareFailureUtil.fail("select all items server side paging failure not enough results for next page", this);
+            JiraAwareFailureUtils.fail("select all items server side paging failure not enough results for next page",
+                    this);
         }
         waitAndClickByLinkText("Next");
 
         if (!areAllMultiValueSelectsChecked()) {
-            JiraAwareFailureUtil.fail("select all items server side paging failure", this);
+            JiraAwareFailureUtils.fail("select all items server side paging failure", this);
         }
         assertButtonEnabledByText(RETURN_SELECTED_BUTTON_TEXT);
 
         // deselect all no checkboxes should be checked and return button disabled
         waitAndClickDropDown("deselect all items");
         if (!areNoMultiValueSelectsChecked()) {
-            JiraAwareFailureUtil.fail("deselect all items failure", this);
+            JiraAwareFailureUtils.fail("deselect all items failure", this);
         }
         assertButtonDisabledByText(RETURN_SELECTED_BUTTON_TEXT);
 
         waitAndClickByLinkText("Previous");
         if (!areNoMultiValueSelectsChecked()) {
-            JiraAwareFailureUtil.fail("deselect all items failure", this);
+            JiraAwareFailureUtils.fail("deselect all items failure", this);
         }
         assertButtonDisabledByText(RETURN_SELECTED_BUTTON_TEXT);
     }
 
+    protected void acceptAlertIfPresent() {
+        WebDriverUtils.acceptAlertIfPresent(driver);
+    }
+
     protected void testMultiValueSelectAllThisPage() throws InterruptedException {
         waitAndClickButtonByText(SEARCH);
-        alertDismiss();
+        acceptAlertIfPresent();
         assertButtonDisabledByText(RETURN_SELECTED_BUTTON_TEXT);
 
         // select all on this page, all checkboxes should be checked and return button enabled
         assertMultiValueSelectAllThisPage();
 
         boolean anotherPageOfResults = false;
-        if (Integer.parseInt(multiValueResultCount()) > 10) {
+        if (Integer.parseInt(multiValueResultCount()) > 5) {
             anotherPageOfResults = true;
         }
 
@@ -3564,9 +3137,10 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         waitAndClickByLinkText("Next");
         if (!areNoMultiValueSelectsChecked()) {
             if (anotherPageOfResults) {
-                JiraAwareFailureUtil.fail("select all items on this page failure", this);
+                JiraAwareFailureUtils.fail("select all items on this page failure", this);
             } else {
-                JiraAwareFailureUtil.fail("select all items on this page failure not enough results for next page", this);
+                JiraAwareFailureUtils.fail("select all items on this page failure not enough results for next page",
+                        this);
             }
         }
         assertButtonEnabledByText(RETURN_SELECTED_BUTTON_TEXT);
@@ -3574,7 +3148,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         // back to the previous page, checkboxes should be checked and return button enabled still
         waitAndClickByLinkText("Previous");
         if (!areAllMultiValueSelectsChecked()) {
-            JiraAwareFailureUtil.fail("select all items on previous page failure", this);
+            JiraAwareFailureUtils.fail("select all items on previous page failure", this);
         }
 
         // deselect no checkboxes should be checked and the return button should be disabled
@@ -3613,7 +3187,8 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         assertPopUpWindowUrl(By.cssSelector("input[title=\"Help for Display only fields\"]"), "HelpWindow", "http://www.kuali.org/?sub_section");
 
         // test external help of display only data field
-        assertPopUpWindowUrl(By.xpath("//div[@id='display-field-external-help']/fieldset/input[@title='Help for Field Label']"), "HelpWindow",
+        assertPopUpWindowUrl(By.xpath(
+                "//div[@id='display-field-external-help']/fieldset/input[@title='Help for Field Label']"), "HelpWindow",
                 "http://www.kuali.org/?display_field");
     }
 
@@ -3623,39 +3198,35 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
 
     protected void testMissingExternalHelp2() throws Exception {
         // test external help of section is not rendered
-        SeleneseTestBase.assertFalse(isElementPresent(By.cssSelector("input[title=\"Help for Missing External Help\"]")));
+        assertFalse(isElementPresent(By.cssSelector("input[title=\"Help for Missing External Help\"]")));
 
         // test external help of field with blank externalHelpURL is not rendered
-        SeleneseTestBase.assertFalse(isElementPresentByXpath("//div[@id='external-help-externalHelpUrl-empty']/*[@class='uif-helpImage']"));
+        assertFalse(isElementPresentByXpath("//div[@id='external-help-externalHelpUrl-empty']/*[@class='uif-helpImage']"));
 
         // test external help of field with empty helpDefinition is not rendered
-        SeleneseTestBase.assertFalse(isElementPresentByXpath("//div[@id='external-help-helpdefinition-empty']/*[@class='uif-helpImage']"));
+        assertFalse(isElementPresentByXpath("//div[@id='external-help-helpdefinition-empty']/*[@class='uif-helpImage']"));
 
         // test external help of field with missing system parameter is not rendered
-        SeleneseTestBase.assertFalse(isElementPresentByXpath("//div[@id='external-help-system-parm-missing']/*[@class='uif-helpImage']"));
+        assertFalse(isElementPresentByXpath("//div[@id='external-help-system-parm-missing']/*[@class='uif-helpImage']"));
 
         // test external help of standalone help widget is not rendered
-        SeleneseTestBase.assertFalse(isElementPresentByXpath("//div[@id='standalone-external-help-missing']"));
+        assertFalse(isElementPresentByXpath("//div[@id='standalone-external-help-missing']"));
     }
-    
-    protected void testReferenceCampusTypeBlanketApprove() throws Exception {
-        selectFrameIframePortlet();
-        waitAndCreateNew();
-        String docId = waitForDocId();
-        assertBlanketApproveButtonsPresent();
-        String dtsTwo = ITUtil.createUniqueDtsPlusTwoRandomCharsNot9Digits();
-        waitAndTypeByXpath(DOC_DESCRIPTION_XPATH, "Validation Test Campus Type " + dtsTwo);
-        waitAndTypeByXpath(DOC_CODE_XPATH, RandomStringUtils.randomAlphabetic(1));
-        waitAndTypeByXpath("//input[@id='document.newMaintainableObject.name']", "Indianapolis" + dtsTwo);
+
+    private String searchForAvailableCode(int codeLength) throws InterruptedException {
+        String randomCode = RandomStringUtils.randomAlphabetic(codeLength).toUpperCase();
+        waitAndTypeByName("code", randomCode);
+        waitAndClickSearch();
         int attemptCount = 1;
-        blanketApproveCheck();
-        while (hasDocError("same primary key already exists") && attemptCount < 25) {
-            clearTextByXpath(DOC_CODE_XPATH);
-            waitAndTypeByXpath(DOC_CODE_XPATH, Character.toString((char) ('A' + attemptCount++)));
-            blanketApproveCheck();
+        waitForTextPresent("You have entered the primary key for this table");
+        while (!isTextPresent("No values match this search.") && attemptCount < 25) {
+            randomCode = Character.toString((char) (randomCode.toCharArray()[0] + attemptCount++));
+            clearTextByName("code");
+            waitAndTypeByName("code", randomCode);
+            waitAndClickSearch();
+            waitForTextPresent("You have entered the primary key for this table");
         }
-        blanketApproveAssert();
-        assertDocFinal(docId);
+        return randomCode;
     }
 
     protected void testSearchEditCancel() throws InterruptedException {
@@ -3667,9 +3238,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
 
     protected void testServerErrorsIT() throws Exception {
         waitAndClickByXpath("//button[contains(.,'Get Error Messages')]");
-        waitForPageToLoad();
-        Thread.sleep(5000);
-        assertElementPresent("div[data-messagesfor=\"Demo-ValidationLayout-SectionsPage\"] .uif-errorMessageItem-field");
+        waitForElementPresent("div[data-messagesfor=\"Demo-ValidationLayout-SectionsPage\"] .uif-errorMessageItem-field");
         waitIsVisibleByXpath("//div[@data-header_for='Demo-ValidationLayout-Section1']");
         assertElementPresentByXpath("//*[@data-messageitemfor='Demo-ValidationLayout-Section1' and @class='uif-errorMessageItem']");
         assertElementPresent("div[data-role=\"InputField\"] img[alt=\"Error\"]");
@@ -3677,7 +3246,6 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         fireMouseOverEventByXpath("//a[contains(.,'Field 1')]");
         assertElementPresent(".uif-errorMessageItem-field");
         waitAndClickByXpath("//a[contains(.,'Field 1')]");
-        Thread.sleep(2000);
         waitIsVisible(".jquerybubblepopup-innerHtml");
         waitIsVisible(".jquerybubblepopup-innerHtml > .uif-serverMessageItems");
         waitIsVisible(".jquerybubblepopup-innerHtml > .uif-serverMessageItems .uif-errorMessageItem-field");
@@ -3692,7 +3260,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
 
         for (int second = 0;; second++) {
             if (second >= waitSeconds) {
-                failableFail(TIMEOUT_MESSAGE);
+                jiraAwareFail(TIMEOUT_MESSAGE);
             }
             try {
                 if (!isElementPresent(".jquerybubblepopup-innerHtml > .uif-clientMessageItems")) {
@@ -3703,24 +3271,24 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         }
 
         waitIsVisible(".jquerybubblepopup-innerHtml > .uif-serverMessageItems .uif-errorMessageItem-field");
-        SeleneseTestBase.assertFalse(isElementPresent(".jquerybubblepopup-innerHtml > .uif-clientMessageItems"));
+        assertFalse(isElementPresent(".jquerybubblepopup-innerHtml > .uif-clientMessageItems"));
     }
 
     protected void testServerInfoIT() throws Exception {
         waitAndClickByXpath("//button[contains(.,'Get Info Messages')]");
         waitIsVisibleByXpath("//div[@data-messagesfor='Demo-ValidationLayout-SectionsPage']");
-        SeleneseTestBase.assertTrue(isVisibleByXpath("//div[@data-messagesfor='Demo-ValidationLayout-SectionsPage']"));
-        SeleneseTestBase.assertTrue(isElementPresent("div[data-messagesfor=\"Demo-ValidationLayout-SectionsPage\"] .uif-infoMessageItem"));
-        SeleneseTestBase.assertTrue(isVisible("div[data-messagesfor=\"Demo-ValidationLayout-Section1\"]"));
-        SeleneseTestBase.assertTrue(isElementPresent("div[data-messagesfor=\"Demo-ValidationLayout-Section1\"] .uif-infoMessageItem"));
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//div[@data-role='InputField']//img[@alt='Information']"));
+        assertTrue(isVisibleByXpath("//div[@data-messagesfor='Demo-ValidationLayout-SectionsPage']"));
+        assertTrue(isElementPresent("div[data-messagesfor=\"Demo-ValidationLayout-SectionsPage\"] .uif-infoMessageItem"));
+        assertTrue(isVisible("div[data-messagesfor=\"Demo-ValidationLayout-Section1\"]"));
+        assertTrue(isElementPresent("div[data-messagesfor=\"Demo-ValidationLayout-Section1\"] .uif-infoMessageItem"));
+        assertTrue(isElementPresentByXpath("//div[@data-role='InputField']//img[@alt='Information']"));
         fireMouseOverEventByXpath("//a[contains(.,'Field 1')]");
-        SeleneseTestBase.assertTrue(isElementPresent(".uif-infoHighlight"));
+        assertTrue(isElementPresent(".uif-infoHighlight"));
         waitAndClickByXpath("//a[contains(.,'Field 1')]");
 
         for (int second = 0;; second++) {
             if (second >= waitSeconds)
-                failableFail(TIMEOUT_MESSAGE);
+                jiraAwareFail(TIMEOUT_MESSAGE);
             try {
                 if (isVisible(".jquerybubblepopup-innerHtml"))
                     break;
@@ -3728,15 +3296,15 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
             Thread.sleep(1000);
         }
 
-        SeleneseTestBase.assertTrue(isVisible(".jquerybubblepopup-innerHtml > .uif-serverMessageItems"));
-        SeleneseTestBase.assertTrue(isVisible(".jquerybubblepopup-innerHtml > .uif-serverMessageItems .uif-infoMessageItem-field"));
+        assertTrue(isVisible(".jquerybubblepopup-innerHtml > .uif-serverMessageItems"));
+        assertTrue(isVisible(".jquerybubblepopup-innerHtml > .uif-serverMessageItems .uif-infoMessageItem-field"));
         waitAndTypeByName("field1", "");
         fireEvent("field1", "blur");
         fireEvent("field1", "focus");
 
         for (int second = 0;; second++) {
             if (second >= waitSeconds)
-                failableFail(TIMEOUT_MESSAGE);
+                jiraAwareFail(TIMEOUT_MESSAGE);
             try {
                 if (isVisible(".jquerybubblepopup-innerHtml"))
                     break;
@@ -3744,10 +3312,10 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
             Thread.sleep(1000);
         }
 
-        SeleneseTestBase.assertTrue(isVisible(".jquerybubblepopup-innerHtml > .uif-serverMessageItems .uif-infoMessageItem-field"));
+        assertTrue(isVisible(".jquerybubblepopup-innerHtml > .uif-serverMessageItems .uif-infoMessageItem-field"));
         for (int second = 0;; second++) {
             if (second >= waitSeconds)
-                failableFail(TIMEOUT_MESSAGE);
+                jiraAwareFail(TIMEOUT_MESSAGE);
             try {
                 if (isVisible(".jquerybubblepopup-innerHtml > .uif-clientMessageItems"))
                     break;
@@ -3755,14 +3323,14 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
             Thread.sleep(1000);
         }
 
-        SeleneseTestBase.assertTrue(isVisible(".jquerybubblepopup-innerHtml > .uif-clientMessageItems  .uif-errorMessageItem-field"));
+        assertTrue(isVisible(".jquerybubblepopup-innerHtml > .uif-clientMessageItems  .uif-errorMessageItem-field"));
         waitAndTypeByName("field1", "b");
         fireEvent("field1", "blur");
         fireEvent("field1", "focus");
 
         for (int second = 0;; second++) {
             if (second >= waitSeconds)
-                failableFail(TIMEOUT_MESSAGE);
+                jiraAwareFail(TIMEOUT_MESSAGE);
             try {
                 if (!isElementPresent(".jquerybubblepopup-innerHtml > .uif-clientMessageItems"))
                     break;
@@ -3772,94 +3340,67 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
 
         fireEvent("field1", "blur");
         Thread.sleep(3000);
-        SeleneseTestBase.assertTrue(!isVisible(".jquerybubblepopup-innerHtml > .uif-serverMessageItems .uif-infoMessageItem-field"));
-        SeleneseTestBase.assertFalse(isElementPresent(".jquerybubblepopup-innerHtml > .uif-clientMessageItems"));
+        assertTrue(!isVisible(".jquerybubblepopup-innerHtml > .uif-serverMessageItems .uif-infoMessageItem-field"));
+        assertFalse(isElementPresent(".jquerybubblepopup-innerHtml > .uif-clientMessageItems"));
         fireEvent("field1", "focus");
         clearTextByName("field1");
         fireEvent("field1", "blur");
-        SeleneseTestBase.assertTrue(isElementPresent("div.uif-hasError"));
-        SeleneseTestBase.assertTrue(isElementPresent("img[src*=\"error.png\"]"));
+        assertTrue(isElementPresent("div.uif-hasError"));
+        assertTrue(isElementPresent("img[src*=\"error.png\"]"));
     }
 
     protected void testServerWarningsIT() throws Exception {
         waitAndClickByXpath("//button[contains(.,'Get Warning Messages')]");
         waitForPageToLoad();
         Thread.sleep(3000);
-        com.thoughtworks.selenium.SeleneseTestBase.assertTrue("div[data-messagesfor=\"Demo-ValidationLayout-SectionsPage\"] not visible",
+        assertTrue("div[data-messagesfor=\"Demo-ValidationLayout-SectionsPage\"] not visible",
                 isVisible("div[data-messagesfor=\"Demo-ValidationLayout-SectionsPage\"]"));
-        com.thoughtworks.selenium.SeleneseTestBase.assertTrue(
-                "div[data-messagesfor=\"Demo-ValidationLayout-SectionsPage\"] .uif-warningMessageItem not present",
+        assertTrue("div[data-messagesfor=\"Demo-ValidationLayout-SectionsPage\"] .uif-warningMessageItem not present",
                 isElementPresent("div[data-messagesfor=\"Demo-ValidationLayout-SectionsPage\"] .uif-warningMessageItem"));
-        com.thoughtworks.selenium.SeleneseTestBase.assertTrue(
-                "div[data-messagesfor=\"Demo-ValidationLayout-Section1\"] not visible", isVisible(
+        assertTrue("div[data-messagesfor=\"Demo-ValidationLayout-Section1\"] not visible", isVisible(
                 "div[data-messagesfor=\"Demo-ValidationLayout-Section1\"]"));
-        com.thoughtworks.selenium.SeleneseTestBase.assertTrue(
+        assertTrue(
                 "div[data-messagesfor=\"Demo-ValidationLayout-Section1\"] .uif-warningMessageItem not present",
                 isElementPresent("div[data-messagesfor=\"Demo-ValidationLayout-Section1\"] .uif-warningMessageItem"));
-        com.thoughtworks.selenium.SeleneseTestBase.assertTrue(
-                "div[data-role=\"InputField\"] img[alt=\"Warning\"] not present", isElementPresent(
+        assertTrue("div[data-role=\"InputField\"] img[alt=\"Warning\"] not present", isElementPresent(
                 "div[data-role=\"InputField\"] img[alt=\"Warning\"]"));
         fireMouseOverEvent(By.xpath("//a[contains(.,'Field 1')]"));
-        com.thoughtworks.selenium.SeleneseTestBase.assertTrue(
-                ".uif-warningHighlight no present when //a[contains(.,'Field 1')] is moused over",
+        assertTrue(".uif-warningHighlight no present when //a[contains(.,'Field 1')] is moused over",
                 isElementPresent(".uif-warningHighlight"));
         waitAndClickByXpath("//a[contains(.,'Field 1')]");
         waitForElementVisible(".jquerybubblepopup-innerHtml", " after click on //a[contains(.,'Field 1')]");
-        com.thoughtworks.selenium.SeleneseTestBase.assertTrue(
-                ".jquerybubblepopup-innerHtml > .uif-serverMessageItems not visible", isVisible(
+        assertTrue(".jquerybubblepopup-innerHtml > .uif-serverMessageItems not visible", isVisible(
                 ".jquerybubblepopup-innerHtml > .uif-serverMessageItems"));
-        com.thoughtworks.selenium.SeleneseTestBase.assertTrue(
-                ".jquerybubblepopup-innerHtml > .uif-serverMessageItems .uif-warningMessageItem-field not visible",
+        assertTrue(".jquerybubblepopup-innerHtml > .uif-serverMessageItems .uif-warningMessageItem-field not visible",
                 isVisible(".jquerybubblepopup-innerHtml > .uif-serverMessageItems .uif-warningMessageItem-field"));
         waitAndTypeByName("field1", "");
         fireEvent("field1", "blur");
         fireMouseOverEventByName("field1");
         waitForElementVisible(".jquerybubblepopup-innerHtml",
                 " not visible after typing nothing in name=field1 then firing blur and focus events");
-        com.thoughtworks.selenium.SeleneseTestBase.assertTrue(
-                ".jquerybubblepopup-innerHtml > .uif-serverMessageItems .uif-warningMessageItem-field not visible after typing nothing in name=field1 then firing blur and focus events",
+        assertTrue(".jquerybubblepopup-innerHtml > .uif-serverMessageItems .uif-warningMessageItem-field not visible after typing nothing in name=field1 then firing blur and focus events",
                 isVisible(".jquerybubblepopup-innerHtml > .uif-serverMessageItems .uif-warningMessageItem-field"));
         waitForElementVisible(".jquerybubblepopup-innerHtml> .uif-clientMessageItems",
                 " not visible after typing nothing in name=field1 then firing blur and focus events");
-        com.thoughtworks.selenium.SeleneseTestBase.assertTrue(
-                ".jquerybubblepopup-innerHtml > .uif-clientMessageItems  .uif-errorMessageItem-field not visible after typing nothing in name=field1 then firing blur and focus events",
+        assertTrue(".jquerybubblepopup-innerHtml > .uif-clientMessageItems  .uif-errorMessageItem-field not visible after typing nothing in name=field1 then firing blur and focus events",
                 isVisible(".jquerybubblepopup-innerHtml > .uif-clientMessageItems  .uif-errorMessageItem-field"));
         waitAndTypeByName("field1", "b");
         fireEvent("field1", "blur");
         fireMouseOverEventByName("field1");
         waitForElementVisible(".jquerybubblepopup-innerHtml> .uif-serverMessageItems", "");
-        com.thoughtworks.selenium.SeleneseTestBase.assertTrue(
-                ".jquerybubblepopup-innerHtml > .uif-serverMessageItems .uif-warningMessageItem-field not visible after typing b in name=field1 then firing blur and focus events",
+        assertTrue(".jquerybubblepopup-innerHtml > .uif-serverMessageItems .uif-warningMessageItem-field not visible after typing b in name=field1 then firing blur and focus events",
                 isVisible(".jquerybubblepopup-innerHtml > .uif-serverMessageItems .uif-warningMessageItem-field"));
-        com.thoughtworks.selenium.SeleneseTestBase.assertTrue(".jquerybubblepopup-innerHtml > .uif-clientMessageItems",
+        assertTrue(".jquerybubblepopup-innerHtml > .uif-clientMessageItems",
                 !isElementPresent(
                         ".jquerybubblepopup-innerHtml > .uif-clientMessageItems"));
         clearTextByName("field1");
         fireEvent("field1", "blur");
         fireMouseOverEventByName("field1");
-        com.thoughtworks.selenium.SeleneseTestBase.assertTrue(
-                ".uif-hasError is not present after typing nothing in name=field1 and then firing focus and blur events",
+        assertTrue(".uif-hasError is not present after typing nothing in name=field1 and then firing focus and blur events",
                 isElementPresent(".uif-hasError"));
-        com.thoughtworks.selenium.SeleneseTestBase.assertTrue(
-                "img[src*=\"error.png\"] is not present after typing nothing in name=field1 and then firing focus and blur events",
+        assertTrue("img[src*=\"error.png\"] is not present after typing nothing in name=field1 and then firing focus and blur events",
                 isElementPresent("img[src*=\"error.png\"]"));
         passed();
-    }
-
-    /**
-     * Test the tooltip and external help on the view
-     */
-    protected void testViewHelp() throws Exception {
-        // test tooltip help
-        fireMouseOverEventByXpath("//h1/span[@class='uif-headerText-span']");
-        SeleneseTestBase.assertEquals("Sample text for view help", getText("td.jquerybubblepopup-innerHtml"));
-
-        // test external help
-        waitAndClickByXpath("//input[@alt='Help for Configuration Test View - Help']");
-        Thread.sleep(5000);
-        switchToWindow("Kuali Foundation");
-        Thread.sleep(5000);
-        switchToWindow(CONFIGURATION_VIEW_WINDOW_TITLE);
     }
 
     /**
@@ -3868,31 +3409,31 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     protected void testViewHelp2() throws Exception {
         // test tooltip help
         if (isElementPresentByXpath("//td[@class='jquerybubblepopup-innerHtml']")) {
-            SeleneseTestBase.assertFalse(findElement(By.cssSelector("td.jquerybubblepopup-innerHtml")).isDisplayed());
+            assertFalse(findElement(By.cssSelector("td.jquerybubblepopup-innerHtml")).isDisplayed());
         }
 
         // test tooltip help
         fireMouseOverEventByXpath("//h1/span[@class='uif-headerText-span']");
         Thread.sleep(2000);
-        SeleneseTestBase.assertTrue(isVisibleByXpath("//td[contains(text(),'View help')]"));
+        assertTrue(isVisibleByXpath("//td[contains(text(),'View help')]"));
         assertPopUpWindowUrl(By.cssSelector("input[title=\"Help for Configuration Test View\"]"), "HelpWindow", "http://www.kuali.org/");
     }
 
     protected void testVerifyAddDeleteFiscalOfficerLegacy() throws Exception {
         selectFrameIframePortlet();
-        checkForIncidentReport("testVerifyAddDeleteFiscalOfficerLegacy");
-        waitAndTypeByName("document.documentHeader.documentDescription", ITUtil.createUniqueDtsPlusTwoRandomChars());
+        waitAndTypeByName("document.documentHeader.documentDescription", AutomatedFunctionalTestUtils
+                .createUniqueDtsPlusTwoRandomChars());
         waitAndTypeByName("newCollectionLines['document.newMaintainableObject.dataObject.fiscalOfficer.accounts'].number","1234567890");
         waitAndTypeByName("newCollectionLines['document.newMaintainableObject.dataObject.fiscalOfficer.accounts'].foId", "2");
         waitAndClickByXpath("//button[@data-loadingmessage='Adding Line...']");
         waitForElementPresentByName("document.newMaintainableObject.dataObject.fiscalOfficer.accounts[0].number");
-        SeleneseTestBase.assertEquals("1234567890", waitAndGetAttributeByName(
+        assertEquals("1234567890", waitAndGetAttributeByName(
                 "document.newMaintainableObject.dataObject.fiscalOfficer.accounts[0].number", "value"));
-        SeleneseTestBase.assertEquals("2", waitAndGetAttributeByName(
+        assertEquals("2", waitAndGetAttributeByName(
                 "document.newMaintainableObject.dataObject.fiscalOfficer.accounts[0].foId", "value"));
         waitAndClickByXpath("//button[@data-loadingmessage='Deleting Line...']");
         Thread.sleep(3000);
-        SeleneseTestBase.assertEquals(Boolean.FALSE, (Boolean) isElementPresentByName(
+        assertEquals(Boolean.FALSE, (Boolean) isElementPresentByName(
                 "document.newMaintainableObject.dataObject.fiscalOfficer.accounts[0].number"));
         passed();
     }
@@ -3904,10 +3445,10 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         waitAndClickByName("newCollectionLines['document.notes'].noteText");
         waitAndTypeByName("newCollectionLines['document.notes'].noteText", "Test note");
         waitAndClick("button[title='Add a Note'].uif-action.uif-primaryActionButton.uif-smallActionButton");
-//        waitForElementPresentByName("document.notes[0].noteText");
-        SeleneseTestBase.assertEquals("Test note", getTextByXpath("//pre"));
+        //        waitForElementPresentByName("document.notes[0].noteText");
+        assertEquals("Test note", getTextByXpath("//pre"));
         waitAndClick("button[title='Delete a Note'].uif-action.uif-primaryActionButton.uif-smallActionButton");
-        SeleneseTestBase.assertEquals(Boolean.FALSE, (Boolean) isElementPresentByName("document.notes[0].noteText"));
+        assertEquals(Boolean.FALSE, (Boolean) isElementPresentByName("document.notes[0].noteText"));
         passed();
     }
 
@@ -3939,13 +3480,13 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
 
     protected void testVerifyConstraintText() throws Exception {
         selectFrameIframePortlet();
-        SeleneseTestBase.assertEquals("* indicates required field", getText(
+        assertEquals("* indicates required field", getText(
                 "div.uif-boxLayout.uif-horizontalBoxLayout.clearfix > span.uif-message.uif-requiredInstructionsMessage.uif-boxLayoutHorizontalItem"));
-        SeleneseTestBase.assertEquals("Must not be more than 10 characters", getText(
+        assertEquals("Must not be more than 10 characters", getText(
                 "div.uif-group.uif-gridGroup.uif-gridSection.uif-disclosure.uif-boxLayoutVerticalItem.clearfix div[data-label='Travel Account Number'].uif-field.uif-inputField span.uif-message.uif-constraintMessage"));
-        SeleneseTestBase.assertEquals("Must not be more than 10 characters", getText(
+        assertEquals("Must not be more than 10 characters", getText(
                 "div.uif-group.uif-gridGroup.uif-gridSection.uif-disclosure.uif-boxLayoutVerticalItem.clearfix div[data-label='Travel Sub Account Number'].uif-field.uif-inputField span.uif-message.uif-constraintMessage"));
-        SeleneseTestBase.assertEquals("Must not be more than 10 characters", getText(
+        assertEquals("Must not be more than 10 characters", getText(
                 "div.uif-group.uif-gridGroup.uif-collectionItem.uif-gridCollectionItem.uif-collectionAddItem div[data-label='Travel Account Number'].uif-field.uif-inputField span.uif-message.uif-constraintMessage"));
         passed();
     }
@@ -3960,8 +3501,8 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         Thread.sleep(2000);
         switchToWindow("Kuali :: Inquiry");
         Thread.sleep(2000);
-        SeleneseTestBase.assertEquals(componentName, getTextByXpath("//div[@class='tab-container']/table//span[@id='name.div']").trim());
-        SeleneseTestBase.assertEquals(componentCode, getTextByXpath("//div[@class='tab-container']/table//span[@id='code.div']").trim());
+        assertEquals(componentName, getTextByXpath("//div[@class='tab-container']/table//span[@id='name.div']").trim());
+        assertEquals(componentCode, getTextByXpath("//div[@class='tab-container']/table//span[@id='code.div']").trim());
         waitAndClickCloseWindow();
         switchToWindow("null");
         List<String> parameterList=new ArrayList<String>();
@@ -4076,7 +3617,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
 
     protected void testVerifySave() throws Exception {
         selectFrameIframePortlet();
-        waitAndTypeByName("document.documentHeader.documentDescription", "Test Document " + ITUtil.DTS);
+        waitAndTypeByName("document.documentHeader.documentDescription", "Test Document " + AutomatedFunctionalTestUtils.DTS);
         waitAndClickByName("document.newMaintainableObject.dataObject.number");
         waitAndTypeByName("document.newMaintainableObject.dataObject.number", "1234567890");
         waitAndTypeByName("document.newMaintainableObject.dataObject.extension.accountTypeCode", "EAT");
@@ -4103,7 +3644,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         waitAndCreateNew();
         String docId = waitForDocId();
         assertBlanketApproveButtonsPresent();
-        String dts = ITUtil.createUniqueDtsPlusTwoRandomCharsNot9Digits();
+        String dts = AutomatedFunctionalTestUtils.createUniqueDtsPlusTwoRandomCharsNot9Digits();
         waitAndTypeByXpath(DOC_DESCRIPTION_XPATH, "Validation Test Document Type " + dts);
         String parentDocType = "//input[@name='methodToCall.performLookup.(!!org.kuali.rice.kew.doctype.bo.DocumentType!!).(((name:document.newMaintainableObject.parentDocType.name,documentTypeId:document.newMaintainableObject.docTypeParentId,))).((`document.newMaintainableObject.parentDocType.name:name,`)).((<>)).(([])).((**)).((^^)).((&&)).((//)).((~~)).(::::;"
                 + getBaseUrlString() + "/kr/lookup.do;::::).anchor4']";
@@ -4118,8 +3659,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
                 "Workflow Maintenance Document Type Document " + dts);
         waitAndTypeByXpath("//input[@id='document.newMaintainableObject.unresolvedHelpDefinitionUrl']",
                 "default.htm?turl=WordDocuments%2Fdocumenttype.htm");
-        blanketApproveTest();
-        assertDocFinal(docId);
+        blanketApproveTest(docId);
     }
 
     protected void uncheck(By by) throws InterruptedException {
@@ -4137,151 +3677,111 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         uncheck(By.xpath(locator));
     }
 
-    protected boolean validateErrorImage(boolean validateVisible) throws Exception {
-        Thread.sleep(500);
-        boolean valid = false;
-
-        for (int second = 0; second < 5; second++) {
-            if ((valid = validateErrorImage(validateVisible, second, ARIA_INVALID_XPATH)) == true) {
-                break;
-            }
-        }
-
-        if (validateVisible) {
-            SeleneseTestBase.assertTrue("valid = " + valid + " when validateVisible is " + validateVisible, valid);
-        } else {
-            SeleneseTestBase.assertFalse("valid = " + valid + " when validateVisible is " + validateVisible, valid);
-        }
-
-        return valid;
-    }
-
-    private boolean validateErrorImage(boolean validateVisible, int second, String xpath) throws InterruptedException {
-        try {
-            if (validateVisible) {
-                if (isElementPresentByXpath(xpath) && isVisibleByXpath(xpath)) {
-                    return true;
-                }
-            } else {
-                if (!isElementPresentByXpath(xpath) || !isVisibleByXpath(xpath)) {
-                    return true;
-                }
-            }
-        } catch (Exception e) {
-            // don't fail here, we're in a loop let the caller decide when to fail
-        }
-        Thread.sleep(1000);
-        return false;
-    }
-
     protected void verifyRichMessagesValidationBasicFunctionality() throws Exception
     {
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//input[@type='text' and @name='field1']"));
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//a[contains(text(), 'Kuali')]"));
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//input[@type='checkbox' and @name='field2']"));
+        assertTrue(isElementPresentByXpath("//input[@type='text' and @name='field1']"));
+        assertTrue(isElementPresentByXpath("//a[contains(text(), 'Kuali')]"));
+        assertTrue(isElementPresentByXpath("//input[@type='checkbox' and @name='field2']"));
         Thread.sleep(3000);
     }
 
     protected void verifyRichMessagesValidationAdvancedFunctionality() throws Exception
     {
         //Color Options
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//span[@style='color: green;']"));
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//span[@style='color: blue;']"));
+        assertTrue(isElementPresentByXpath("//span[@style='color: green;']"));
+        assertTrue(isElementPresentByXpath("//span[@style='color: blue;']"));
 
         //Css class
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//span[@class='fl-text-underline fl-text-larger']"));
+        assertTrue(isElementPresentByXpath("//span[@class='uif-text-underline uif-text-larger']"));
 
         //Combinations
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//input[@type='text' and @name='field3']"));
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//select[@name='field4']"));
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//button[contains(text(), 'Action Button')]"));
+        assertTrue(isElementPresentByXpath("//input[@type='text' and @name='field3']"));
+        assertTrue(isElementPresentByXpath("//select[@name='field4']"));
+        assertTrue(isElementPresentByXpath("//button[contains(text(), 'Action Button')]"));
 
         //Rich Message Field
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//label[contains(., 'Label With')]/span[contains(., 'Color')]"));
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//label[contains(., 'Label With')]/i/b[contains(., 'Html')]"));
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//label[contains(., 'Label With')]/img[@class='uif-image inlineBlock']"));
+        assertTrue(isElementPresentByXpath("//label[contains(., 'Label With')]/span[contains(., 'Color')]"));
+        assertTrue(isElementPresentByXpath("//label[contains(., 'Label With')]/i/b[contains(., 'Html')]"));
+        assertTrue(isElementPresentByXpath("//label[contains(., 'Label With')]/img[@class='uif-image inlineBlock']"));
         Thread.sleep(3000);
     }
 
     protected void verifyRichMessagesValidationLettersNumbersValidation() throws Exception
     {
         //For letters only Validation
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//input[@type='text' and @name='field5']"));
+        assertTrue(isElementPresentByXpath("//div[@data-parent='Demo-AdvancedMessagesSection']/div/input[@type='text' and @name='field5']"));
         waitAndTypeByXpath(
-                "//div[@class='uif-field uif-inputField uif-inputField-labelTop inlineBlock']/input[@name= 'field5']",
-                "abc");
-        SeleneseTestBase.assertFalse(isElementPresentByXpath("//div[@class='uif-field uif-inputField uif-inputField-labelTop inlineBlock uif-hasError']"));
+                "//div[@data-parent='Demo-AdvancedMessagesSection']/div/input[@type='text' and @name='field5']","abc");
+        assertFalse(isElementPresentByXpath("//div[@class='uif-field uif-inputField uif-inputField-labelTop inlineBlock uif-hasError']"));
         clearTextByXpath(
-                "//div[@class='uif-field uif-inputField uif-inputField-labelTop inlineBlock']/input[@name= 'field5']");
-        waitAndTypeByXpath("//div[@class='uif-field uif-inputField uif-inputField-labelTop inlineBlock']/input[@name= 'field5']","abc12");
+                "//div[@data-parent='Demo-AdvancedMessagesSection']/div/input[@type='text' and @name='field5']");
+        waitAndTypeByXpath("//div[@data-parent='Demo-AdvancedMessagesSection']/div/input[@type='text' and @name='field5']","abc12");
         waitAndTypeByXpath("//input[@name= 'field6']", "");
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//div[@class='uif-field uif-inputField uif-inputField-labelTop inlineBlock uif-hasError']"));
+        waitForElementPresentByXpath("//div[@class='uif-inputField inlineBlock uif-hasError']");
         Thread.sleep(3000);
-        clearTextByXpath("//div[@class='uif-field uif-inputField uif-inputField-labelTop inlineBlock uif-hasError']/input[@name= 'field5']");
-        waitAndTypeByXpath("//div[@class='uif-field uif-inputField uif-inputField-labelTop inlineBlock uif-hasError']/input[@name= 'field5']","abc");
+        clearTextByXpath("//div[@data-parent='Demo-AdvancedMessagesSection']/div/input[@type='text' and @name='field5']");
+        waitAndTypeByXpath("//div[@data-parent='Demo-AdvancedMessagesSection']/div/input[@type='text' and @name='field5']","abc");
         waitAndTypeByXpath("//input[@name= 'field6']", "");
 
         //For numbers only validation
         waitAndTypeByXpath("//input[@name= 'field6']", "123");
-        SeleneseTestBase.assertFalse(isElementPresentByXpath("//div[@class='uif-field uif-inputField uif-inputField-labelTop inlineBlock uif-hasError']"));
-        clearTextByXpath("//input[@name= 'field6']");
-        waitAndTypeByXpath("//input[@name= 'field6']", "123ab");
+        assertFalse(isElementPresentByXpath("//div[@class='uif-field uif-inputField uif-inputField-labelTop inlineBlock uif-hasError']"));
+        clearTextByXpath("//input[@name='field6']");
+        waitAndTypeByXpath("//input[@name='field6']", "123ab");
         fireEvent("field6", "blur");
         Thread.sleep(5000);
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//div[@class='uif-field uif-inputField uif-inputField-labelTop inlineBlock uif-hasError']"));
+        assertTrue(isElementPresentByXpath("//div[@class='uif-inputField inlineBlock uif-hasError']"));
         Thread.sleep(3000);
     }
 
     protected void verifyRichMessagesValidationRadioAndCheckBoxGroupFunctionality() throws Exception
     {
         //Radio Group
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//fieldset[@class='uif-verticalRadioFieldset']/span/input[@type='radio' and @name='field24' and @value='1']"));
-        SeleneseTestBase.assertTrue(isElementPresentByXpath(
+        assertTrue(isElementPresentByXpath("//fieldset[@class='uif-verticalRadioFieldset']/span/input[@type='radio' and @name='field24' and @value='1']"));
+        assertTrue(isElementPresentByXpath(
                 "//fieldset[@class='uif-verticalRadioFieldset']/span/input[@type='radio' and @name='field24' and @value='2']"));
-        SeleneseTestBase.assertTrue(isElementPresentByXpath(
+        assertTrue(isElementPresentByXpath(
                 "//fieldset[@class='uif-verticalRadioFieldset']/span/input[@type='radio' and @name='field24' and @value='3']"));
-        SeleneseTestBase.assertTrue(isElementPresentByXpath(
+        assertTrue(isElementPresentByXpath(
                 "//fieldset[@class='uif-verticalRadioFieldset']/span/input[@type='radio' and @name='field24' and @value='4']"));
 
         //Checkbox Group
-        SeleneseTestBase.assertTrue(isElementPresentByXpath(
+        assertTrue(isElementPresentByXpath(
                 "//fieldset[@class='uif-verticalCheckboxesFieldset']/span/input[@type='checkbox' and @name='field115' and @value='1']"));
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//fieldset[@class='uif-verticalCheckboxesFieldset']/span/input[@type='checkbox' and @name='field115' and @value='2']"));
-        SeleneseTestBase.assertTrue(isElementPresentByXpath(
+        assertTrue(isElementPresentByXpath("//fieldset[@class='uif-verticalCheckboxesFieldset']/span/input[@type='checkbox' and @name='field115' and @value='2']"));
+        assertTrue(isElementPresentByXpath(
                 "//fieldset[@class='uif-verticalCheckboxesFieldset']/span/input[@type='checkbox' and @name='field115' and @value='3']"));
-        SeleneseTestBase.assertTrue(isElementPresentByXpath(
+        assertTrue(isElementPresentByXpath(
                 "//fieldset[@class='uif-verticalCheckboxesFieldset']/span/label/div/select[@name='field4']"));
 
         //Checkbox Control
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//input[@type='checkbox' and @name='bField1']"));
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//input[@type='text' and @name='field103']"));
+        assertTrue(isElementPresentByXpath("//input[@type='checkbox' and @name='bField1']"));
+        assertTrue(isElementPresentByXpath("//input[@type='text' and @name='field103']"));
     }
 
     protected void verifyRichMessagesValidationLinkDeclarationsFunctionality() throws Exception
     {
         //Testing link tag
-        waitAndClickByXpath("//div[contains(., 'Testing link tag')]/a");
+        waitAndClickByLinkText("Kuali Site");
         Thread.sleep(9000);
         switchToWindow("Open Source Software | www.kuali.org");
         switchToWindow(RICH_MESSAGES_WINDOW_TITLE);
 
         //Testing methodToCall Action
-        waitAndClickByXpath("//div[contains(., 'Testing methodToCall action')]/a");
+        waitAndClickByXpath("//p[contains(., 'Testing methodToCall action')]/a");
         Thread.sleep(3000);
-        SeleneseTestBase.assertTrue(isElementPresentByXpath(
+        assertTrue(isElementPresentByXpath(
                 "//div[@class='uif-validationMessages uif-groupValidationMessages uif-pageValidationMessages uif-pageValidationMessages-error']"));
-        SeleneseTestBase.assertTrue(isElementPresentByXpath(
-                "//div[@id='Demo-AdvancedMessagesSection']/div[@class='uif-validationMessages uif-groupValidationMessages uif-pageValidationMessages-error']"));
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//div[@id='Demo-RadioCheckboxMessageSection']/div[@class='uif-validationMessages uif-groupValidationMessages uif-pageValidationMessages-error']"));
 
         //Testing methodToCall action (no client validation check)
-        waitAndClickByXpath("//div[contains(., 'Testing methodToCall action (no client validation check)')]/a");
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//div[@class='uif-validationMessages uif-groupValidationMessages uif-pageValidationMessages uif-pageValidationMessages-error']"));
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//div[@class='uif-validationMessages uif-groupValidationMessages']"));
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//div[@class='uif-validationMessages uif-groupValidationMessages uif-pageValidationMessages uif-pageValidationMessages-error']"));
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//div[@id='Demo-AdvancedMessagesSection']/div[@class='uif-validationMessages uif-groupValidationMessages uif-pageValidationMessages-error']"));
-        SeleneseTestBase.assertTrue(isElementPresentByXpath("//div[@id='Demo-RadioCheckboxMessageSection']/div[@class='uif-validationMessages uif-groupValidationMessages uif-pageValidationMessages-error']"));
+        waitAndClickByXpath("//p[contains(., 'Testing methodToCall action (no client validation check)')]/a");
+        assertTrue(isElementPresentByXpath("//div[@class='uif-validationMessages uif-groupValidationMessages uif-pageValidationMessages uif-pageValidationMessages-error']"));
+        assertTrue(isElementPresentByXpath("//div[@class='uif-validationMessages uif-groupValidationMessages uif-pageValidationMessages uif-pageValidationMessages-error']"));
         Thread.sleep(3000);
+    }
+
+    protected void waitAndClickAdministration() throws InterruptedException {
+        waitAndClickByLinkText(ADMINISTRATION_LINK_TEXT, this);
     }
 
     /**
@@ -4289,22 +3789,21 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
      * @param failable
      * @throws InterruptedException
      */
-    protected void waitAndClickAdministration(Failable failable) throws InterruptedException {
+    private void waitAndClickAdministration(JiraAwareFailable failable) throws InterruptedException {
         waitAndClickByLinkText(ADMINISTRATION_LINK_TEXT, failable);
     }
 
     protected void waitAndCancelConfirmation() throws InterruptedException {
         waitAndClickCancel();
-        checkForIncidentReport("methodToCall.processAnswer.button0");
         waitAndClickByName("methodToCall.processAnswer.button0");
     }
 
     protected void waitAndClick(By by) throws InterruptedException {
-        jiraAwareWaitAndClick(by, "");
+        jiraAwareWaitAndClick(by, this.getClass().toString());
     }
 
-    protected void waitAndClick(By by, Failable failable) throws InterruptedException {
-        jiraAwareWaitAndClick(by, "", failable);
+    protected void waitAndClick(By by, JiraAwareFailable failable) throws InterruptedException {
+        jiraAwareWaitAndClick(by, this.getClass().toString(), failable);
     }
 
     protected void waitAndClick(String locator, String message) throws InterruptedException {
@@ -4312,7 +3811,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     }
 
     protected void waitAndClickById(String id) throws InterruptedException {
-        jiraAwareWaitAndClick(By.id(id), "");
+        jiraAwareWaitAndClick(By.id(id), this.getClass().toString());
     }
 
     protected void waitAndClickById(String id, String message) throws InterruptedException {
@@ -4320,20 +3819,24 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     }
 
     protected void waitAndClickByLinkText(String text) throws InterruptedException {
-        waitAndClickByLinkText(text, "");
+        waitAndClickByLinkText(text, this.getClass().toString());
     }
 
     protected void waitAndClickByLinkText(String text, String message) throws InterruptedException {
         waitAndClickByLinkText(text, message, this);
     }
 
-    protected void waitAndClickByLinkText(String text, Failable failable) throws InterruptedException {
-        waitAndClickByLinkText(text, "", failable);
+    protected void waitAndClickByLinkText(String text, JiraAwareFailable failable) throws InterruptedException {
+        waitAndClickByLinkText(text, this.getClass().toString(), failable);
     }
 
-    protected void waitAndClickByLinkText(String text, String message, Failable failable) throws InterruptedException {
+    protected void waitAndClickByLinkText(String text, String message, JiraAwareFailable failable) throws InterruptedException {
         jGrowl("Click " + text + " link.");
         jiraAwareWaitAndClick(By.linkText(text), message, failable);
+    }
+
+    protected void waitAndClickLinkContainingText(String linkText) throws InterruptedException {
+        waitAndClickLinkContainingText(linkText, this.getClass().toString());
     }
 
     protected void waitAndClickLinkContainingText(String linkText, String message) throws InterruptedException {
@@ -4342,7 +3845,8 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     }
 
     protected void waitAndClickByName(String name) throws InterruptedException {
-        jiraAwareWaitAndClick(By.name(name), "");
+        jGrowl("Click By Name " + name);
+        jiraAwareWaitAndClick(By.name(name), this.getClass().toString());
     }
 
     protected void waitAndClickByValue(String value) throws InterruptedException {
@@ -4353,7 +3857,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         waitAndClick(By.xpath(xpath));
     }
 
-    protected void waitAndClickByXpath(String xpath, Failable failable) throws InterruptedException {
+    protected void waitAndClickByXpath(String xpath, JiraAwareFailable failable) throws InterruptedException {
         waitAndClick(By.xpath(xpath), failable);
     }
 
@@ -4366,12 +3870,19 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     }
 
     protected void waitAndClickButtonByText(String buttonText) throws InterruptedException {
-        waitAndClickButtonByText(buttonText, "");
+        waitAndClickButtonByText(buttonText, this.getClass().toString());
     }
 
     protected void waitAndClickButtonByText(String buttonText, String message) throws InterruptedException {
         jGrowl("Click " + buttonText + " button.");
         waitAndClickByXpath("//button[contains(text(), '" + buttonText + "')]", message);
+    }
+
+    protected void waitAndClickAllByName(String name) throws InterruptedException{
+        List<WebElement> elements = driver.findElements(By.name(name));
+        for(WebElement ele : elements){
+            ele.click();
+        }
     }
 
     /**
@@ -4427,9 +3938,21 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
      * @param failable
      * @throws InterruptedException
      */
-    protected void waitAndClickLogout(Failable failable) throws InterruptedException {
+    protected void waitAndClickLogout(JiraAwareFailable failable) throws InterruptedException {
+        jGrowl("Logging out");
         selectTopFrame();
         waitAndClickByXpath(LOGOUT_XPATH, failable);
+    }
+
+    protected void waitAndClickLogoutIfPresent() throws InterruptedException {
+        selectTopFrame();
+        if (isElementPresentByXpath(LOGOUT_XPATH)) {
+            waitAndClickLogout(this);
+        }
+    }
+
+    protected void waitAndClickMainMenu() throws InterruptedException {
+        waitAndClickByLinkText(MAIN_MENU_LINK_TEXT, this);
     }
 
     /**
@@ -4437,7 +3960,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
      * @param failable
      * @throws InterruptedException
      */
-    protected void waitAndClickMainMenu(Failable failable) throws InterruptedException {
+    private void waitAndClickMainMenu(JiraAwareFailable failable) throws InterruptedException {
         waitAndClickByLinkText(MAIN_MENU_LINK_TEXT, failable);
     }
 
@@ -4462,7 +3985,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
      * @param failable
      * @throws InterruptedException
      */
-    protected void waitAndClickXMLIngester(Failable failable) throws InterruptedException {
+    protected void waitAndClickXMLIngester(JiraAwareFailable failable) throws InterruptedException {
         waitAndClickByLinkText(XML_INGESTER_LINK_TEXT, failable);
     }
 
@@ -4471,50 +3994,35 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         select(By.name(name), selectText);
     }
 
-    protected void waitAndType(By by, String text) throws InterruptedException {
-        waitAndType(by, text,  "");
+    protected WebElement waitAndType(By by, String text) throws InterruptedException {
+        return waitAndType(by, text, this.getClass().toString());
     }
 
-    protected void waitAndType(By by, String text, String message) throws InterruptedException {
-        try {
-            jiraAwareWaitFor(by, "");
-            WebElement element = findElement(by);
-            WebDriverUtil.highlightElement(driver, element);
-            element.sendKeys(text);
-        } catch (Exception e) {
-            JiraAwareFailureUtil.failOnMatchedJira(by.toString(), this);
-            failableFail(e.getMessage() + " " + by.toString() + "  unable to type text '" + text + "'  " + message
-                    + " current url " + driver.getCurrentUrl()
-                    + "\n" + ITUtil.deLinespace(driver.getPageSource()));
-        }
+    protected WebElement waitAndType(String selector, String text) throws InterruptedException {
+        return waitAndType(By.cssSelector(selector), text);
     }
 
-    protected void waitAndType(String selector, String text) throws InterruptedException {
-        waitAndType(By.cssSelector(selector), text);
+    protected WebElement waitAndTypeById(String id, String text) throws InterruptedException {
+        return waitAndType(By.id(id), text);
     }
 
-    protected void waitAndTypeById(String id, String text) throws InterruptedException {
-        waitAndType(By.id(id), text);
+    protected WebElement waitAndTypeByXpath(String locator, String text) throws InterruptedException {
+        return waitAndType(By.xpath(locator), text);
     }
 
-    protected void waitAndTypeByXpath(String locator, String text) throws InterruptedException {
-        waitAndType(By.xpath(locator), text);
+    protected WebElement waitAndTypeByXpath(String locator, String text, String message) throws InterruptedException {
+        return waitAndType(By.xpath(locator), text, message);
     }
 
-    protected void waitAndTypeByXpath(String locator, String text, String message) throws InterruptedException {
-        waitAndType(By.xpath(locator), text, message);
-    }
-
-    protected void waitAndTypeByName(String name, String text) throws InterruptedException {
-        waitAndType(By.name(name), text);
+    protected WebElement waitAndTypeByName(String name, String text) throws InterruptedException {
+        return waitAndType(By.name(name), text);
     }
 
     protected void waitAndCreateNew() throws InterruptedException {
-        waitAndCreateNew("");
+        waitAndCreateNew(this.getClass().toString());
     }
 
     protected void waitAndCreateNew(String message) throws InterruptedException {
-        checkForIncidentReport();
         selectFrameIframePortlet();
         jGrowl("Create New");
         waitAndClickCreateNew(message);
@@ -4525,11 +4033,12 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
      * @throws InterruptedException
      */
     protected void waitAndClickCreateNew() throws InterruptedException {
-        waitAndClickCreateNew("");
+        waitAndClickCreateNew(this.getClass().toString());
     }
 
     protected void waitAndClickCreateNew(String message) throws InterruptedException {
-        if (WebDriverUtil.waitFors(driver, By.xpath(CREATE_NEW_XPATH)).size() > 0) {
+        jGrowl("Click Create New");
+        if (WebDriverUtils.waitFors(driver, By.xpath(CREATE_NEW_XPATH)).size() > 0) {
             waitAndClickByXpath(CREATE_NEW_XPATH, message);
         } else {
             System.out.println("waitAndClickByXpath(" + CREATE_NEW_XPATH + ") wasn't found trying " + CREATE_NEW_XPATH2);
@@ -4542,7 +4051,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         WebElement dropdownMenu = waitAndGetElementByAttributeValue("class", "dropdown-toggle");
         Thread.sleep(1000);
         dropdownMenu.click();
-        waitAndClickLinkContainingText(dropDownText, "dropdown click " + dropDownText + " problem");
+        waitAndClickByLinkText(dropDownText, "dropdown click " + dropDownText + " problem");
     }
 
     protected void waitAndClickEdit() throws InterruptedException {
@@ -4550,7 +4059,11 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     }
 
     protected void waitAndClickReturnValue() throws InterruptedException {
-        waitAndClickByLinkText(RETURN_VALUE_LINK_TEXT);
+        waitAndClickByLinkText(RETURN_VALUE_LINK_TEXT, "Unable to click return value " + this.getClass().toString());
+    }
+
+    protected void waitAndClickReturnValue(String message) throws InterruptedException {
+        waitAndClickByLinkText(RETURN_VALUE_LINK_TEXT, message);
     }
 
     /**
@@ -4558,15 +4071,23 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
      * @throws InterruptedException
      */
     protected void waitAndClickSearch() throws InterruptedException {
+        jGrowl("Click Search");
         waitAndClickByXpath(SEARCH_XPATH);
     }
 
     protected void waitAndClickSearch2() throws InterruptedException {
+        jGrowl("Click Search");
         waitAndClickByXpath(SEARCH_XPATH_2);
     }
 
     protected void waitAndClickSearch3() throws InterruptedException {
+        jGrowl("Click Search");
         waitAndClickByXpath(SEARCH_XPATH_3);
+    }
+
+    protected void waitAndClickSearchSecond() throws InterruptedException {
+        jGrowl("Click Search");
+        waitAndClickByXpath(SEARCH_SECOND);
     }
 
     protected String waitForDocId() throws InterruptedException {
@@ -4576,8 +4097,20 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         return findElement(By.xpath(DOC_ID_XPATH)).getText();
     }
 
+    protected String waitForDocInitiator() throws InterruptedException {
+        waitForElementPresentByXpath(DOC_INITIATOR_XPATH);
+
+        return findElement(By.xpath(DOC_INITIATOR_XPATH)).getText();
+    }
+
+    protected String waitForDocStatus() throws InterruptedException {
+        waitForElementPresentByXpath(DOC_STATUS_XPATH);
+
+        return findElement(By.xpath(DOC_STATUS_XPATH)).getText();
+    }
+
     protected WebElement waitForElementPresent(By by) throws InterruptedException {
-        return jiraAwareWaitFor(by, "");
+        return jiraAwareWaitFor(by, this.getClass().toString());
     }
 
     protected WebElement waitForElementPresent(By by, String message) throws InterruptedException {
@@ -4585,15 +4118,19 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     }
 
     protected WebElement waitForElementPresent(String locator) throws InterruptedException {
-        return jiraAwareWaitFor(By.cssSelector(locator), "");
+        return jiraAwareWaitFor(By.cssSelector(locator), this.getClass().toString());
     }
 
     protected WebElement waitForElementPresentByClassName(String name) throws InterruptedException {
-        return jiraAwareWaitFor(By.className(name), "");
+        return jiraAwareWaitFor(By.className(name), this.getClass().toString());
     }
 
     protected WebElement waitForElementPresentByClassName(String name, String message) throws InterruptedException {
         return jiraAwareWaitFor(By.className(name), message);
+    }
+
+    protected WebElement waitForElementPresentByClassName(String name, int seconds) throws InterruptedException {
+        return jiraAwareWaitFor(By.className(name), seconds, this.getClass().toString());
     }
 
     protected void waitForElementsPresentByClassName(String name, String message) throws InterruptedException {
@@ -4601,11 +4138,15 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     }
 
     protected WebElement waitForElementPresentById(String id) throws InterruptedException {
-        return jiraAwareWaitFor(By.id(id), "");
+        return jiraAwareWaitFor(By.id(id), this.getClass().toString());
     }
 
     protected void waitForElementPresentById(String id, String message) throws InterruptedException {
         jiraAwareWaitFor(By.id(id), message);
+    }
+
+    protected void waitForElementPresentById(String id, String message, int seconds) throws InterruptedException {
+        jiraAwareWaitFor(By.id(id), seconds, message);
     }
 
     protected void waitForElementsPresentById(String id, String message) throws InterruptedException {
@@ -4613,11 +4154,15 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     }
 
     protected WebElement waitForElementPresentByName(String name) throws InterruptedException {
-        return jiraAwareWaitFor(By.name(name), "");
+        return waitForElementPresentByName(name, this.getClass().toString());
+    }
+
+    protected WebElement waitForElementPresentByName(String name, String message) throws InterruptedException {
+        return jiraAwareWaitFor(By.name(name), message);
     }
 
     protected WebElement waitForElementPresentByXpath(String xpath) throws InterruptedException {
-        return jiraAwareWaitFor(By.xpath(xpath), "");
+        return jiraAwareWaitFor(By.xpath(xpath), this.getClass().toString());
     }
 
     protected WebElement waitForElementPresentByXpath(String xpath, String message) throws InterruptedException {
@@ -4625,11 +4170,77 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     }
 
     protected void waitForElementsPresentByXpath(String xpathLocator) throws InterruptedException {
-        jiraAwareWaitFors(By.xpath(xpathLocator), "");
+        jiraAwareWaitFors(By.xpath(xpathLocator), this.getClass().toString());
+    }
+
+    protected void waitForElementNotPresent(By by) throws InterruptedException {
+        driver.manage().timeouts().implicitlyWait(1, TimeUnit.SECONDS);
+        int secondsToWait = WebDriverUtils.configuredImplicityWait() * 1000;
+        while (isElementPresent(by) && secondsToWait > 0) {
+            secondsToWait -= 1000;
+            Thread.sleep(1000);
+        }
+        if (isElementPresent(by)) {
+            jiraAwareFail(by + " is still present");
+        }
+        driver.manage().timeouts().implicitlyWait(waitSeconds, TimeUnit.SECONDS);
+    }
+
+    protected boolean waitForIsTextPresent(String text) throws InterruptedException {
+        boolean present = false;
+        driver.manage().timeouts().implicitlyWait(1, TimeUnit.SECONDS);
+        int secondsToWait = WebDriverUtils.configuredImplicityWait() * 1000;
+        while (!isTextPresent(text) && secondsToWait > 0) {
+            secondsToWait -= 1000;
+            Thread.sleep(1000);
+        }
+        if (isTextPresent(text)) {
+            present = true;
+        }
+        driver.manage().timeouts().implicitlyWait(waitSeconds, TimeUnit.SECONDS);
+        return present;
+    }
+
+    protected void waitForTextPresent(String text) throws InterruptedException {
+        driver.manage().timeouts().implicitlyWait(1, TimeUnit.SECONDS);
+        int secondsToWait = WebDriverUtils.configuredImplicityWait() * 1000;
+        while (!isTextPresent(text) && secondsToWait > 0) {
+            secondsToWait -= 1000;
+            Thread.sleep(1000);
+        }
+        if (!isTextPresent(text)) {
+            jiraAwareFail(text + " is not present for " + this.getClass().toString());
+        }
+        driver.manage().timeouts().implicitlyWait(waitSeconds, TimeUnit.SECONDS);
+    }
+
+    protected void waitForTextPresent(String text, int secondsToWait) throws InterruptedException {
+        driver.manage().timeouts().implicitlyWait(1, TimeUnit.SECONDS);
+        while (!isTextPresent(text) && secondsToWait > 0) {
+            secondsToWait -= 1000;
+            Thread.sleep(1000);
+        }
+        if (!isTextPresent(text)) {
+            jiraAwareFail(text + " is not present for " + this.getClass().toString());
+        }
+        driver.manage().timeouts().implicitlyWait(waitSeconds, TimeUnit.SECONDS);
+    }
+
+    protected void waitForTextNotPresent(String text) throws InterruptedException {
+        driver.manage().timeouts().implicitlyWait(1, TimeUnit.SECONDS);
+        int secondsToWait = WebDriverUtils.configuredImplicityWait() * 1000;
+        while (isTextPresent(text) && secondsToWait > 0) {
+            secondsToWait -= 1000;
+            Thread.sleep(1000);
+        }
+        if (isTextPresent(text)) {
+            jiraAwareFail(text + " is still present for " + this.getClass().toString());
+        }
+        driver.manage().timeouts().implicitlyWait(waitSeconds, TimeUnit.SECONDS);
     }
 
     protected void waitForTitleToEqualKualiPortalIndex() throws InterruptedException {
-        waitForTitleToEqualKualiPortalIndex("");
+        waitForTitleToEqualKualiPortalIndex(this.getClass().toString());
     }
 
     protected void waitIsVisible(By by) throws InterruptedException {
@@ -4637,21 +4248,21 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         isVisible(by);
         driver.manage().timeouts().implicitlyWait(1, TimeUnit.SECONDS);
 
-//        for (int second = 0;; second++) {
-//            if (second >= waitSeconds) {
-//                failableFail(TIMEOUT_MESSAGE + " " + by.toString());
-//            }
-//            if (isVisible(by)) {
-//                break;
-//            }
-//            Thread.sleep(1000);
-//        }
+        //        for (int second = 0;; second++) {
+        //            if (second >= waitSeconds) {
+        //                jiraAwareFail(TIMEOUT_MESSAGE + " " + by.toString());
+        //            }
+        //            if (isVisible(by)) {
+        //                break;
+        //            }
+        //            Thread.sleep(1000);
+        //        }
     }
 
     protected void waitIsVisible(By by, String message) throws InterruptedException {
         for (int second = 0;; second++) {
             if (second >= waitSeconds) {
-                failableFail(TIMEOUT_MESSAGE + " " + by.toString() + " " + message);
+                jiraAwareFail(TIMEOUT_MESSAGE + " " + by.toString() + " " + message);
             }
             if (isVisible(by)) {
                 break;
@@ -4709,7 +4320,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         waitForElementVisibleBy(By.cssSelector(elementLocator), message);
     }
 
-    protected void waitForElementVisibleBy(By by, String message) throws InterruptedException {
+    protected WebElement waitForElementVisibleBy(By by, String message) throws InterruptedException {
         driver.manage().timeouts().implicitlyWait(1, TimeUnit.SECONDS);
 
         boolean failed = false;
@@ -4729,8 +4340,11 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         driver.manage().timeouts().implicitlyWait(waitSeconds, TimeUnit.SECONDS);
 
         if (failed) {
-            failableFail("timeout of " + waitSeconds + " seconds waiting for " + by + " " + message + " " + driver.getCurrentUrl());
+            jiraAwareFail("timeout of " + waitSeconds + " seconds waiting for " + by + " " + message + " " + driver
+                    .getCurrentUrl());
+            return null;
         }
+        return driver.findElements(by).get(0);
     }
 
     protected void waitForElementVisibleById(String id, String message) throws InterruptedException {
@@ -4760,20 +4374,24 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
         //     try { if (failed || ITUtil.KUALI_PORTAL_TITLE.equals(driver.getTitle())) break; } catch (Exception e) {}
         // }
 
-        // WebDriverUtil.checkForIncidentReport(driver, message); // after timeout to be sure page is loaded
-        // if (failed) failableFail("timeout of " + waitSeconds + " seconds " + message);
+        // WebDriverUtils.checkForIncidentReport(driver, message); // after timeout to be sure page is loaded
+        // if (failed) jiraAwareFail("timeout of " + waitSeconds + " seconds " + message);
     }
 
     protected void waitAndClick(String locator) throws InterruptedException {
-        waitAndClick(locator, "");
+        waitAndClick(locator, this.getClass().toString());
     }
 
+    /**
+     * {@deprecated} use any of the various wait methods over this, waitForElementPresent for example.
+     * @throws InterruptedException
+     */
     protected void waitForPageToLoad() throws InterruptedException {
         Thread.sleep(5000);
     }
 
     protected WebElement waitFor(By by) throws InterruptedException {
-        return jiraAwareWaitFor(by, "");
+        return jiraAwareWaitFor(by, this.getClass().toString());
     }
 
     /**
@@ -4786,7 +4404,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
      * @throws InterruptedException
      */
     protected void waitFor(By by, String message) throws InterruptedException {
-        WebDriverUtil.waitFor(this.driver, this.waitSeconds, by, message);
+        WebDriverUtils.waitFor(this.driver, this.waitSeconds, by, message);
     }
 
     /**
@@ -4800,7 +4418,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
     protected void waitNotVisible(By by) throws InterruptedException {
         for (int second = 0;; second++) {
             if (second >= waitSeconds) {
-                failableFail(TIMEOUT_MESSAGE);
+                jiraAwareFail(TIMEOUT_MESSAGE);
             }
             if (!isVisible(by)) {
                 break;
@@ -4819,7 +4437,7 @@ public abstract class WebDriverLegacyITBase implements Failable { //implements c
      * @return
      */
     protected boolean isKrad(){
-        return (ITUtil.REMOTE_UIF_KRAD.equalsIgnoreCase(getUiFramework()));
+        return (AutomatedFunctionalTestUtils.REMOTE_UIF_KRAD.equalsIgnoreCase(getUiFramework()));
     }
 
     protected WebElement getElementByAttribute(String attributeName){

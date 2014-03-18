@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import java.util.Map;
 
 import org.kuali.rice.core.api.CoreApiServiceLocator;
 import org.kuali.rice.krad.uif.UifConstants;
-import org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleTaskBase;
 import org.kuali.rice.krad.uif.lifecycle.FinalizeComponentPhase;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase;
@@ -33,7 +33,7 @@ import org.kuali.rice.krad.util.KRADConstants;
  * 
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-public class FinalizeViewTask extends AbstractViewLifecycleTask {
+public class FinalizeViewTask extends ViewLifecycleTaskBase<View> {
 
     /**
      * Constructor.
@@ -41,23 +41,23 @@ public class FinalizeViewTask extends AbstractViewLifecycleTask {
      * @param phase The finalize phase for the component.
      */
     public FinalizeViewTask(ViewLifecyclePhase phase) {
-        super(phase);
+        super(phase, View.class);
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask#getPhase()
+     * {@inheritDoc}
      */
     @Override
-    public FinalizeComponentPhase getPhase() {
-        return (FinalizeComponentPhase) super.getPhase();
+    public FinalizeComponentPhase getElementState() {
+        return (FinalizeComponentPhase) super.getElementState();
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask#performLifecycleTask()
+     * {@inheritDoc}
      */
     @Override
     protected void performLifecycleTask() {
-        View view = (View) getPhase().getComponent();
+        View view = (View) getElementState().getElement();
         assert view == ViewLifecycle.getView();
         Object model = ViewLifecycle.getModel();
 
@@ -73,8 +73,8 @@ public class FinalizeViewTask extends AbstractViewLifecycleTask {
      * script
      * </p>
      * 
-     * @param view view instance that is being built
-     * @param model model containing the client side state map
+     * @param model model containing the client side state map.
+     * @return The client side state script associated with this model.
      */
     protected String buildClientSideStateScript(Object model) {
         Map<String, Object> clientSideState = ((ViewModel) model).getClientStateForSyncing();
@@ -101,6 +101,11 @@ public class FinalizeViewTask extends AbstractViewLifecycleTask {
                 KRADConstants.ConfigParameters.APPLICATION_URL);
         clientStateScript += ScriptUtils.buildFunctionCall(UifConstants.JsFunctions.SET_CONFIG_PARM,
                 UifConstants.ClientSideVariables.APPLICATION_URL, applicationURL);
+
+        String scriptCleanup = CoreApiServiceLocator.getKualiConfigurationService().getPropertyValueAsString(
+                KRADConstants.ConfigParameters.KRAD_SCRIPT_CLEANUP);
+        clientStateScript += ScriptUtils.buildFunctionCall(UifConstants.JsFunctions.SET_CONFIG_PARM,
+                UifConstants.ClientSideVariables.KRAD_SCRIPT_CLEANUP, scriptCleanup);
 
         return clientStateScript;
     }

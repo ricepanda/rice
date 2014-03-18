@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 package org.kuali.rice.krad.data.jpa;
 
 import org.apache.commons.lang.StringUtils;
-import org.kuali.rice.core.framework.persistence.jpa.criteria.Criteria;
-import org.kuali.rice.core.framework.persistence.jpa.criteria.QueryByCriteria;
 import org.springframework.util.ClassUtils;
 
 import javax.persistence.EntityManager;
@@ -27,7 +25,7 @@ import java.util.Collection;
 class JpaQueryTranslator extends QueryTranslatorBase<Criteria, Query> {
     protected EntityManager entityManager;
 
-    public JpaQueryTranslator(EntityManager entityManager) {
+    JpaQueryTranslator(EntityManager entityManager) {
         this.entityManager = entityManager;
     }
 

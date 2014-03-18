@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,6 @@ import org.kuali.rice.krad.web.form.UifFormBase;
  */
 @BeanTag(name = "breadcrumbOptions-bean", parent = "Uif-BreadcrumbOptions")
 public class BreadcrumbOptions implements Serializable, Copyable {
-
     private static final long serialVersionUID = -6705552809624394000L;
 
     //custom breadcrumbs
@@ -107,6 +106,8 @@ public class BreadcrumbOptions implements Serializable, Copyable {
      * performFinalize method.
      *
      * @param model the model
+     * @param parent parent container
+     * @param breadcrumbItem breadcrumb item to finalize
      */
     public void finalizeBreadcrumbs(Object model, Container parent, BreadcrumbItem breadcrumbItem) {
         View view = ViewLifecycle.getView();
@@ -122,6 +123,41 @@ public class BreadcrumbOptions implements Serializable, Copyable {
             breadcrumbItem.setRender(false);
         }
 
+        // set breadcrumb url attributes
+        finalizeBreadcrumbsUrl(model, parent, breadcrumbItem);
+
+        //explicitly set the page to default for the view breadcrumb when not using path based (path based will pick
+        //up the breadcrumb pageId from the form data automatically)
+        if (breadcrumbItem.getUrl().getPageId() == null && !view.getBreadcrumbs().isUsePathBasedBreadcrumbs()) {
+            //set breadcrumb to default to the default page if an explicit page id for view breadcrumb is not set
+            if (view.getEntryPageId() != null) {
+                breadcrumbItem.getUrl().setPageId(view.getEntryPageId());
+            } else if (view.isSinglePageView() && view.getPage() != null) {
+                //single page
+                breadcrumbItem.getUrl().setPageId(view.getPage().getId());
+            } else if (!view.getItems().isEmpty() && view.getItems().get(0) != null) {
+                //multi page
+                breadcrumbItem.getUrl().setPageId(view.getItems().get(0).getId());
+            }
+        }
+
+        //add to breadcrumbItem to current items if it is set to use in path based
+        if (model instanceof UifFormBase && ((UifFormBase) model).getHistoryFlow() != null) {
+            // clean the breadcrumb item since it will be stored in session
+            ComponentUtils.cleanContextDeap(view.getBreadcrumbItem());
+
+            ((UifFormBase) model).getHistoryFlow().setCurrentViewItem(view.getBreadcrumbItem());
+        }
+    }
+
+    /**
+     * Finalize the setup of url for the BreadcrumbItem.
+     *
+     * @param model the model
+     * @param parent the parent
+     * @param breadcrumbItem the breadcrumb item
+     */
+    protected void finalizeBreadcrumbsUrl(Object model, Container parent, BreadcrumbItem breadcrumbItem) {
         //special breadcrumb request param handling
         if (breadcrumbItem.getUrl().getControllerMapping() == null
                 && breadcrumbItem.getUrl().getViewId() == null
@@ -155,29 +191,8 @@ public class BreadcrumbOptions implements Serializable, Copyable {
         }
 
         if (breadcrumbItem.getUrl().getViewId() == null) {
-            breadcrumbItem.getUrl().setViewId(view.getId());
+            breadcrumbItem.getUrl().setViewId(ViewLifecycle.getView().getId());
         }
-
-        //explicitly set the page to default for the view breadcrumb when not using path based (path based will pick
-        //up the breadcrumb pageId from the form data automatically)
-        if (breadcrumbItem.getUrl().getPageId() == null && !view.getBreadcrumbs().isUsePathBasedBreadcrumbs()) {
-            //set breadcrumb to default to the default page if an explicit page id for view breadcrumb is not set
-            if (view.getEntryPageId() != null) {
-                breadcrumbItem.getUrl().setPageId(view.getEntryPageId());
-            } else if (view.isSinglePageView() && view.getPage() != null) {
-                //single page
-                breadcrumbItem.getUrl().setPageId(view.getPage().getId());
-            } else if (!view.getItems().isEmpty() && view.getItems().get(0) != null) {
-                //multi page
-                breadcrumbItem.getUrl().setPageId(view.getItems().get(0).getId());
-            }
-        }
-
-        //add to breadcrumbItem to current items if it is set to use in path based
-        if (model instanceof UifFormBase && ((UifFormBase) model).getHistoryFlow() != null) {
-            ((UifFormBase) model).getHistoryFlow().setCurrentViewItem(view.getBreadcrumbItem());
-        }
-
     }
 
     /**
@@ -293,31 +308,10 @@ public class BreadcrumbOptions implements Serializable, Copyable {
     }
 
     /**
-     * Copies the properties over for the copy method.
-     *
-     * @param breadcrumbOptions The BreadcrumbOptions to copy
+     * {@inheritDoc}
      */
-    protected <T> void copyProperties(T breadcrumbOptions) {
-        BreadcrumbOptions breadcrumbOptionsCopy = (BreadcrumbOptions) breadcrumbOptions;
-
-        if (breadcrumbOverrides != null) {
-            List<BreadcrumbItem> breadcrumbOverridesCopy = ComponentUtils.copy(breadcrumbOverrides);
-            breadcrumbOptionsCopy.setBreadcrumbOverrides(breadcrumbOverridesCopy);
-        }
-
-        if (homewardPathBreadcrumbs != null) {
-            List<BreadcrumbItem> homewardPathBreadcrumbsCopy = ComponentUtils.copy(homewardPathBreadcrumbs);
-            breadcrumbOptionsCopy.setHomewardPathBreadcrumbs(homewardPathBreadcrumbsCopy);
-        }
-
-        if (prePageBreadcrumbs != null) {
-            List<BreadcrumbItem> prePageBreadcrumbsCopy = ComponentUtils.copy(prePageBreadcrumbs);
-            breadcrumbOptionsCopy.setPrePageBreadcrumbs(prePageBreadcrumbsCopy);
-        }
-
-        if (preViewBreadcrumbs != null) {
-            List<BreadcrumbItem> preViewBreadcrumbsCopy = ComponentUtils.copy(preViewBreadcrumbs);
-            breadcrumbOptionsCopy.setPreViewBreadcrumbs(preViewBreadcrumbsCopy);
-        }
+    @Override
+    public Copyable unwrap() {
+        return this;
     }
 }

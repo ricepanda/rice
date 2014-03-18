@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -313,36 +313,4 @@ public class ColumnCalculationInfo extends UifDictionaryBeanBase implements Seri
         this.propertyName = propertyName;
     }
 
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T columnCalculationInfo) {
-        super.copyProperties(columnCalculationInfo);
-
-        ColumnCalculationInfo columnCalculationInfoCopy = (ColumnCalculationInfo) columnCalculationInfo;
-
-        columnCalculationInfoCopy.setCalculateOnKeyUp(this.calculateOnKeyUp);
-        columnCalculationInfoCopy.setCalculationFunctionExtraData(this.calculationFunctionExtraData);
-        columnCalculationInfoCopy.setCalculationFunctionName(this.calculationFunctionName);
-        columnCalculationInfoCopy.setColumnNumber(this.columnNumber);
-
-        if (this.groupTotalFieldPrototype != null) {
-            columnCalculationInfoCopy.setGroupTotalFieldPrototype((MessageField) this.groupTotalFieldPrototype.copy());
-        }
-
-        if (this.pageTotalField != null) {
-            columnCalculationInfoCopy.setPageTotalField((MessageField) this.pageTotalField.copy());
-        }
-
-        columnCalculationInfoCopy.setPropertyName(this.propertyName);
-        columnCalculationInfoCopy.setRecalculateTotalClientSide(this.recalculateTotalClientSide);
-        columnCalculationInfoCopy.setShowGroupTotal(this.showGroupTotal);
-        columnCalculationInfoCopy.setShowPageTotal(this.showPageTotal);
-        columnCalculationInfoCopy.setShowTotal(this.showTotal);
-
-        if (this.totalField != null) {
-            columnCalculationInfoCopy.setTotalField((MessageField) this.totalField.copy());
-        }
-    }
 }

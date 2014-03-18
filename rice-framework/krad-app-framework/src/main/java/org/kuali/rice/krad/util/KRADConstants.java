@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -527,6 +527,8 @@ public final class KRADConstants {
     public static final String CSV_FORMAT = "csv";
 
     public static final String XML_MIME_TYPE = "application/xml";
+    public static final String EXCEL_MIME_TYPE = "application/vnd.ms-excel";
+    public static final String CSV_MIME_TYPE = "text/csv";
 
     // Header Tab navigation constant values
     public static final String NAVIGATE_TO = "navigateTo.";
@@ -699,8 +701,16 @@ public final class KRADConstants {
         public static final String APPLICATION_VERSION = "application.version";
         public static final String APPLICATION_URL = "application.url";
         public static final String KRAD_DEV_MODE = "rice.krad.dev.mode";
+        public static final String KRAD_SCRIPT_CLEANUP = "rice.krad.script.cleanup";
         public static final String KRAD_STRICT_LIFECYCLE = "rice.krad.lifecycle.strict";
+        public static final String KRAD_VIEW_LIFECYCLE_TRACE = "rice.krad.lifecycle.trace";
         public static final String KRAD_RENDER_IN_LIFECYCLE = "rice.krad.lifecycle.render";
+        public static final String KRAD_VIEW_LIFECYCLE_ASYNCHRONOUS = "rice.krad.lifecycle.asynchronous";
+        public static final String KRAD_VIEW_LIFECYCLE_MINTHREADS = "rice.krad.lifecycle.asynchronous.minThreads";
+        public static final String KRAD_VIEW_LIFECYCLE_MAXTHREADS = "rice.krad.lifecycle.asynchronous.maxThreads";
+        public static final String KRAD_VIEW_LIFECYCLE_TIMEOUT = "rice.krad.lifecycle.asynchronous.timeout";
         public static final String KRAD_USE_CLONE = "rice.krad.copyable.useClone";
+        public static final String KRAD_COPY_DELAY = "rice.krad.copyable.delay";
+        public static final String KRAD_INCLUDE_LESS = "rice.krad.include.less";
     }
 }

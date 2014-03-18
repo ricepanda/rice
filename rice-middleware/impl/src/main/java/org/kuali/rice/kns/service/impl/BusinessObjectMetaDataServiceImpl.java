@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -304,7 +304,7 @@ public class BusinessObjectMetaDataServiceImpl extends DataObjectMetaDataService
 		// TODO move out to a separate method
 		// so that the logic for finding the relationships is similar to
 		// primitiveReference
-		if (ddReference != null && isLookupable(ddReference.getTargetClass()) && bo != null
+		if (ddReference != null && BusinessObject.class.isAssignableFrom(ddReference.getTargetClass()) && isLookupable(ddReference.getTargetClass()) && bo != null
 				&& ddReference.getPrimitiveAttributes().size() < maxSize) {
 			relationship = new DataObjectRelationship(boClass, ddReference.getObjectAttributeName(),
 					ddReference.getTargetClass());

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package org.kuali.rice.krad.uif.util;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Field;
@@ -34,11 +36,16 @@ import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.component.ComponentBase;
 import org.kuali.rice.krad.uif.component.ReferenceCopy;
 import org.kuali.rice.krad.uif.container.CollectionGroup;
+import org.kuali.rice.krad.uif.container.CollectionGroupBase;
 import org.kuali.rice.krad.uif.control.CheckboxControl;
 import org.kuali.rice.krad.uif.element.Action;
+import org.kuali.rice.krad.uif.element.Label;
 import org.kuali.rice.krad.uif.field.DataField;
+import org.kuali.rice.krad.uif.field.DataFieldBase;
 import org.kuali.rice.krad.uif.field.FieldBase;
 import org.kuali.rice.krad.uif.field.InputField;
+import org.kuali.rice.krad.uif.field.InputFieldBase;
+import org.kuali.rice.krad.uif.widget.Tooltip;
 
 /**
  * ComponentUtilsTest tests various ComponentUtils methods
@@ -52,16 +59,15 @@ public class ComponentUtilsTest {
 
     @Before
     public void setup() {
-        component = new InputField();
+        component = new InputFieldBase();
         componentId = "field1";
         component.setId(componentId);
-        component.setBaseId(componentId);
     }
 
     // Initialization methods
     private CollectionGroup initializeCollectionGroup() {
-        CollectionGroup collectionGroup = new CollectionGroup();
-        collectionGroup = (CollectionGroup) initializeComponentBase(collectionGroup);
+        CollectionGroupBase collectionGroup = new CollectionGroupBase();
+        collectionGroup = (CollectionGroupBase) initializeComponentBase(collectionGroup);
 
         DataField field1 = initializeDataField();
         DataField field2 = initializeDataField();
@@ -96,8 +102,8 @@ public class ComponentUtilsTest {
     }
 
     private DataField initializeDataField() {
-        DataField dataField = new DataField();
-        dataField = (DataField) initializeComponentBase(dataField);
+        DataFieldBase dataField = new DataFieldBase();
+        dataField = (DataFieldBase) initializeComponentBase(dataField);
         dataField.setAddHiddenWhenReadOnly(true);
 
         List<String> additionalHiddenPropertyNames = new ArrayList<String>();
@@ -136,9 +142,9 @@ public class ComponentUtilsTest {
         cellCssClasses.add("CellClass1");
         cellCssClasses.add("CellClass2");
         cellCssClasses.add("CellClass3");
-        componentBase.setCellCssClasses(cellCssClasses);
+        componentBase.setWrapperCssClasses(cellCssClasses);
 
-        componentBase.setCellStyle("Style1");
+        componentBase.setWrapperStyle("Style1");
         componentBase.setCellWidth("20px");
         componentBase.setColSpan(2);
         componentBase.setConditionalRefresh("Refresh");
@@ -294,15 +300,15 @@ public class ComponentUtilsTest {
             result = false;
         }
 
-        List<String> missingCellCssClasses = originalComponent.getCellCssClasses();
+        List<String> missingCellCssClasses = originalComponent.getWrapperCssClasses();
         if (missingCellCssClasses != null) {
-            missingCellCssClasses.removeAll(copiedComponent.getCellCssClasses());
+            missingCellCssClasses.removeAll(copiedComponent.getWrapperCssClasses());
             if (!missingCellCssClasses.isEmpty()) {
                 result = false;
             }
         }
 
-        if (!originalComponent.getCellStyle().equals(copiedComponent.getCellStyle())) {
+        if (!originalComponent.getWrapperStyle().equals(copiedComponent.getWrapperStyle())) {
             result = false;
         }
         if (!originalComponent.getCellWidth().equals(copiedComponent.getCellWidth())) {
@@ -468,8 +474,47 @@ public class ComponentUtilsTest {
         return result;
     }
 
-    @Ignore
-    // Ignored for now, but this is a proof of concept for using reflection to test copying
+    /**
+     * Test {@link ComponentUtils#cleanContextDeap} using a BreadcrumbItem object
+     */
+    @Test
+    public void testCleanContextDeap() {
+        Map<String, Object> context = new HashMap<String, Object>();
+        context.put("contextkey", "value");
+        context.put("contextkey2", "value2");
+
+        BreadcrumbItem breadcrumbItem = new BreadcrumbItem();
+        breadcrumbItem.setContext(context);
+
+        InputField inputField = new InputFieldBase();
+        inputField.setContext(context);
+
+        Label fieldLabel = new Label();
+        fieldLabel.setContext(context);
+
+        Tooltip labelTootlip = new Tooltip();
+        labelTootlip.setContext(context);
+        fieldLabel.setToolTip(labelTootlip);
+
+        inputField.setFieldLabel(fieldLabel);
+
+        breadcrumbItem.setSiblingBreadcrumbComponent(inputField);
+
+        Tooltip tooltip = new Tooltip();
+        tooltip.setContext(context);
+
+        breadcrumbItem.setToolTip(tooltip);
+
+        ComponentUtils.cleanContextDeap(breadcrumbItem);
+
+        assertEquals(0, breadcrumbItem.getContext().size());
+        assertEquals(0, inputField.getContext().size());
+        assertEquals(0, fieldLabel.getContext().size());
+        assertEquals(0, labelTootlip.getContext().size());
+        assertEquals(0, tooltip.getContext().size());
+    }
+
+    @Ignore // Ignored for now, this is a proof of concept for using reflection to test copying
     @Test
     /**
      * test {@link ComponentUtils#copyUsingCloning} using a DataField object

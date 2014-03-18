@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,6 @@ import org.kuali.rice.krad.UserSession;
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.UifParameters;
 import org.kuali.rice.krad.uif.util.ProcessLogger;
-import org.kuali.rice.krad.uif.util.ViewCleaner;
-import org.kuali.rice.krad.uif.view.View;
 import org.kuali.rice.krad.util.GlobalVariables;
 import org.kuali.rice.krad.util.KRADUtils;
 import org.kuali.rice.krad.web.form.HistoryManager;
@@ -55,7 +53,7 @@ public class UifControllerHandlerInterceptor implements HandlerInterceptor {
      * validation errors done during the binding are not cleared out?
      *
      * @see org.springframework.web.servlet.HandlerInterceptor#preHandle(javax.servlet.http.HttpServletRequest,
-     *      javax.servlet.http.HttpServletResponse, java.lang.Object)
+     * javax.servlet.http.HttpServletResponse, java.lang.Object)
      */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response,
@@ -66,7 +64,7 @@ public class UifControllerHandlerInterceptor implements HandlerInterceptor {
         GlobalVariables.clear();
 
         // add the HistoryManager for storing HistoryFlows to the session
-        if (request.getSession().getAttribute(UifConstants.HistoryFlow.HISTORY_MANAGER) == null){
+        if (request.getSession().getAttribute(UifConstants.HistoryFlow.HISTORY_MANAGER) == null) {
             request.getSession().setAttribute(UifConstants.HistoryFlow.HISTORY_MANAGER, new HistoryManager());
         }
 
@@ -80,8 +78,8 @@ public class UifControllerHandlerInterceptor implements HandlerInterceptor {
      * and the corresponding view is prepared for rendering
      *
      * @see org.springframework.web.servlet.HandlerInterceptor#postHandle(javax.servlet.http.HttpServletRequest,
-     *      javax.servlet.http.HttpServletResponse, java.lang.Object,
-     *      org.springframework.web.servlet.ModelAndView)
+     * javax.servlet.http.HttpServletResponse, java.lang.Object,
+     * org.springframework.web.servlet.ModelAndView)
      */
     @Override
     public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler,
@@ -92,10 +90,10 @@ public class UifControllerHandlerInterceptor implements HandlerInterceptor {
     }
 
     /**
-     * After the view is rendered we can do some cleaning to reduce the size of the form storage in memory
+     * After the view is rendered remove the view to reduce the size of the form storage in memory.
      *
      * @see org.springframework.web.servlet.HandlerInterceptor#afterCompletion(javax.servlet.http.HttpServletRequest,
-     *      javax.servlet.http.HttpServletResponse, java.lang.Object, java.lang.Exception)
+     * javax.servlet.http.HttpServletResponse, java.lang.Object, java.lang.Exception)
      */
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler,
@@ -105,41 +103,19 @@ public class UifControllerHandlerInterceptor implements HandlerInterceptor {
         UifFormManager uifFormManager = (UifFormManager) request.getSession().getAttribute(UifParameters.FORM_MANAGER);
         UifFormBase uifForm = (UifFormBase) request.getAttribute(UifConstants.REQUEST_FORM);
 
-        if ((uifForm == null) || (uifForm.getView() == null && uifForm.getPostedView() == null)) {
+        if ((uifForm == null) || (uifForm.getView() == null)) {
             return;
-        }
-
-        // perform form session handling
-        boolean persistFormToSession = uifForm.getView() != null ? uifForm.getView().isPersistFormToSession() :
-                uifForm.getPostedView().isPersistFormToSession();
-
-        // cleaning of view structure
-        if (uifForm.isRequestRedirected() || uifForm.isUpdateNoneRequest()) {
-            // view wasn't rendered, just set to null and leave previous posted view
-            uifForm.setView(null);
-        } else if (uifForm.isBuildViewRequest()) {
-            // full view render, clean view and back up
-            View view = uifForm.getView();
-            if (view != null) {
-                ViewCleaner.cleanView(view);
-            }
-
-            uifForm.setPostedView(view);
-            uifForm.setView(null);
-        } else {
-            // partial refresh on posted view
-            View postedView = uifForm.getPostedView();
-            if (postedView != null) {
-                ViewCleaner.cleanView(postedView);
-            }
         }
 
         // remove the session transient variables from the request form before adding it to the list of
         // Uif session forms
+        boolean persistFormToSession = uifForm.getView().isPersistFormToSession();
         if (persistFormToSession && (uifFormManager != null)) {
             uifFormManager.purgeForm(uifForm);
             uifFormManager.addSessionForm(uifForm);
         }
+
+        uifForm.setView(null);
 
         ProcessLogger.trace("after-completion-end");
     }

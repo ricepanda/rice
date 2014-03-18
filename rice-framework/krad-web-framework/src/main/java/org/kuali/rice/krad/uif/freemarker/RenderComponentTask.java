@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,21 +19,22 @@ import java.io.IOException;
 import java.util.Collections;
 
 import org.kuali.rice.krad.uif.component.Component;
-import org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleTaskBase;
 
 import freemarker.core.Environment;
 import freemarker.core.Macro;
 import freemarker.template.TemplateException;
 import freemarker.template.TemplateModel;
+import org.kuali.rice.krad.uif.view.View;
 
 /**
  * Perform actual rendering on a component during the lifecycle.
  * 
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-public class RenderComponentTask extends AbstractViewLifecycleTask {
+public class RenderComponentTask extends ViewLifecycleTaskBase<Component> {
 
     /**
      * Constructor.
@@ -41,17 +42,23 @@ public class RenderComponentTask extends AbstractViewLifecycleTask {
      * @param phase The render phase for the component.
      */
     public RenderComponentTask(ViewLifecyclePhase phase) {
-        super(phase);
+        super(phase, Component.class);
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask#performLifecycleTask()
+     * {@inheritDoc}
      */
     @Override
     protected void performLifecycleTask() {
-        Component component = getPhase().getComponent();
+        Component component = (Component) getElementState().getElement();
         LifecycleRenderingContext renderingContext = ViewLifecycle.getRenderingContext();
         renderingContext.clearRenderingBuffer();
+
+        renderingContext.importTemplate(component.getTemplate());
+
+        for (String additionalTemplate : component.getAdditionalTemplates()) {
+            renderingContext.importTemplate(additionalTemplate);
+        }
 
         try {
             Environment env = renderingContext.getEnvironment();
@@ -77,8 +84,8 @@ public class RenderComponentTask extends AbstractViewLifecycleTask {
             throw new IllegalStateException("Error rendering component " + component.getId(), e);
         }
 
-        component.setSelfRendered(true);
         component.setRenderedHtmlOutput(renderingContext.getRenderedOutput());
+        component.setSelfRendered(true);
     }
 
 }

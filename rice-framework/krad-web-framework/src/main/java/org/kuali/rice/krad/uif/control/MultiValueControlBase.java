@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,6 @@
  */
 package org.kuali.rice.krad.uif.control;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.kuali.rice.core.api.util.KeyValue;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
 import org.kuali.rice.krad.uif.UifConstants;
@@ -28,12 +25,15 @@ import org.kuali.rice.krad.uif.field.InputField;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.util.ComponentFactory;
 import org.kuali.rice.krad.uif.util.ComponentUtils;
-import org.kuali.rice.krad.uif.util.ExpressionUtils;
 import org.kuali.rice.krad.uif.util.KeyMessage;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.util.UifKeyValueLocation;
 import org.kuali.rice.krad.uif.util.UrlInfo;
 import org.kuali.rice.krad.uif.view.ExpressionEvaluator;
 import org.kuali.rice.krad.uif.view.View;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Base class for controls that accept/display multiple values
@@ -47,6 +47,8 @@ public abstract class MultiValueControlBase extends ControlBase implements Multi
     private List<KeyMessage> richOptions;
     private List<Component> inlineComponents;
 
+    private List<Message> internalMessageComponents;
+
     private boolean locationSelect = false;
 
     public MultiValueControlBase() {
@@ -56,24 +58,36 @@ public abstract class MultiValueControlBase extends ControlBase implements Multi
     /**
      * Process rich message content that may be in the options, by creating and initializing the richOptions
      *
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#performApplyModel(org.kuali.rice.krad.uif.view.View,
-     *      Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performApplyModel(Object model, Component parent) {
+    public void performApplyModel(Object model, LifecycleElement parent) {
         super.performApplyModel(model, parent);
 
         if (options != null && richOptions == null) {
             richOptions = new ArrayList<KeyMessage>();
+            internalMessageComponents = new ArrayList<Message>();
 
             for (KeyValue option : options) {
                 Message message = ComponentFactory.getMessage();
-                message.setMessageText(option.getValue());
-                message.setInlineComponents(inlineComponents);
-                message.setGenerateSpan(false);
 
-                ViewLifecycle.spawnSubLifecyle(model, message, this);
-                richOptions.add(new KeyMessage(option.getKey(), option.getValue(), message));
+                String key = option.getKey();
+                if (key.contains(UifConstants.EL_PLACEHOLDER_PREFIX)) {
+                    key = (String) ViewLifecycle.getExpressionEvaluator().evaluateExpression(this.getContext(),
+                            key);
+                }
+
+                String value = option.getValue();
+                if (value.contains(UifConstants.EL_PLACEHOLDER_PREFIX)) {
+                    value = (String) ViewLifecycle.getExpressionEvaluator().evaluateExpression(this.getContext(),
+                            value);
+                }
+
+                message.setMessageText(value);
+                message.setInlineComponents(inlineComponents);
+                message.setRenderWrapperTag(false);
+                richOptions.add(new KeyMessage(key, value, message));
+                internalMessageComponents.add(message);
             }
         }
     }
@@ -81,15 +95,14 @@ public abstract class MultiValueControlBase extends ControlBase implements Multi
     /**
      * Adds appropriate parent data to inputs internal to the controls that may be in rich content of options
      *
-     * @see org.kuali.rice.krad.uif.component.Component#performFinalize(org.kuali.rice.krad.uif.view.View, Object,
-     *      org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performFinalize(Object model, Component parent) {
+    public void performFinalize(Object model, LifecycleElement parent) {
         super.performFinalize(model, parent);
 
         View view = ViewLifecycle.getView();
-        ExpressionEvaluator expressionEvaluator = ViewLifecycle.getHelper().getExpressionEvaluator();
+        ExpressionEvaluator expressionEvaluator = ViewLifecycle.getExpressionEvaluator();
 
         if (options != null && !options.isEmpty()) {
             for (KeyValue option : options) {
@@ -98,7 +111,7 @@ public abstract class MultiValueControlBase extends ControlBase implements Multi
 
                     UrlInfo url = ((UifKeyValueLocation) option).getLocation();
 
-                    ExpressionUtils.populatePropertyExpressionsFromGraph(url, false);
+                    ViewLifecycle.getExpressionEvaluator().populatePropertyExpressionsFromGraph(url, false);
                     expressionEvaluator.evaluateExpressionsOnConfigurable(view, url, view.getContext());
                 }
             }
@@ -125,22 +138,6 @@ public abstract class MultiValueControlBase extends ControlBase implements Multi
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#getComponentsForLifecycle()
-     */
-    @Override
-    public List<Component> getComponentsForLifecycle() {
-        List<Component> components = super.getComponentsForLifecycle();
-
-        if (richOptions != null) {
-            for (KeyMessage richOption : richOptions) {
-                components.add(richOption.getMessage());
-            }
-        }
-
-        return components;
-    }
-
-    /**
      * @see MultiValueControl#getOptions()
      */
     @BeanTagAttribute(name = "options", type = BeanTagAttribute.AttributeType.LISTBEAN)
@@ -149,7 +146,7 @@ public abstract class MultiValueControlBase extends ControlBase implements Multi
     }
 
     /**
-     * @see MultiValueControl#setOptions(java.util.List<org.kuali.rice.core.api.util.KeyValue>)
+     * {@inheritDoc}
      */
     public void setOptions(List<KeyValue> options) {
         this.options = options;
@@ -197,6 +194,17 @@ public abstract class MultiValueControlBase extends ControlBase implements Multi
     }
 
     /**
+     * Used by reflection during the lifecycle to get internal message components that may be contained in options
+     *
+     * <p>There are no references to this method in the code, this is intentional.  DO NOT REMOVE.</p>
+     *
+     * @return the internal message components, if any
+     */
+    public List<Message> getInternalMessageComponents() {
+        return internalMessageComponents;
+    }
+
+    /**
      * If true, this select represents a location select (navigate on select of option)
      *
      * @return true if this is a location select
@@ -212,56 +220,5 @@ public abstract class MultiValueControlBase extends ControlBase implements Multi
      */
     protected void setLocationSelect(boolean locationSelect) {
         this.locationSelect = locationSelect;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        MultiValueControlBase multiValueControlBaseCopy = (MultiValueControlBase) component;
-
-        try {
-            if (options != null) {
-                List<KeyValue> optionsCopy = new ArrayList<KeyValue>();
-                for (KeyValue option : options) {
-
-                    KeyValue keyValue = null;
-                    if (option != null) {
-                        Class<? extends KeyValue> optionClass = option.getClass();
-                        keyValue = optionClass.getDeclaredConstructor(String.class, String.class).newInstance(
-                                option.getKey(), option.getValue());
-                        if (keyValue instanceof UifKeyValueLocation) {
-                            ((UifKeyValueLocation) keyValue).setLocation(
-                                    (UrlInfo) ((UifKeyValueLocation) option).getLocation().copy());
-                        }
-                    }
-
-                    optionsCopy.add(keyValue);
-                }
-                multiValueControlBaseCopy.setOptions(optionsCopy);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to copy options in MultiValueControlBase", e);
-        }
-
-        if (richOptions != null) {
-            List<KeyMessage> richOptionsCopy = new ArrayList<KeyMessage>();
-            for (KeyMessage richOption : richOptions) {
-                KeyMessage keyMessage = new KeyMessage(richOption.getKey(), richOption.getValue(),
-                        richOption.getMessage());
-                richOptionsCopy.add(keyMessage);
-            }
-            multiValueControlBaseCopy.setRichOptions(richOptionsCopy);
-        }
-
-        if (inlineComponents != null) {
-            List<Component> inlineComponentsCopy = ComponentUtils.copy(inlineComponents);
-            multiValueControlBaseCopy.setInlineComponents(inlineComponentsCopy);
-        }
-
-        multiValueControlBaseCopy.setLocationSelect(this.locationSelect);
     }
 }

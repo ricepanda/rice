@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import org.kuali.rice.krad.document.Document;
  * This implementation of {@link PropertySerializabilityEvaluator} specifies that all properties of a document are serializable.
  *
  */
-public class AlwaysTruePropertySerializibilityEvaluator extends PropertySerializabilityEvaluatorBase implements PropertySerializabilityEvaluator {
+public class AlwaysTruePropertySerializibilityEvaluator extends PropertySerializabilityEvaluatorBase {
 
     /**
      * Does nothing, since we know everything's serializable
@@ -33,7 +33,7 @@ public class AlwaysTruePropertySerializibilityEvaluator extends PropertySerializ
     /**
      * Trivially returns true
      *
-     * @see org.kuali.rice.krad.util.documentserializer.PropertySerializabilityEvaluator#isPropertySerializable(org.kuali.rice.krad.util.documentserializer.DocumentSerializationState, Object, java.lang.String, java.lang.Object)
+     * {@inheritDoc}
      */
 	@Override
     public boolean isPropertySerializable(SerializationState state, Object containingObject, String childPropertyName, Object childPropertyValue) {

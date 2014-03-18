@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,20 @@ package org.kuali.rice.krad.uif.modifier;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
 import org.kuali.rice.krad.datadictionary.parse.BeanTags;
 import org.kuali.rice.krad.uif.component.Component;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleUtils;
 import org.kuali.rice.krad.uif.util.ComponentUtils;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.util.ObjectPropertyUtils;
+import org.kuali.rice.krad.uif.util.RecycleUtils;
 
 /**
  * For a given <code>Component</code> instance converts all component properties
@@ -53,8 +58,7 @@ public class ComponentConvertModifier extends ComponentModifierBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.modifier.ComponentModifier#performModification(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
     public void performModification(Object model, Component component) {
@@ -81,23 +85,36 @@ public class ComponentConvertModifier extends ComponentModifierBase {
             return;
         }
 
-        // check all component properties for the type to replace
-        List<String> componentProperties = ComponentUtils.getComponentPropertyNames(component.getClass());
-        for (String propertyPath : componentProperties) {
-            Object propValue = ObjectPropertyUtils.getPropertyValue(component, propertyPath);
+        @SuppressWarnings("unchecked")
+        Queue<LifecycleElement> elementQueue = RecycleUtils.getInstance(LinkedList.class);
+        elementQueue.offer(component);
+        
+        while (elementQueue.isEmpty()) {
+            LifecycleElement element = elementQueue.poll();
 
-            if (propValue != null) {
-                if (getComponentTypeToReplace().isAssignableFrom(propValue.getClass())) {
-                    // types match, convert the component
-                    performConversion(component, propertyPath, idSuffix++);
+            elementQueue.addAll(ViewLifecycleUtils.getElementsForLifecycle(element).values());
+            
+            if (!(element instanceof Component)) {
+                continue;
+            }
+            
+            // check all component properties for the type to replace
+            Set<String> componentProperties =
+                    ObjectPropertyUtils.getReadablePropertyNames(component.getClass());
+            for (String propertyPath : componentProperties) {
+                Object propValue = ObjectPropertyUtils.getPropertyValue(component, propertyPath);
+
+                if (propValue != null) {
+                    if (getComponentTypeToReplace().isAssignableFrom(propValue.getClass())) {
+                        // types match, convert the component
+                        performConversion(component, propertyPath, idSuffix++);
+                    }
                 }
             }
         }
-
-        // recursively update components
-        for (Component nestedComponent : component.getComponentsForLifecycle()) {
-            convertToReplacement(nestedComponent, idSuffix);
-        }
+        
+        elementQueue.clear();
+        RecycleUtils.recycle(elementQueue);
     }
 
     /**
@@ -117,7 +134,7 @@ public class ComponentConvertModifier extends ComponentModifierBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.modifier.ComponentModifier#getSupportedComponents()
+     * {@inheritDoc}
      */
     @Override
     public Set<Class<? extends Component>> getSupportedComponents() {
@@ -182,16 +199,4 @@ public class ComponentConvertModifier extends ComponentModifierBase {
         this.componentReplacementPrototype = componentReplacementPrototype;
     }
 
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T componentModifier) {
-        super.copyProperties(componentModifier);
-
-        ComponentConvertModifier componentConvertModifierCopy = (ComponentConvertModifier) componentModifier;
-
-        componentConvertModifierCopy.setComponentReplacementPrototype((Component)this.componentReplacementPrototype.copy());
-        componentConvertModifierCopy.setComponentTypeToReplace(this.componentTypeToReplace);
-    }
 }

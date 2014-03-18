@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,12 @@ import org.kuali.rice.ken.api.notification.NotificationListRecipient;
 import org.kuali.rice.ken.api.notification.NotificationProducer;
 import org.kuali.rice.ken.api.notification.UserChannelSubscription;
 import org.kuali.rice.krad.bo.PersistableBusinessObjectBase;
+import org.kuali.rice.krad.data.jpa.PortableSequenceGenerator;
+import org.kuali.rice.krad.data.jpa.converters.BooleanYNConverter;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -35,7 +38,6 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
 import javax.persistence.OrderBy;
-import javax.persistence.Parameter;
 import javax.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,14 +54,16 @@ import java.util.List;
 public class NotificationChannelBo extends PersistableBusinessObjectBase implements NotificationChannelContract {
 	@Id
 	@GeneratedValue(generator="KREN_CHNL_S")
+    @PortableSequenceGenerator(name="KREN_CHNL_S")
 	@Column(name = "CHNL_ID")
 	private Long id;
 	@Column(name = "NM", nullable = false)
 	private String name;
 	@Column(name = "DESC_TXT", nullable = false)
 	private String description;
-	@Column(name = "SUBSCRB_IND", nullable = false)
-	private boolean subscribable;
+    @Convert(converter = BooleanYNConverter.class)
+    @Column(name = "SUBSCRB_IND", nullable = false)
+    private boolean subscribable;
 
 	// List references
 	@OneToMany(cascade={CascadeType.REFRESH, CascadeType.DETACH, CascadeType.REMOVE, CascadeType.MERGE, CascadeType.PERSIST}, 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,8 @@ import org.kuali.rice.krad.datadictionary.Copyable;
  * <p>Mutability of the map will follow the semantics for the lifecycle element.</p>
  *
  * @author Kuali Rice Team (rice.collab@kuali.org)
+ * @param <K> map key type
+ * @param <V> map value type
  */
 public class LifecycleAwareMap<K, V> implements Map<K, V>, UifCloneable, Copyable, Serializable {
     private static final long serialVersionUID = -2872079344892779899L;
@@ -179,6 +181,14 @@ public class LifecycleAwareMap<K, V> implements Map<K, V>, UifCloneable, Copyabl
     @Override
     public Object clone() throws CloneNotSupportedException {
         return super.clone();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Copyable unwrap() {
+        return this;
     }
 
 }

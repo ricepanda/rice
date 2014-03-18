@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,17 @@
  */
 package org.kuali.rice.krad.uif.lifecycle.initialize;
 
-import org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask;
+import org.kuali.rice.krad.uif.component.Component;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleTaskBase;
 
 /**
  * Perform default initialization defined for the component.
  * 
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-public class ComponentDefaultInitializeTask extends AbstractViewLifecycleTask {
+public class ComponentDefaultInitializeTask extends ViewLifecycleTaskBase<Component> {
 
     /**
      * Create a task to assign component IDs during the initialize phase.
@@ -31,17 +33,17 @@ public class ComponentDefaultInitializeTask extends AbstractViewLifecycleTask {
      * @param phase The initialize phase for the component.
      */
     public ComponentDefaultInitializeTask(ViewLifecyclePhase phase) {
-        super(phase);
+        super(phase, Component.class);
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask#performLifecycleTask()
+     * {@inheritDoc}
      */
     @SuppressWarnings("deprecation")
     @Override
     protected void performLifecycleTask() {
         // invoke component to initialize itself after properties have been set
-        getPhase().getComponent().performInitialization(getPhase().getModel());
+        getElementState().getElement().performInitialization(ViewLifecycle.getModel());
     }
 
 }

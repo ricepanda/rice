@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,11 +33,12 @@ import org.kuali.rice.krad.util.ForeignKeyFieldsPopulationState;
  * Adapter that supports "legacy" KNS/KRAD persistence, metadata, and object utility frameworks via runtime
  * argument inspection
  *
- * deprecated This class is deprecated by default, applications should *never*
+ * @deprecated This class is deprecated by default, applications should *never*
  * use this adapter directly
  *
  * @author Kuali Rice Team (rice.collab@kuali.org).
  */
+@Deprecated
 public interface LegacyDataAdapter {
 
     // BusinessObjectService
@@ -127,7 +128,7 @@ public interface LegacyDataAdapter {
      *
      * @param clazz
      * @param fieldValues
-     * @return
+     * @return collection of business objects
      */
     <T> Collection<T> findMatchingOrderBy(Class<T> clazz, Map<String, ?> fieldValues, String sortField, boolean sortAscending);
     // PersistenceService
@@ -144,7 +145,6 @@ public interface LegacyDataAdapter {
 
     /**
      * @param persistableObject object whose objects need to be filled in based on primary keys
-     * @return the object whose key fields have just been retrieved
      * @throws IllegalArgumentException if the given Object is null
      * @throws org.kuali.rice.krad.exception.ClassNotPersistableException if the given object is of a type not described in the OJB repository
      */
@@ -300,7 +300,7 @@ public interface LegacyDataAdapter {
      *
      * @param boClass
      * @param referenceName
-     * @return
+     * @return true if the reference exists
      */
     boolean hasReference(Class<?> boClass, String referenceName);
 
@@ -309,7 +309,7 @@ public interface LegacyDataAdapter {
      *
      * @param boClass
      * @param collectionName
-     * @return
+     * @return true if a collection is defined
      */
     boolean hasCollection(Class<?> boClass, String collectionName);
 
@@ -451,7 +451,7 @@ public interface LegacyDataAdapter {
      * @return A populated object from the DB, if it exists
      *
      */
-    BusinessObject getReferenceIfExists(BusinessObject bo, String referenceName);
+    Object getReferenceIfExists(Object bo, String referenceName);
 
     /**
      *
@@ -462,9 +462,9 @@ public interface LegacyDataAdapter {
      * @return true if they all are accessible and have values, false otherwise
      *
      */
-    boolean allForeignKeyValuesPopulatedForReference(PersistableBusinessObject bo, String referenceName);
+    boolean allForeignKeyValuesPopulatedForReference(Object bo, String referenceName);
 
-	RelationshipDefinition getDictionaryRelationship(Class<?> c, String attributeName);
+    RelationshipDefinition getDictionaryRelationship(Class<?> c, String attributeName);
 
     /**
      * This method gets the title attribute from the datadictionary for the given data object class
@@ -481,9 +481,9 @@ public interface LegacyDataAdapter {
     boolean areNotesSupported(Class<?> dataObjectClass);
 
     /**
-     *
-     * @param dataObject
-     * @return
+     * Gets the identifier for a data object
+     * @param dataObject data object
+     * @return data object identifier
      */
     String getDataObjectIdentifierString(Object dataObject);
 

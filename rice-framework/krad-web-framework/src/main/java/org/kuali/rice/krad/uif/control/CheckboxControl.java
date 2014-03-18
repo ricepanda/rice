@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,9 @@ import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
 import org.kuali.rice.krad.datadictionary.validator.ValidationTrace;
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.element.Message;
-import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.util.ComponentFactory;
 import org.kuali.rice.krad.uif.util.ComponentUtils;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 
 /**
  * Represents a HTML Checkbox control. Typically used for boolean attributes (where the
@@ -50,32 +50,19 @@ public class CheckboxControl extends ControlBase implements ValueConfiguredContr
     /**
      * Sets up rich message content for the label, if any exists
      *
-     * @see Component#performApplyModel(org.kuali.rice.krad.uif.view.View, Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @Override
-    public void performApplyModel(Object model, Component parent) {
+    public void performApplyModel(Object model, LifecycleElement parent) {
         super.performApplyModel(model, parent);
 
         if (richLabelMessage == null) {
             Message message = ComponentFactory.getMessage();
             message.setMessageText(checkboxLabel);
             message.setInlineComponents(inlineComponents);
-            message.setGenerateSpan(false);
-            ViewLifecycle.spawnSubLifecyle(model, message, this);
+            message.setRenderWrapperTag(false);
             this.setRichLabelMessage(message);
         }
-    }
-
-    /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#getComponentsForLifecycle()
-     */
-    @Override
-    public List<Component> getComponentsForLifecycle() {
-        List<Component> components = super.getComponentsForLifecycle();
-
-        components.add(richLabelMessage);
-
-        return components;
     }
 
     /**
@@ -133,7 +120,7 @@ public class CheckboxControl extends ControlBase implements ValueConfiguredContr
 
     /**
      * Returns true if checked, false if not checked.
-     * @return
+     * @return true if checked
      */
     public boolean isChecked() {
         return checked;
@@ -182,30 +169,7 @@ public class CheckboxControl extends ControlBase implements ValueConfiguredContr
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        CheckboxControl checkboxControlCopy = (CheckboxControl) component;
-
-        checkboxControlCopy.setValue(this.value);
-        checkboxControlCopy.setCheckboxLabel(this.checkboxLabel);
-        checkboxControlCopy.setChecked(this.checked);
-
-        if (this.richLabelMessage != null) {
-            checkboxControlCopy.setRichLabelMessage((Message)this.richLabelMessage.copy());
-        }
-
-        if(inlineComponents != null) {
-            List<Component> inlineComponentsCopy = ComponentUtils.copy(inlineComponents);
-            checkboxControlCopy.setInlineComponents(inlineComponentsCopy);
-        }
-    }
-
-    /**
-     * @see org.kuali.rice.krad.uif.component.Component#completeValidation
+     * {@inheritDoc}
      */
     @Override
     public void completeValidation(ValidationTrace tracer){

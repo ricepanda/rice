@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,9 +50,7 @@ public abstract class BaseMaintenanceDocumentTest extends KRADTestCase {
             maintenanceDocument.getDocumentHeader().setDocumentDescription("test maintenance document");
             setDocument(maintenanceDocument);
         } catch (org.kuali.rice.krad.datadictionary.exception.UnknownDocumentTypeException udte) {
-            if (udte.getMessage().contains("AccountManagerMaintenanceDocument")) {
-                fail("CI failure - https://jira.kuali.org/browse/KULRICE-9285 " + udte.getMessage() + " "  +ExceptionUtils.getStackTrace(udte));
-            }
+            fail("CI failure - " + udte.getMessage() + " "  +ExceptionUtils.getStackTrace(udte));
         }
     }
 

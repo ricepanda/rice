@@ -1,6 +1,6 @@
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -395,6 +395,70 @@
   <bean id="TravelerDetail-lookupDefinition-parentBean" abstract="true"
         parent="LookupDefinition">
     <property name="title" value="Traveler Detail Lookup" />
+    <property name="helpDefinition" >
+      <bean parent="HelpDefinition"
+            p:parameterNamespace="KSAPP-TRVL"
+            p:parameterName="principalName">
+              <property name="parameterDetailType">String</property>
+            </bean>
+    </property>
+    <property name="defaultSort">
+      <bean parent="SortDefinition">
+        <property name="attributeNames">
+          <list>
+          </list>
+        </property>
+      </bean>
+    </property>
+    <property name="lookupFields">
+      <list>
+        <bean parent="FieldDefinition" p:attributeName="principalName" />
+        <bean parent="FieldDefinition" p:attributeName="principalId" />
+        <bean parent="FieldDefinition" p:attributeName="firstName" />
+        <bean parent="FieldDefinition" p:attributeName="lastName" />
+      </list>
+    </property>
+    <property name="resultFields">
+      <list>
+        <bean parent="FieldDefinition" p:attributeName="principalName" />
+        <bean parent="FieldDefinition" p:attributeName="principalId" />
+        <bean parent="FieldDefinition" p:attributeName="firstName" />
+        <bean parent="FieldDefinition" p:attributeName="lastName" />
+        <bean parent="FieldDefinition" p:attributeName="streetAddressLine1" />
+        <bean parent="FieldDefinition" p:attributeName="cityName" />
+        <bean parent="FieldDefinition" p:attributeName="stateCode" />
+        <bean parent="FieldDefinition" p:attributeName="zipCode" />
+        <bean parent="FieldDefinition" p:attributeName="countryCode" />
+        <bean parent="FieldDefinition" p:attributeName="emailAddress" />
+        <bean parent="FieldDefinition" p:attributeName="phoneNumber" />
+      </list>
+    </property>
+  </bean>
+
+  <bean id="TravelerDetail-lookupDefinition-withHelpDefinition" parent="TravelerDetail-lookupDefinition-withHelpDefinition-parentBean" />
+  <bean id="TravelerDetail-lookupDefinition-withHelpDefinition-parentBean" abstract="true" parent="LookupDefinition">
+  <property name="title" value="Traveler Detail Lookup" />
+  <property name="helpDefinition" >
+    <bean parent="HelpDefinition"
+          p:parameterNamespace="KSAPP-TRVL"
+          p:parameterName="principalName">
+      <property name="parameterDetailType">String</property>
+    </bean>
+  </property>
+  </bean>
+
+  <bean id="TravelerDetail-lookupDefinition-withHelpUrl" parent="TravelerDetail-lookupDefinition-withHelpUrl-parentBean" />
+  <bean id="TravelerDetail-lookupDefinition-withHelpUrl-parentBean" abstract="true" parent="LookupDefinition">
+    <property name="title" value="Traveler Detail Lookup" />
+    <property name="helpUrl" value="helpUrl.html"/>
+  </bean>
+
+
+<bean id="TestCase-lookupDefinition" parent="TestCase-lookupDefinition-parentBean" />
+<bean id="TestCase-lookupDefinition-parentBean" abstract="true"
+      parent="LookupDefinition">
+<property name="title" value="Traveler Detail Lookup" />
+    <property name="disableSearchButtons" value="true"/>
     <property name="defaultSort">
       <bean parent="SortDefinition">
         <property name="attributeNames">

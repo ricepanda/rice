@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,22 +52,13 @@ public class CriteriaLookupDaoProxy implements CriteriaLookupDao {
                 if (lookupDaoValues.get(dataSourceName) != null) {
                     return lookupDaoValues.get(dataSourceName);
                 } else {
-                    if (!LegacyUtils.useLegacy(clazz)) {
-                        throw new IllegalStateException(this.getClass() + " called with non-legacy class: " + clazz);
-					} else {
-						CriteriaLookupDaoOjb classSpecificLookupDaoOjb = new CriteriaLookupDaoOjb();
-                        classSpecificLookupDaoOjb.setJcdAlias(dataSourceName);
-                        lookupDaoValues.put(dataSourceName, classSpecificLookupDaoOjb);
-                        return classSpecificLookupDaoOjb;
-                    }
+        			CriteriaLookupDaoOjb classSpecificLookupDaoOjb = new CriteriaLookupDaoOjb();
+                    classSpecificLookupDaoOjb.setJcdAlias(dataSourceName);
+                    lookupDaoValues.put(dataSourceName, classSpecificLookupDaoOjb);
+                    return classSpecificLookupDaoOjb;
                 }
 
             }
-        }
-        //return lookupDaoJpa;
-
-        if (!LegacyUtils.useLegacy(clazz)) {
-            throw new IllegalStateException(this.getClass() + " called with non-legacy class: " + clazz);
         }
         return criteriaLookupDaoOjb;
     }

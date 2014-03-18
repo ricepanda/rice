@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import org.kuali.rice.ken.api.notification.NotificationProducer;
 import org.kuali.rice.ken.api.notification.NotificationProducerContract;
 import org.kuali.rice.ken.service.NotificationChannelService;
 import org.kuali.rice.krad.bo.PersistableBusinessObjectBase;
+import org.kuali.rice.krad.data.jpa.PortableSequenceGenerator;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -46,6 +47,7 @@ import java.util.List;
 public class NotificationProducerBo extends PersistableBusinessObjectBase implements NotificationProducerContract {
     @Id
     @GeneratedValue(generator="KREN_PRODCR_S")
+    @PortableSequenceGenerator(name="KREN_PRODCR_S")
 	@Column(name="PRODCR_ID")
 	private Long id;
     @Column(name="NM", nullable=false)

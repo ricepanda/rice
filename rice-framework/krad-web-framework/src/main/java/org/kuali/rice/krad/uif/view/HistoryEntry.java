@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -139,19 +139,4 @@ public class HistoryEntry extends UifDictionaryBeanBase implements Serializable 
         this.formKey = formKey;
     }
 
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        HistoryEntry historyEntryCopy = (HistoryEntry) component;
-
-        historyEntryCopy.setViewId(this.viewId);
-        historyEntryCopy.setPageId(this.pageId);
-        historyEntryCopy.setTitle(this.title);
-        historyEntryCopy.setUrl(this.url);
-        historyEntryCopy.setFormKey(this.formKey);
-    }
 }

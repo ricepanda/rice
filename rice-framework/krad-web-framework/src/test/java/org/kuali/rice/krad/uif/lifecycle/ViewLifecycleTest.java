@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,32 +22,38 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import javax.servlet.http.HttpServletResponse;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.kuali.rice.krad.sampleapp_2_4_M2.labs.KradLabsForm;
-import org.kuali.rice.krad.sampleapp_2_4_M2.labs.kitchensink.UifComponentsTestForm;
-import org.kuali.rice.krad.sampleapp_2_4_M2.labs.transaction.TransactionForm;
+import org.kuali.rice.core.api.config.property.ConfigContext;
 import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.UifParameters;
 import org.kuali.rice.krad.uif.component.Component;
+import org.kuali.rice.krad.uif.container.CollectionGroup;
 import org.kuali.rice.krad.uif.container.Group;
+import org.kuali.rice.krad.uif.container.PageGroup;
+import org.kuali.rice.krad.uif.layout.collections.DataTablesPagingHelper;
+import org.kuali.rice.krad.uif.layout.collections.DataTablesPagingHelper.DataTablesInputs;
 import org.kuali.rice.krad.uif.service.ViewService;
 import org.kuali.rice.krad.uif.util.ComponentFactory;
 import org.kuali.rice.krad.uif.util.ObjectPropertyUtils;
 import org.kuali.rice.krad.uif.util.ProcessLogger;
 import org.kuali.rice.krad.uif.util.ProcessLoggingUnitTest;
 import org.kuali.rice.krad.uif.util.UifUnitTestUtils;
-import org.kuali.rice.krad.uif.util.ViewCleaner;
 import org.kuali.rice.krad.uif.view.View;
+import org.kuali.rice.krad.uif.view.ViewModel;
+import org.kuali.rice.krad.util.KRADConstants;
 import org.kuali.rice.krad.web.bind.UifServletRequestDataBinder;
 import org.kuali.rice.krad.web.controller.UifControllerHelper;
-import org.kuali.rice.krad.web.controller.helper.DataTablesPagingHelper;
 import org.kuali.rice.krad.web.form.UifFormBase;
 import org.kuali.rice.krad.web.login.DummyLoginForm;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
@@ -57,15 +63,25 @@ import org.springframework.mock.web.MockHttpServletResponse;
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 public class ViewLifecycleTest extends ProcessLoggingUnitTest {
+    private static final Logger LOG = LoggerFactory.getLogger(ViewLifecycleTest.class);
+
+    @Override
+    protected int getRepetitions() {
+        return 2;
+    }
 
     @BeforeClass
     public static void setUpClass() throws Throwable {
-        UifUnitTestUtils.establishMockConfig("KRAD-ViewHelperServiceTest");
+        UifUnitTestUtils.establishMockConfig("KRAD-ViewLifecycleTest");
     }
 
     @Before
     public void setUp() throws Throwable {
         UifUnitTestUtils.establishMockUserSession("admin");
+        String async = Boolean.toString(getRepetition() == 1);
+        ProcessLogger.trace("async:" + async);
+        ConfigContext.getCurrentContextConfig().getProperties().setProperty(
+                KRADConstants.ConfigParameters.KRAD_VIEW_LIFECYCLE_ASYNCHRONOUS, async);
     }
 
     @After
@@ -90,39 +106,55 @@ public class ViewLifecycleTest extends ProcessLoggingUnitTest {
         assertEquals(UifConstants.ViewStatus.RENDERED, dummyLogin.getViewStatus());
         assertEquals("LoginPage", dummyLogin.getCurrentPage().getId());
         assertEquals("Rice-UserName",
-                ObjectPropertyUtils.getPropertyValue(dummyLogin, "currentPage.items[0].items[1].items[1].items[1].items[3].id"));
-        
-        ViewCleaner.cleanView(dummyLogin);
+                ObjectPropertyUtils.getPropertyValue(dummyLogin,
+                        "currentPage.items[0].items[1].items[1].items[1].items[3].id"));
+
+//        ViewCleaner.cleanView(dummyLogin);
+    }
+
+    private UifFormBase testFormView(String viewName, String initialStateId) throws Throwable {
+        return testFormView(null, viewName, initialStateId);
+    }
+
+    private UifFormBase testFormView(UifFormBase form, String viewName, String initialStateId) throws Throwable {
+        View view = KRADServiceLocatorWeb.getDataDictionaryService().getViewById(viewName);
+        if (form == null) {
+            form = (UifFormBase) view.getFormClass().newInstance();
+        }
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        request.setParameter(UifParameters.VIEW_ID, viewName);
+        new UifServletRequestDataBinder(form).bind(request);
+        UifControllerHelper.prepareViewForRendering(request, response, form);
+        view = form.getView();
+        assertEquals(UifConstants.ViewStatus.RENDERED, view.getViewStatus());
+//        ViewCleaner.cleanView(view);
+        return form;
     }
 
     @Test
     public void testKitchenSinkView() throws Throwable {
-        ViewService viewService = KRADServiceLocatorWeb.getViewService();
-        View uifCompView = viewService.getViewById("UifCompView");
-        UifComponentsTestForm uifcompform = new UifComponentsTestForm();
-        // TODO:
-        //        ViewLifecycle.buildView(uifCompView, uifcompform, Collections.<String, String> emptyMap());
+        UifFormBase form = testFormView("UifCompView", null);
+        form.setFormKey(null);
+        form.setPageId("UifCompView-Page2");
+        testFormView(form, "UifCompView", null);
+        form.setFormKey(null);
+        form.setPageId("UifCompView-Page7");
+        testFormView(form, "UifCompView", null);
     }
-    
+
     @Test
     public void testTransactionView() throws Throwable {
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        MockHttpServletResponse response = new MockHttpServletResponse();
-        TransactionForm tform = new TransactionForm();
-        request.setParameter(UifParameters.VIEW_ID, "TransactionView");
-        new UifServletRequestDataBinder(tform).bind(request);
-        UifControllerHelper.prepareViewForRendering(request, response, tform);
-        View transactionView = tform.getView();
-        assertEquals(UifConstants.ViewStatus.RENDERED, transactionView.getViewStatus());
-        ViewCleaner.cleanView(transactionView);
+        testFormView((UifFormBase) Class
+                .forName("org.kuali.rice.krad.labs.transaction.TransactionForm").newInstance(),
+                "TransactionView", null);
     }
-    
+
     @Test
-    public void testTransactionViewOnly() throws Throwable {
-        ViewService viewService = KRADServiceLocatorWeb.getViewService();
-        viewService.getViewById("TransactionView");
+    public void testLabsMenuView() throws Throwable {
+        testFormView("LabsMenuView", null);
     }
-    
+
     @Test
     public void testTransactionInitPhase() throws Throwable {
         ViewService viewService = KRADServiceLocatorWeb.getViewService();
@@ -131,45 +163,51 @@ public class ViewLifecycleTest extends ProcessLoggingUnitTest {
         ViewLifecycle.encapsulateLifecycle(transactionView, tform, null, null, new Runnable() {
             @Override
             public void run() {
-                ViewLifecycle viewLifecycle = ViewLifecycle.getActiveLifecycle();
                 View view = ViewLifecycle.getView();
                 assertSame(transactionView, view);
-                
+
                 assertEquals("TransactionView", view.getId());
-                
+
                 ProcessLogger.trace("begin-init");
-                viewLifecycle.populateViewFromRequestParameters(Collections.<String, String> emptyMap());
-                
+                ViewLifecycle.getHelper().populateViewFromRequestParameters(Collections.<String, String> emptyMap());
+
                 ProcessLogger.trace("populate-request");
                 tform.setViewRequestParameters(view.getViewRequestParameters());
-                
-                ProcessLogger.trace("set-request");
-                viewLifecycle.performInitialization();
-                
+
+                ViewLifecycle.getHelper().performCustomViewInitialization(tform);
+
+                ViewLifecycleProcessor processor = ViewLifecycle.getProcessor();
+                processor.performPhase(LifecyclePhaseFactory.initialize(view, tform, "", null));
+
                 ProcessLogger.trace("end-init");
-            }});
+            }
+        });
     }
 
     @Test
+    public void testComponentLibrary() throws Throwable {
+        testFormView("ComponentLibraryHome", null);
+    }
+
+    @Test
+    public void testColumnCalculations() throws Throwable {
+        testFormView("Demo-TableLayoutTotalingView", null);
+    }
+    
+    @Test
     public void testPerformanceMediumAll() throws Throwable {
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        MockHttpServletResponse response = new MockHttpServletResponse();
-        KradLabsForm pform = new KradLabsForm();
-        request.setParameter(UifParameters.VIEW_ID, "Lab-PerformanceMedium");
-        new UifServletRequestDataBinder(pform).bind(request);
-        UifControllerHelper.prepareViewForRendering(request, response, pform);
-        View performanceView = pform.getView();
-        assertEquals(UifConstants.ViewStatus.RENDERED, performanceView.getViewStatus());
-        ViewCleaner.cleanView(performanceView);
-        pform.setPostedView(performanceView);
-        pform.setView(null);
+        UifFormBase form = testFormView("Lab-PerformanceMedium", "u1c5ay4e");
 
-        assertEquals("uwdv4lg", performanceView.getItems().get(0).getItems().get(1).getId());
-        String tableId = "uwdv4lg";
+        View view = form.getView();
+        ViewPostMetadata viewPostMetadata = form.getViewPostMetadata();
+        form.setView(null);
 
-        request = new MockHttpServletRequest();
+        final CollectionGroup table = (CollectionGroup) ((PageGroup) view.getItems().get(0)).getItems().get(1);
+        assertEquals("uek5db", table.getId());
+
+        final MockHttpServletRequest request = new MockHttpServletRequest();
         request.setParameter("methodToCall", "tableJsonRetrieval");
-        request.setParameter("tableId", tableId);
+        request.setParameter("tableId", table.getId());
         request.setParameter("ajaxReturnType", "update-none");
         request.setParameter("ajaxRequest", "true");
         request.setParameter("sEcho", "1");
@@ -238,12 +276,16 @@ public class ViewLifecycleTest extends ProcessLoggingUnitTest {
         request.setParameter("bSortable_9", "true");
         request.setParameter("bSortable_10", "false");
 
-        DataTablesPagingHelper.DataTablesInputs dataTablesInputs =
-                new DataTablesPagingHelper.DataTablesInputs(request);
-        DataTablesPagingHelper pagingHelper = new DataTablesPagingHelper();
-        pagingHelper.processPagingRequest(tableId, pform, request, response, dataTablesInputs);
+        HttpServletResponse response = new MockHttpServletResponse();
+        ViewLifecycle.encapsulateLifecycle(view, form, viewPostMetadata,
+                viewPostMetadata.getComponentPostMetadata(table.getId()), request, response, new Runnable() {
+                    @Override
+                    public void run() {
+                        DataTablesPagingHelper.processPagingRequest(ViewLifecycle.getView(),
+                                (ViewModel) ViewLifecycle.getModel(), table, new DataTablesInputs(request));
+                    }
+                });
     }
-
 
     @SuppressWarnings("unchecked")
     @Test
@@ -255,7 +297,7 @@ public class ViewLifecycleTest extends ProcessLoggingUnitTest {
         group.setHeaderText("bar");
         group.setItems(new ArrayList<Component>());
         ((List<Group>) loginView.getItems()).add(group);
-        assertSame(group, loginView.getItems().get(loginView.getItems().size()-1));
+        assertSame(group, loginView.getItems().get(loginView.getItems().size() - 1));
     }
 
 }

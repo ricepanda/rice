@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,17 @@
  */
 package org.kuali.rice.krad.web.bind;
 
-import org.kuali.rice.krad.uif.view.ViewIndex;
+import org.apache.commons.lang.ObjectUtils;
+import org.kuali.rice.core.api.CoreApiServiceLocator;
+import org.kuali.rice.core.api.encryption.EncryptionService;
+import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
+import org.kuali.rice.krad.uif.lifecycle.ViewPostMetadata;
 import org.kuali.rice.krad.uif.view.ViewModel;
+import org.kuali.rice.krad.util.KRADUtils;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.InvalidPropertyException;
+import org.springframework.beans.NotReadablePropertyException;
 import org.springframework.beans.NullValueInNestedPathException;
 import org.springframework.beans.PropertyAccessorUtils;
 import org.springframework.beans.PropertyValue;
@@ -27,13 +33,14 @@ import org.springframework.util.StringUtils;
 
 import java.beans.PropertyDescriptor;
 import java.beans.PropertyEditor;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 /**
- * Class is a top level BeanWrapper for a UIF View Model
+ * Class is a top level BeanWrapper for a UIF View Model.
  *
  * <p>
  * Registers custom property editors configured on the field associated with the property name for which
@@ -53,10 +60,13 @@ public class UifViewBeanWrapper extends BeanWrapperImpl {
     // with the view so the service isn't called again
     private Set<String> processedProperties;
 
-    public UifViewBeanWrapper(ViewModel model) {
+    private final UifBeanPropertyBindingResult bindingResult;
+
+    public UifViewBeanWrapper(ViewModel model, UifBeanPropertyBindingResult bindingResult) {
         super(model);
 
         this.model = model;
+        this.bindingResult = bindingResult;
         this.processedProperties = new HashSet<String>();
     }
 
@@ -77,27 +87,20 @@ public class UifViewBeanWrapper extends BeanWrapperImpl {
             return;
         }
 
-        // when rendering the page, we will use the view that was just built, for post
-        // we need to use the posted view (not the newly initialized view)
-        ViewIndex viewIndex = null;
-        if (model.getView() != null) {
-            viewIndex = model.getView().getViewIndex();
-        } else if (model.getPostedView() != null) {
-            viewIndex = model.getPostedView().getViewIndex();
-        }
-
-        // if view index instance not established we cannot determine property editors
-        if (viewIndex == null) {
+        ViewPostMetadata viewPostMetadata = model.getViewPostMetadata();
+        if (viewPostMetadata == null) {
             return;
         }
 
         PropertyEditor propertyEditor = null;
         boolean requiresEncryption = false;
 
-        if (viewIndex.getFieldPropertyEditors().containsKey(propertyName)) {
-            propertyEditor = viewIndex.getFieldPropertyEditors().get(propertyName);
-        } else if (viewIndex.getSecureFieldPropertyEditors().containsKey(propertyName)) {
-            propertyEditor = viewIndex.getSecureFieldPropertyEditors().get(propertyName);
+        if ((viewPostMetadata.getFieldPropertyEditors() != null) && viewPostMetadata.getFieldPropertyEditors()
+                .containsKey(propertyName)) {
+            propertyEditor = viewPostMetadata.getFieldPropertyEditors().get(propertyName);
+        } else if ((viewPostMetadata.getSecureFieldPropertyEditors() != null) && viewPostMetadata
+                .getSecureFieldPropertyEditors().containsKey(propertyName)) {
+            propertyEditor = viewPostMetadata.getSecureFieldPropertyEditors().get(propertyName);
             requiresEncryption = true;
         }
 
@@ -215,13 +218,143 @@ public class UifViewBeanWrapper extends BeanWrapperImpl {
     @Override
     public void setPropertyValue(PropertyValue pv) throws BeansException {
         registerEditorFromView(pv.getName());
+
+        // Convert blank string values to null so empty strings are not set on the form as values (useful for legacy
+        // checks) Jira: KULRICE-11424
+        if(pv != null && pv.getValue() != null && pv.getValue() instanceof String && pv.getValue().equals("")) {
+            pv = new PropertyValue(pv, null);
+        }
+
+        if (pv != null && pv.getValue() instanceof String) {
+            String propertyValue = (String) pv.getValue();
+
+            if (propertyValue.endsWith(EncryptionService.ENCRYPTION_POST_PREFIX)) {
+                propertyValue = org.apache.commons.lang.StringUtils.removeEnd(propertyValue, EncryptionService.ENCRYPTION_POST_PREFIX);
+            }
+
+            if (isSecure(pv.getName())) {
+                try {
+                    if (CoreApiServiceLocator.getEncryptionService().isEnabled()) {
+                        pv = new PropertyValue(pv, CoreApiServiceLocator.getEncryptionService().decrypt(propertyValue));
+                    }
+                } catch (GeneralSecurityException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+        // save off the original value if we are change tracking
+        boolean originalValueSaved = true;
+        Object originalValue = null;
+        if (bindingResult.isChangeTracking()) {
+            try {
+                originalValue = getPropertyValue(pv.getName());
+            } catch (Exception e) {
+                // be failsafe here, if an exception happens here then we can't make any assumptions about whether
+                // the property value changed or not
+                originalValueSaved = false;
+            }
+        }
+
+        // set the actual property value
         super.setPropertyValue(pv);
+
+        // if we are change tracking and we saved original value, check if it's modified
+        if (bindingResult.isChangeTracking() && originalValueSaved) {
+            try {
+                Object newValue = getPropertyValue(pv.getName());
+                if (ObjectUtils.notEqual(originalValue, newValue)) {
+                    // if they are not equal, it's been modified!
+                    bindingResult.addModifiedPath(pv.getName());
+                }
+            } catch (Exception e) {
+                // failsafe here as well
+            }
+        }
     }
 
     @Override
     public void setPropertyValue(String propertyName, Object value) throws BeansException {
         registerEditorFromView(propertyName);
+
+        // Convert blank string values to null so empty strings are not set on the form as values (useful for legacy
+        // checks) Jira: KULRICE-11424
+        if(value != null && value instanceof String && value.equals("")) {
+            value = null;
+        }
+
+        if (value instanceof String) {
+            String propertyValue = (String) value;
+
+            if (propertyValue.endsWith(EncryptionService.ENCRYPTION_POST_PREFIX)) {
+                propertyValue = org.apache.commons.lang.StringUtils.removeEnd(propertyValue, EncryptionService.ENCRYPTION_POST_PREFIX);
+            }
+
+            if (isSecure(propertyName)) {
+                try {
+                    if (CoreApiServiceLocator.getEncryptionService().isEnabled()) {
+                        value = CoreApiServiceLocator.getEncryptionService().decrypt(propertyValue);
+                    }
+                } catch (GeneralSecurityException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+        // save off the original value
+        boolean originalValueSaved = true;
+        Object originalValue = null;
+        try {
+            originalValue = getPropertyValue(propertyName);
+        } catch (Exception e) {
+            // be failsafe here, if an exception happens here then we can't make any assumptions about whether
+            // the property value changed or not
+            originalValueSaved = false;
+        }
+
+        // set the actual property value
         super.setPropertyValue(propertyName, value);
+
+        // only check if it's modified if we were able to save the original value
+        if (originalValueSaved) {
+            try {
+                Object newValue = getPropertyValue(propertyName);
+                if (ObjectUtils.notEqual(originalValue, newValue)) {
+                    // if they are not equal, it's been modified!
+                    bindingResult.addModifiedPath(propertyName);
+                }
+            } catch (Exception e) {
+                // failsafe here as well
+            }
+        }
+
+    }
+
+    private boolean isSecure(String propertyName) {
+        return isSecure(getWrappedClass(), propertyName);
+    }
+
+    private boolean isSecure(Class<?> wrappedClass, String propertyPath) {
+        if (KRADServiceLocatorWeb.getDataObjectAuthorizationService().attributeValueNeedsToBeEncryptedOnFormsAndLinks(wrappedClass, propertyPath)) {
+            return true;
+        }
+
+        BeanWrapperImpl beanWrapper;
+        try {
+            beanWrapper = getBeanWrapperForPropertyPath(propertyPath);
+        } catch (NotReadablePropertyException nrpe) {
+            LOG.debug("Bean wrapper was not found for " + propertyPath + ", but since it cannot be accessed it will not be set as secure.", nrpe);
+            return false;
+        }
+
+        if (org.apache.commons.lang.StringUtils.isNotBlank(beanWrapper.getNestedPath())) {
+            PropertyTokenHolder tokens = getPropertyNameTokens(propertyPath);
+            String nestedPropertyPath = org.apache.commons.lang.StringUtils.removeStart(tokens.canonicalName, beanWrapper.getNestedPath());
+
+            return isSecure(beanWrapper.getWrappedClass(), nestedPropertyPath);
+        }
+
+        return false;
     }
 
     @Override

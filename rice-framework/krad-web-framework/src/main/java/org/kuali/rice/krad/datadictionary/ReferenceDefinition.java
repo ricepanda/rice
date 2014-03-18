@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,8 @@ public class ReferenceDefinition extends DataDictionaryDefinitionBase {
     protected String attributeToHighlightOnFail;
     protected String displayFieldName;
     protected String collection;
-    protected Class<? extends BusinessObject> collectionBusinessObjectClass;
-    protected Class<? extends BusinessObject> businessObjectClass;
+    protected Class<?> collectionBusinessObjectClass;
+    protected Class<?> businessObjectClass;
 
     public ReferenceDefinition() {}
 
@@ -112,12 +112,10 @@ public class ReferenceDefinition extends DataDictionaryDefinitionBase {
     }
 
     /**
-     * This method returns true if the displayFieldName is set, otherwise it returns false. Whether the
-     * displayFieldName
-     * is set is
-     * defined by whether it has any non-whitespace content in it.
-     *
-     * @return
+     * This method returns true if the displayFieldName is set, otherwise it returns false. Whether
+     * the displayFieldName is set is defined by whether it has any non-whitespace content in it.
+     * 
+     * @return true if the display field name is set
      */
     public boolean isDisplayFieldNameSet() {
         return StringUtils.isNotBlank(displayFieldName);
@@ -140,7 +138,7 @@ public class ReferenceDefinition extends DataDictionaryDefinitionBase {
     }
 
     @BeanTagAttribute(name = "collectionBusinessObjectClass")
-    public Class<? extends BusinessObject> getCollectionBusinessObjectClass() {
+    public Class<?> getCollectionBusinessObjectClass() {
         return collectionBusinessObjectClass;
     }
 
@@ -148,7 +146,7 @@ public class ReferenceDefinition extends DataDictionaryDefinitionBase {
      * Class that the specified collection represents.  Does not need to be set.  The DD
      * Will set this attribute through introspection.
      */
-    public void setCollectionBusinessObjectClass(Class<? extends BusinessObject> collectionBusinessObjectClass) {
+    public void setCollectionBusinessObjectClass(Class<?> collectionBusinessObjectClass) {
         this.collectionBusinessObjectClass = collectionBusinessObjectClass;
     }
 
@@ -197,11 +195,11 @@ public class ReferenceDefinition extends DataDictionaryDefinitionBase {
 
 
     @BeanTagAttribute(name = "businessObjectClass")
-    public Class<? extends BusinessObject> getBusinessObjectClass() {
+    public Class<?> getBusinessObjectClass() {
         return businessObjectClass;
     }
 
-    public void setBusinessObjectClass(Class<? extends BusinessObject> businessObjectClass) {
+    public void setBusinessObjectClass(Class<?> businessObjectClass) {
         this.businessObjectClass = businessObjectClass;
     }
 }

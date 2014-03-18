@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,14 +37,14 @@ public abstract class UifKeyValuesFinderBase extends KeyValuesBase implements Ui
     }
 
     /**
-     * @see UifKeyValuesFinder#getKeyValues()
+     * {@inheritDoc}
      */
     public List<KeyValue> getKeyValues() {
         return null;
     }
 
     /**
-     * @see UifKeyValuesFinder#getKeyValues(org.kuali.rice.krad.uif.view.ViewModel)
+     * {@inheritDoc}
      */
     @Override
     public List<KeyValue> getKeyValues(ViewModel model) {
@@ -52,7 +52,7 @@ public abstract class UifKeyValuesFinderBase extends KeyValuesBase implements Ui
     }
 
     /**
-     * @see UifKeyValuesFinder#getKeyValues(org.kuali.rice.krad.uif.view.ViewModel, org.kuali.rice.krad.uif.field.InputField)
+     * {@inheritDoc}
      */
     @Override
     public List<KeyValue> getKeyValues(ViewModel model, InputField field){
@@ -60,9 +60,10 @@ public abstract class UifKeyValuesFinderBase extends KeyValuesBase implements Ui
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.control.UifKeyValuesFinder#isAddBlankOption()
+     * {@inheritDoc}
      */
     @BeanTagAttribute(name="addBlankOption")
+    @Override
     public boolean isAddBlankOption() {
         return addBlankOption;
     }

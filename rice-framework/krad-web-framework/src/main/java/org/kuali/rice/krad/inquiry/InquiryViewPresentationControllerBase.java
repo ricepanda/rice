@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ public class InquiryViewPresentationControllerBase extends ViewPresentationContr
 
     /**
      * Examines the data objects data dictionary entry to determine if it supports XML export or not
+     * @param view inquiry view
      *
      * @return boolean true if it supports export, false if not
      */

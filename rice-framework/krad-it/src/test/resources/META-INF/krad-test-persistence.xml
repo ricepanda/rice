@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@
     <mapping-file>META-INF/krad-test-orm.xml</mapping-file>
     <class>org.kuali.rice.krad.test.document.AccountRequestDocument</class>
     <class>org.kuali.rice.krad.test.document.AccountRequestDocumentWithCyclicalReference</class>
-    <class>org.kuali.rice.krad.test.document.bo.AccountManager</class>
     <class>org.kuali.rice.krad.test.document.bo.Account</class>
     <class>org.kuali.rice.krad.test.document.bo.AccountType</class>
     <class>org.kuali.rice.krad.test.document.bo.AccountExtension</class>

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ class TermDefinitionTest {
         spec.setDescription(TERM_SPEC_DESCRIPTION);
 
         // create(String id, String name, String value) {
-        TermParameterDefinition.Builder param = TermParameterDefinition.Builder.create(ID + "PARAM", ID + "SPEC", PARAM_NAME, PARAM_VALUE);
+        TermParameterDefinition.Builder param = TermParameterDefinition.Builder.create(ID + "PARAM", ID + "DEF", PARAM_NAME, PARAM_VALUE);
 
         // create(String id, TermSpecificationDefinition termSpecificationDefinition,
         //		Set<TermParameterDefinition> termParameters) {

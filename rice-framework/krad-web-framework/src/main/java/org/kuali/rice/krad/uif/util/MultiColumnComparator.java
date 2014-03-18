@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,32 +15,31 @@
  */
 package org.kuali.rice.krad.uif.util;
 
-import com.google.common.collect.Maps;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.core.api.util.type.KualiDecimal;
 import org.kuali.rice.krad.comparator.NumericValueComparator;
 import org.kuali.rice.krad.comparator.TemporalValueComparator;
 import org.kuali.rice.krad.uif.UifConstants;
-import org.kuali.rice.krad.uif.component.BindingInfo;
 import org.kuali.rice.krad.uif.container.CollectionGroup;
+import org.kuali.rice.krad.uif.container.CollectionGroupLineBuilder;
+import org.kuali.rice.krad.uif.container.collections.LineBuilderContext;
 import org.kuali.rice.krad.uif.field.DataField;
 import org.kuali.rice.krad.uif.field.Field;
 import org.kuali.rice.krad.uif.layout.TableLayoutManager;
+import org.kuali.rice.krad.uif.layout.collections.TableRow;
+import org.kuali.rice.krad.uif.layout.collections.TableRowBuilder;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase;
 import org.kuali.rice.krad.uif.view.ExpressionEvaluator;
 import org.kuali.rice.krad.uif.view.View;
+import org.kuali.rice.krad.uif.view.ViewModel;
 import org.kuali.rice.krad.util.KRADUtils;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Comparator used for server side sorting of CollectionGroup data.
@@ -63,6 +62,7 @@ public class MultiColumnComparator implements Comparator<Integer> {
     private final CollectionGroup collectionGroup;
     private final List<ColumnSort> columnSorts;
     private final View view;
+    private final ViewModel form;
 
     // we use the layout manager a lot, so for convenience we'll keep a handy reference to it
     private final TableLayoutManager tableLayoutManager;
@@ -83,14 +83,16 @@ public class MultiColumnComparator implements Comparator<Integer> {
      * @param modelCollection the model collection that the CollectionGroup is associated with
      * @param collectionGroup the CollectionGroup whose columns are being sorted
      * @param columnSorts A list from highest to lowest precedence of the column sorts to apply
+     * @param form object containing the view's data
      * @param view The view
      */
     public MultiColumnComparator(List<Object> modelCollection, CollectionGroup collectionGroup,
-            List<ColumnSort> columnSorts, View view) {
+            List<ColumnSort> columnSorts, ViewModel form, View view) {
         this.modelCollection = modelCollection;
         this.collectionGroup = collectionGroup;
         this.columnSorts = columnSorts;
         this.view = view;
+        this.form = form;
 
         //
         // initialize convenience members and calculated members.  Caches first!
@@ -117,8 +119,8 @@ public class MultiColumnComparator implements Comparator<Integer> {
         int sortResult = 0;
 
         for (ColumnSort columnSort : columnSorts) {
+            Field protoField = prototypeRow.get(columnSort.getColumnIndex());
 
-            Field protoField = prototypeRow.get(columnSort.getColumnIndex()); // get the prototype field for this column
             Object modelElement1 = modelCollection.get(index1);
             Object modelElement2 = modelCollection.get(index2);
 
@@ -268,8 +270,10 @@ public class MultiColumnComparator implements Comparator<Integer> {
         String cachedValue = calculatedValueCache.get(cacheKey);
 
         if (cachedValue == null) {
+            View view = ViewLifecycle.getView();
+            
             Object collectionElement = modelCollection.get(collectionIndex);
-            ExpressionEvaluator expressionEvaluator = view.getViewHelperService().getExpressionEvaluator();
+            ExpressionEvaluator expressionEvaluator = ViewLifecycle.getExpressionEvaluator();
 
             // set up expression context
             Map<String, Object> viewContext = view.getContext();
@@ -278,13 +282,18 @@ public class MultiColumnComparator implements Comparator<Integer> {
             if (viewContext != null) {
                 expressionContext.putAll(viewContext);
             }
+
+            ViewLifecyclePhase phase = ViewLifecycle.getPhase();
+            if (phase.getParent() instanceof CollectionGroup) {
+                CollectionGroup collectionGroup = (CollectionGroup) phase.getParent();
+                expressionContext.put(UifConstants.ContextVariableNames.COLLECTION_GROUP, collectionGroup);
+                expressionContext.put(UifConstants.ContextVariableNames.MANAGER, collectionGroup.getLayoutManager());
+                expressionContext.put(UifConstants.ContextVariableNames.PARENT, collectionGroup);
+            }
             
             expressionContext.put(UifConstants.ContextVariableNames.LINE, collectionElement);
             expressionContext.put(UifConstants.ContextVariableNames.INDEX, collectionIndex);
-            expressionContext.put(UifConstants.ContextVariableNames.COLLECTION_GROUP, collectionGroup);
-            expressionContext.put(UifConstants.ContextVariableNames.MANAGER, tableLayoutManager);
             expressionContext.put(UifConstants.ContextVariableNames.COMPONENT, protoField);
-            expressionContext.put(UifConstants.ContextVariableNames.PARENT, collectionGroup);
 
             expressionEvaluator.evaluateExpressionsOnConfigurable(view, protoField, expressionContext);
 
@@ -300,7 +309,7 @@ public class MultiColumnComparator implements Comparator<Integer> {
 
     /**
      * Compare the string values based on the given sortType, which must match one of the constants
-     * in {@link UifConstants.TableToolsValues}.
+     * in {@link org.kuali.rice.krad.uif.UifConstants.TableToolsValues}.
      * 
      * @param val1 The first string value for comparison
      * @param val2 The second string value for comparison
@@ -376,50 +385,22 @@ public class MultiColumnComparator implements Comparator<Integer> {
     /**
      * Build a List of prototype Fields representing a row of the table.
      * 
-     * <p>
-     * Any DataFields will have their binding paths shortened to access the model collection
-     * elements directly, instead of via the data object
-     * </p>
+     * <p>Any DataFields will have their binding paths shortened to access the model collection
+     * elements directly, instead of via the data object</p>
      * 
      * @return a List of prototype Fields representing a row in the table
      */
-    private List<Field> buildPrototypeRow() {
-        final List<Field> prototypeRow = new ArrayList<Field>(tableLayoutManager.getNumberOfColumns());
+    protected List<Field> buildPrototypeRow() {
+        LineBuilderContext lineBuilderContext = new LineBuilderContext(0, modelCollection.get(0), null, false, form,
+                collectionGroup, collectionGroup.getLineActions());
 
-        final List<Field> allRowFields = tableLayoutManager.getAllRowFields();
-        final Iterator<Field> allRowFieldsIter = allRowFields.iterator();
+        CollectionGroupLineBuilder collectionGroupLineBuilder =
+                collectionGroup.getCollectionGroupBuilder().getCollectionGroupLineBuilder(lineBuilderContext);
+        collectionGroupLineBuilder.preprocessLine();
 
-        // find the index of the first component beyond the add line
-        int componentsSkipped = 0;
-        int columnsSkipped = 0;
+        TableRowBuilder tableRowBuilder = new TableRowBuilder(collectionGroup, lineBuilderContext);
+        TableRow tableRow = tableRowBuilder.buildRow();
 
-        if (collectionGroup.isRenderAddLine() && !collectionGroup.isReadOnly()
-                && !tableLayoutManager.isSeparateAddLine()) {
-            while (columnsSkipped < tableLayoutManager.getNumberOfColumns()) {
-                columnsSkipped += allRowFieldsIter.next().getColSpan();
-                componentsSkipped += 1;
-            }
-        }
-
-        // build prototypes from first row, starting just past the add line components
-        for (int i = 0; i < tableLayoutManager.getNumberOfColumns(); i++) {
-            Field protoField = allRowFields.get(componentsSkipped + i).copy(); // note the adjusted index
-
-            if (protoField instanceof DataField) {
-                // adjust binding path for direct element access
-                final DataField dataField = (DataField) protoField;
-
-                // use a copy of the binding info so no shared data gets affected
-                final BindingInfo bindingInfoCopy = dataField.getBindingInfo().copy();
-                dataField.setBindingInfo(bindingInfoCopy);
-
-                String elementAdjustedBindingPath = dataField.getBindingInfo().getBindingName();
-                bindingInfoCopy.setBindingPath(elementAdjustedBindingPath);
-            }
-
-            prototypeRow.add(protoField);
-        }
-
-        return prototypeRow;
+        return tableRow.getColumns();
     }
 }

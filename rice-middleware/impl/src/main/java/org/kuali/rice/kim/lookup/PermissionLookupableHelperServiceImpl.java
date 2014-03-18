@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import org.kuali.rice.kim.impl.role.RoleBo;
 import org.kuali.rice.kim.impl.role.RolePermissionBo;
 import org.kuali.rice.kns.lookup.HtmlData;
 import org.kuali.rice.krad.bo.BusinessObject;
+import org.kuali.rice.krad.data.KradDataServiceLocator;
 import org.kuali.rice.krad.lookup.CollectionIncomplete;
 import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
 import org.kuali.rice.krad.service.LookupService;
@@ -186,15 +187,12 @@ public class PermissionLookupableHelperServiceImpl extends RoleMemberLookupableH
 	
 
 	private void populateAssignedToRoles(UberPermissionBo permission){
-		Map<String, String> criteria;
 		for(RolePermissionBo rolePermission: permission.getRolePermissions()){
 			if ( rolePermission.isActive() ) {
-				criteria = new HashMap<String, String>();
-				criteria.put("id", rolePermission.getRoleId());
-	//			permission.getAssignedToRoles().add((RoleBo)getBusinessObjectService().findByPrimaryKey(RoleBo.class, criteria));
-                RoleBo roleBo = getBusinessObjectService().findByPrimaryKey(RoleBo.class, criteria);
-                permission.getAssignedToRoles().add(roleBo);
-
+				RoleBo roleBo = KradDataServiceLocator.getDataObjectService().find(RoleBo.class, rolePermission.getRoleId());
+				if ( roleBo != null ) {
+				    permission.getAssignedToRoles().add(roleBo);
+				}
 			}
 		}
 	}

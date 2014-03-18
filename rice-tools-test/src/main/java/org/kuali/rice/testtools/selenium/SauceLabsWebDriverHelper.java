@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,12 +76,13 @@ import java.util.Map;
  * </p><p>
  * In order to use {@link SauceOnDemandTestWatcher} the {@link SauceOnDemandSessionIdProvider} interface is implemented.
  * </p>
+ * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 public class SauceLabsWebDriverHelper implements SauceOnDemandSessionIdProvider {
 
     /**
      * <p>
-     * Use Saucelabs flag.
+     * Use Saucelabs flag, <b>required</b>.
      * </p><p>
      * For ease of disabling saucelabs without having to remove other saucelabs property settings, if not present saucelabs
      * will not be used.
@@ -257,12 +258,13 @@ public class SauceLabsWebDriverHelper implements SauceOnDemandSessionIdProvider 
      * using the JVM arguments described as SAUCE_ Constants in this class.  After setUp the WebDriver can be accessed via
      * {@see #getDriver}.  You'll also need {@see #getSessionId} for when you call {@see #tearDown}
      * </p>
+     *
      * @param className class name of the test being setup as a String
      * @param testName test name of the test being setup as a String
      * @throws Exception
      */
     public void setUp(String className, String testName) throws Exception {
-        if (System.getProperty(REMOTE_DRIVER_SAUCELABS_PROPERTY) == null) { // dup guard so WebDriverUtil doesn't have to be used.
+        if (System.getProperty(REMOTE_DRIVER_SAUCELABS_PROPERTY) == null) { // dup guard so WebDriverUtils doesn't have to be used.
             return;
         }
 
@@ -308,9 +310,11 @@ public class SauceLabsWebDriverHelper implements SauceOnDemandSessionIdProvider 
         capabilities.setCapability("platform", System.getProperty(SAUCE_PLATFORM_PROPERTY, Platform.UNIX.toString()).replaceAll("_", " "));
         capabilities.setCapability("idle-timeout", Integer.parseInt(System.getProperty(SAUCE_IDLE_TIMEOUT_SECONDS_PROPERTY, "180")));
         capabilities.setCapability("max-duration", Integer.parseInt(System.getProperty(SAUCE_MAX_DURATION_SECONDS_PROPERTY, "480")));
-        capabilities.setCapability("name",  className + "." + testName + "-" + ITUtil.DTS);
+        capabilities.setCapability("name",  className + "." + testName + "-" + AutomatedFunctionalTestUtils.DTS);
         capabilities.setCapability("disable-popup-handler", System.getProperty(SAUCE_POPUP_PROPERTY, "false"));
         capabilities.setCapability("public", System.getProperty(SAUCE_SHARE_PROPERTY, "public restricted"));
+
+        System.out.println("Requesting Saucelabs RemoteWebDriver with DesiredCapabilities of " + capabilities.toString());
 
         this.driver = new RemoteWebDriver(
                 new URL("http://" + authentication.getUsername() + ":" + authentication.getAccessKey() + "@ondemand.saucelabs.com:80/wd/hub"),
@@ -343,12 +347,13 @@ public class SauceLabsWebDriverHelper implements SauceOnDemandSessionIdProvider 
      * </p><p>
      * Uses the SauceREST API to register a test as passed or failed.  {@see #SAUCE_REST_API_DELAY_MS}
      * </p>
+     *
      * @param passed true if passed, falsed if failed, as a boolean
      * @param sessionId saucelabs test session id, as a String
      * @throws Exception
      */
     public static void tearDown(boolean passed, String sessionId) throws Exception {
-        if (sessionId != null && System.getProperty(REMOTE_DRIVER_SAUCELABS_PROPERTY) != null) { // dup guard so WebDriverUtil doesn't have to be used
+        if (sessionId != null && System.getProperty(REMOTE_DRIVER_SAUCELABS_PROPERTY) != null) { // dup guard so WebDriverUtils doesn't have to be used
             SauceREST client = new SauceREST(System.getProperty(SauceLabsWebDriverHelper.SAUCE_USER_PROPERTY),
                     System.getProperty(SauceLabsWebDriverHelper.SAUCE_KEY_PROPERTY));
             /* Using a map of udpates:
@@ -383,9 +388,9 @@ public class SauceLabsWebDriverHelper implements SauceOnDemandSessionIdProvider 
                 + System.getProperty(SAUCE_PLATFORM_PROPERTY, Platform.UNIX.toString()) + "-"
                 + System.getProperty(SAUCE_BROWSER_PROPERTY) + "-"
                 + System.getProperty(SAUCE_VERSION_PROPERTY) + "-"
-                + System.getProperty(WebDriverUtil.REMOTE_PUBLIC_USER_PROPERTY, "admin") + "-"
+                + System.getProperty(WebDriverUtils.REMOTE_PUBLIC_USER_PROPERTY, "admin") + "-"
                 + System.getProperty(SAUCE_BUILD_PROPERTY, "unknown_build") + "-"
-                + ITUtil.DTS + "-"
+                + AutomatedFunctionalTestUtils.DTS + "-"
                 + resource;
     }
 
@@ -393,6 +398,7 @@ public class SauceLabsWebDriverHelper implements SauceOnDemandSessionIdProvider 
      * <p>
      * Returns the (RemoteWebDriver) driver.
      * </p>
+     *
      * @return WebDriver
      */
     public WebDriver getDriver() {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -126,15 +126,6 @@ public class BusinessObjectDaoOjb extends PlatformAwareDaoBaseOjb implements Bus
 
         return (Collection<T>)getPersistenceBrokerTemplate().getCollectionByQuery(QueryFactory.newQuery(clazz, criteria));
     }
-
-
-    /**
-	 * Throws an UnsupportedOperationException
-	 * @see org.kuali.rice.krad.dao.BusinessObjectDao#findMatching(org.kuali.rice.core.framework.persistence.jpa.criteria.Criteria)
-	 */
-	//public <T extends BusinessObject> Collection<T> findMatching(org.kuali.rice.core.jpa.criteria.Criteria criteria) {
-	//	throw new UnsupportedOperationException("OJB does not support finding matching business objects using JPA criteria");
-	//}
 
 	/**
      * @see org.kuali.rice.krad.dao.BusinessObjectDao#findAllActive(java.lang.Class)

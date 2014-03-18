@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,6 +98,7 @@ public class MessageStructureUtils {
      * @param messageText message text to be parsed
      * @param componentList the inlineComponent list
      * @param view the current view
+     * @param parseComponents true to parse components
      * @return list of components representing the parsed message structure
      */
     public static List<Component> parseMessage(String messageId, String messageText, List<Component> componentList,
@@ -183,7 +184,7 @@ public class MessageStructureUtils {
         if (currentMessageComponent == null) {
             currentMessageComponent = ComponentFactory.getMessage();
             currentMessageComponent.setMessageText(messagePiece);
-            currentMessageComponent.setGenerateSpan(false);
+            currentMessageComponent.setRenderWrapperTag(false);
         } else {
             currentMessageComponent.setMessageText(currentMessageComponent.getMessageText() + messagePiece);
         }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,9 @@ package org.kuali.rice.krad.uif.lifecycle.finalize;
 
 import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.krad.uif.component.Component;
-import org.kuali.rice.krad.uif.container.Container;
-import org.kuali.rice.krad.uif.freemarker.LifecycleRenderingContext;
-import org.kuali.rice.krad.uif.layout.LayoutManager;
-import org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleTaskBase;
 import org.kuali.rice.krad.uif.view.View;
 
 /**
@@ -30,7 +27,7 @@ import org.kuali.rice.krad.uif.view.View;
  * 
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-public class AddViewTemplatesTask extends AbstractViewLifecycleTask {
+public class AddViewTemplatesTask extends ViewLifecycleTaskBase<Component> {
 
     /**
      * Constructor.
@@ -38,36 +35,24 @@ public class AddViewTemplatesTask extends AbstractViewLifecycleTask {
      * @param phase The finalize phase for the component.
      */
     public AddViewTemplatesTask(ViewLifecyclePhase phase) {
-        super(phase);
+        super(phase, Component.class);
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask#performLifecycleTask()
+     * {@inheritDoc}
      */
     @Override
     protected void performLifecycleTask() {
-        Component component = getPhase().getComponent();
+        Component component = (Component) getElementState().getElement();
         View view = ViewLifecycle.getView();
-        LifecycleRenderingContext renderingContext = ViewLifecycle.getRenderingContext();
 
         // add the components template to the views list of components
         if (!component.isSelfRendered() && StringUtils.isNotBlank(component.getTemplate())) {
             String template = component.getTemplate();
             view.addViewTemplate(template);
-            if (renderingContext != null) {
-                renderingContext.importTemplate(template);
-            }
-        }
-
-        if (component instanceof Container) {
-            LayoutManager layoutManager = ((Container) component).getLayoutManager();
-
-            if (layoutManager != null) {
-                String template = layoutManager.getTemplate();
-                view.addViewTemplate(template);
-                if (renderingContext != null) {
-                    renderingContext.importTemplate(template);
-                }
+            
+            for (String additionalTemplate : component.getAdditionalTemplates()) {
+                view.addViewTemplate(additionalTemplate);
             }
         }
     }

@@ -1,6 +1,6 @@
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.kuali.rice</groupId>
     <artifactId>rice-middleware</artifactId>
-    <version>2.4.0-M3-SNAPSHOT</version>
+    <version>2.4.0-M5-SNAPSHOT</version>
   </parent>
   <artifactId>rice-impl</artifactId>
 
@@ -42,7 +42,13 @@
         </excludes>
       </resource>
     </resources>
-
+    <plugins>
+      <!-- Enable static weaving using META-INF/persistence-weaving.xml for this module -->
+      <plugin>
+        <groupId>au.com.alderaan</groupId>
+        <artifactId>eclipselink-staticweave-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
   </build>
 
   <dependencies>
@@ -340,11 +346,6 @@
     </dependency>
 
     <dependency>
-      <groupId>javax.resource</groupId>
-      <artifactId>connector-api</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>commons-validator</groupId>
       <artifactId>commons-validator</artifactId>
     </dependency>
@@ -381,7 +382,7 @@
     </dependency>
 
     <dependency>
-      <groupId>org.ow2.jotm</groupId>
+      <groupId>org.kuali.jotm</groupId>
       <artifactId>jotm-core</artifactId>
     </dependency>
 
@@ -485,6 +486,12 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.reflections</groupId>
+      <artifactId>reflections</artifactId>
       <scope>test</scope>
     </dependency>
 

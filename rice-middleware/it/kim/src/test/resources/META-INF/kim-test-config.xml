@@ -1,6 +1,6 @@
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@
 	<param name="kim.test.port">9912</param>
 	<param name="kim.test.host">localhost</param>
 
-  <param name="rice.kim.additionalSpringFiles">classpath:org/kuali/rice/kim/impl/config/KimWebSpringBeans.xml,classpath:KIMLdapSpringBeans-test.xml</param>
+  <param name="rice.kim.additionalSpringFiles">classpath:org/kuali/rice/kim/impl/config/KimWebSpringBeans.xml,classpath:KIMTestSpringBeans.xml,classpath:KIMLdapSpringBeans-test.xml</param>
 
   <!-- LDAP Server Configurations -->
   <param name="rice.ldap.username">uid=admin,ou=system</param>

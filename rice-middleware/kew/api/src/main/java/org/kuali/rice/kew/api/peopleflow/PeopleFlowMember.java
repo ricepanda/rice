@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -173,10 +173,6 @@ public final class PeopleFlowMember extends AbstractDataTransferObject implement
         }
 
         public PeopleFlowMember build() {
-            if (this.memberType.equals(MemberType.GROUP) || this.memberType.equals(MemberType.PRINCIPAL)) {
-                this.actionRequestPolicy = null;
-            }
-
             return new PeopleFlowMember(this);
         }
 
@@ -225,12 +221,12 @@ public final class PeopleFlowMember extends AbstractDataTransferObject implement
         }
 
         public void setActionRequestPolicy(ActionRequestPolicy actionRequestPolicy) {
-            if (actionRequestPolicy != null
-                    && (this.memberType.equals(MemberType.GROUP) || this.memberType.equals(MemberType.PRINCIPAL))) {
-                throw new IllegalArgumentException("cannot set ActionRequestPolicy for MemberTypes GROUP or PRINCIPAL");
+            if (this.memberType.equals(MemberType.ROLE)) {
+                if (actionRequestPolicy == null) {
+                    throw new IllegalArgumentException("actionRequestPolicy was null");
+                }
+                this.actionRequestPolicy = actionRequestPolicy;
             }
-
-            this.actionRequestPolicy = actionRequestPolicy;
         }
 
         public void setResponsibilityId(String responsibilityId) {

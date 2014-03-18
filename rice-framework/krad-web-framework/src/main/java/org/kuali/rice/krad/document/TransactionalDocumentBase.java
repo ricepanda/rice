@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.kuali.rice.krad.document;
 
+import javax.persistence.Embeddable;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.Transient;
 
@@ -28,6 +29,13 @@ import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
 @MappedSuperclass
 public abstract class TransactionalDocumentBase extends DocumentBase implements TransactionalDocument, SessionDocument {
     private static final long serialVersionUID = 1L;
+
+    /**
+     * EclipseLink static weaving does not weave MappedSuperclass unless an Entity or Embedded is
+     * weaved which uses it, hence this class.
+     */
+    @Embeddable
+    private static final class WeaveMe extends TransactionalDocumentBase {}
 
     // EclipseLink chokes with an NPE if a mapped superclass does not have any attributes.  This keeps it happy.
     @Transient
@@ -47,7 +55,7 @@ public abstract class TransactionalDocumentBase extends DocumentBase implements 
     /**
      * This method to check whether the document class implements SessionDocument
      *
-     * @return
+     * @return true if the document is a session document
      */
     public boolean isSessionDocument() {
         return SessionDocument.class.isAssignableFrom(this.getClass());

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,12 @@ package org.kuali.rice.krad.maintenance;
 
 import org.eclipse.persistence.annotations.Index;
 import org.kuali.rice.krad.bo.PersistableBusinessObjectBase;
-import org.kuali.rice.krad.data.jpa.eclipselink.PortableSequenceGenerator;
+import org.kuali.rice.krad.data.jpa.PortableSequenceGenerator;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.PrePersist;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
@@ -75,19 +74,6 @@ public class MaintenanceLock extends PersistableBusinessObjectBase {
     public void setDocumentNumber(String documentNumber) {
         this.documentNumber = documentNumber;
     }
-
-	/**
-	 * Uses OrmUtils to set the sequence
-     *
-     * @see org.kuali.rice.krad.bo.PersistableBusinessObjectBase#prePersist()
-     */
-    @PrePersist
-	protected void customPrePersist() {
-//		final EntityManagerFactory factory = KRADServiceLocator.getApplicationEntityManagerFactory();
-//		OrmUtils.populateAutoIncValue(this, factory.createEntityManager());
-
-		super.prePersist();
-	}
 
 }
 

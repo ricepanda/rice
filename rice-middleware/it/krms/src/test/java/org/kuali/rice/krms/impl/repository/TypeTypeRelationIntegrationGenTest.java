@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,9 +43,9 @@ public final class TypeTypeRelationIntegrationGenTest extends AbstractBoTest{
     @Before
     public void setup() {
         typeTypeRelationBoServiceImpl = new TypeTypeRelationBoServiceImpl();
-        typeTypeRelationBoServiceImpl.setBusinessObjectService(getBoService());
+        typeTypeRelationBoServiceImpl.setDataObjectService(getDataObjectService());
         krmsTypeBoServiceImpl = new KrmsTypeBoServiceImpl();
-        krmsTypeBoServiceImpl.setBusinessObjectService(getBoService());
+        krmsTypeBoServiceImpl.setDataObjectService(getDataObjectService());
     }
 
     @Test(expected = java.lang.IllegalArgumentException.class)
@@ -86,6 +86,19 @@ public final class TypeTypeRelationIntegrationGenTest extends AbstractBoTest{
         KrmsTypeDefinition krmsType = krmsTypeTest.getKrmsType();
         TypeTypeRelationBoServiceImplGenTest test = TypeTypeRelationBoServiceImplGenTest.create(typeTypeRelationBoServiceImpl);
         test.createTypeTypeRelation(krmsType, krmsType); // TODO gen handle more than 1 of the same type
+        typeTypeRelation = test.getTypeTypeRelation();
+        assert(typeTypeRelation != null);
+        assert(typeTypeRelation.getId() != null);
+    }
+
+    @Test
+    public void test_createTypeTypeRelationGeneratedId() {
+        KrmsTypeIntegrationGenTest krmsTypeTest = new KrmsTypeIntegrationGenTest();
+        krmsTypeTest.setup();
+        krmsTypeTest.test_createKrmsType();
+        KrmsTypeDefinition krmsType = krmsTypeTest.getKrmsType();
+        TypeTypeRelationBoServiceImplGenTest test = TypeTypeRelationBoServiceImplGenTest.create(typeTypeRelationBoServiceImpl);
+        test.createTypeTypeRelationGeneratedId(krmsType, krmsType);
         typeTypeRelation = test.getTypeTypeRelation();
         assert(typeTypeRelation != null);
         assert(typeTypeRelation.getId() != null);

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.container.Group;
+import org.kuali.rice.krad.uif.element.Label;
 import org.kuali.rice.krad.uif.field.Field;
 
 /**
@@ -46,8 +47,7 @@ public class LabelSeparateModifier extends ComponentModifierBase {
 	 * immediately before the <code>Field</code> item the label applies to.
 	 * Finally the new list of components is set on the group
 	 *
-	 * @see org.kuali.rice.krad.uif.modifier.ComponentModifier#performModification(org.kuali.rice.krad.uif.view.View,
-	 *      java.lang.Object, org.kuali.rice.krad.uif.component.Component)
+	 * {@inheritDoc}
 	 */
 	@Override
 	public void performModification(Object model, Component component) {
@@ -69,22 +69,23 @@ public class LabelSeparateModifier extends ComponentModifierBase {
 				Field field = (Field) item;
 
 				// pull out label field
-				if (field.getFieldLabel() != null && field.getFieldLabel().isRender()) {
-				    field.getFieldLabel().addStyleClass("displayWith-" + field.getId());
+				Label label = field.getFieldLabel();
+				if (label != null && label.isRender()) {
+				    label.addStyleClass("displayWith-" + field.getId());
                     if (!field.isRender() && StringUtils.isBlank(field.getProgressiveRender())) {
-                       field.getFieldLabel().setRender(false);
+                       label.setRender(false);
                     }
                     else if(!field.isRender() && StringUtils.isNotBlank(field.getProgressiveRender())){
-                       field.getFieldLabel().setRender(true);
+                       label.setRender(true);
                        String prefixStyle = "";
-                       if(StringUtils.isNotBlank(field.getFieldLabel().getStyle())){
-                           prefixStyle = field.getFieldLabel().getStyle();
+                       if(StringUtils.isNotBlank(label.getStyle())){
+                           prefixStyle = label.getStyle();
                        }
-                       field.getFieldLabel().setStyle(prefixStyle + ";" + "display: none;");
+                       label.setStyle(prefixStyle + ";" + "display: none;");
                     }
 
-					groupFields.add(field.getFieldLabel());
-
+					groupFields.add(label);
+					
 					// set boolean to indicate label field should not be
 					// rendered with the attribute
 					field.setLabelRendered(true);
@@ -99,7 +100,7 @@ public class LabelSeparateModifier extends ComponentModifierBase {
 	}
 
 	/**
-	 * @see org.kuali.rice.krad.uif.modifier.ComponentModifier#getSupportedComponents()
+	 * {@inheritDoc}
 	 */
 	@Override
 	public Set<Class<? extends Component>> getSupportedComponents() {

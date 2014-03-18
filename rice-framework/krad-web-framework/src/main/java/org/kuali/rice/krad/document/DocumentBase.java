@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
-import javax.persistence.FetchType;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
 import javax.persistence.MappedSuperclass;
-import javax.persistence.OneToMany;
 import javax.persistence.PostLoad;
 import javax.persistence.PostRemove;
 import javax.persistence.PrePersist;
@@ -73,7 +69,6 @@ import org.kuali.rice.krad.util.documentserializer.PropertySerializabilityEvalua
 import org.kuali.rice.krad.workflow.DocumentInitiator;
 import org.kuali.rice.krad.workflow.KualiDocumentXmlMaterializer;
 import org.kuali.rice.krad.workflow.KualiTransactionalDocumentInformation;
-import org.springframework.util.AutoPopulatingList;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -91,9 +86,7 @@ public abstract class DocumentBase extends PersistableBusinessObjectBase impleme
     @Transient
     protected DocumentHeader documentHeader;
 
-    @OneToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JoinColumn(
-            name = "DOC_HDR_ID", insertable = false, updatable = false)
+    @Transient
     protected List<PessimisticLock> pessimisticLocks;
 
     @Transient
@@ -204,6 +197,12 @@ public abstract class DocumentBase extends PersistableBusinessObjectBase impleme
         // do nothing
     }
 
+    /**
+     * Return the list of actions a user could take on a document which should not result
+     * in the recalculation of the {@link PessimisticLock}s.
+     * 
+     * @see #doActionTaken(ActionTakenEvent)
+     */
     protected List<String> getNonLockingActionTakenCodes() {
         List<String> actionTakenStatusCodes = new ArrayList<String>();
         actionTakenStatusCodes.add(KewApiConstants.ACTION_TAKEN_SAVED_CD);
@@ -402,7 +401,7 @@ public abstract class DocumentBase extends PersistableBusinessObjectBase impleme
     }
 
     /**
-     * @see org.kuali.rice.krad.document.Document#getDocumentHeader()
+     * {@inheritDoc}
      */
     @Override
     public DocumentHeader getDocumentHeader() {
@@ -410,7 +409,7 @@ public abstract class DocumentBase extends PersistableBusinessObjectBase impleme
     }
 
     /**
-     * @see org.kuali.rice.krad.document.Document#setDocumentHeader(org.kuali.rice.krad.document.DocumentHeader)
+     * {@inheritDoc}
      */
     @Override
     public void setDocumentHeader(DocumentHeader documentHeader) {
@@ -418,7 +417,7 @@ public abstract class DocumentBase extends PersistableBusinessObjectBase impleme
     }
 
     /**
-     * @see org.kuali.rice.krad.document.Document#getDocumentNumber()
+     * {@inheritDoc}
      */
     @Override
     public String getDocumentNumber() {
@@ -426,7 +425,7 @@ public abstract class DocumentBase extends PersistableBusinessObjectBase impleme
     }
 
     /**
-     * @see org.kuali.rice.krad.document.Document#setDocumentNumber(java.lang.String)
+     * {@inheritDoc}
      */
     @Override
     public void setDocumentNumber(String documentNumber) {
@@ -434,7 +433,7 @@ public abstract class DocumentBase extends PersistableBusinessObjectBase impleme
     }
 
     /**
-     * @see org.kuali.rice.krad.document.Document#getAdHocRoutePersons()
+     * {@inheritDoc}
      */
     @Override
     public List<AdHocRoutePerson> getAdHocRoutePersons() {
@@ -442,7 +441,7 @@ public abstract class DocumentBase extends PersistableBusinessObjectBase impleme
     }
 
     /**
-     * @see org.kuali.rice.krad.document.Document#setAdHocRoutePersons(java.util.List)
+     * {@inheritDoc}
      */
     @Override
     public void setAdHocRoutePersons(List<AdHocRoutePerson> adHocRoutePersons) {
@@ -450,7 +449,7 @@ public abstract class DocumentBase extends PersistableBusinessObjectBase impleme
     }
 
     /**
-     * @see org.kuali.rice.krad.document.Document#getAdHocRouteWorkgroups()
+     * {@inheritDoc}
      */
     @Override
     public List<AdHocRouteWorkgroup> getAdHocRouteWorkgroups() {
@@ -458,7 +457,7 @@ public abstract class DocumentBase extends PersistableBusinessObjectBase impleme
     }
 
     /**
-     * @see org.kuali.rice.krad.document.Document#setAdHocRouteWorkgroups(java.util.List)
+     * {@inheritDoc}
      */
     @Override
     public void setAdHocRouteWorkgroups(List<AdHocRouteWorkgroup> adHocRouteWorkgroups) {
@@ -515,15 +514,15 @@ public abstract class DocumentBase extends PersistableBusinessObjectBase impleme
         if (LOG.isInfoEnabled()) {
             if (GlobalVariables.getMessageMap().hasErrors()) {
 
-                for (Iterator<Map.Entry<String, AutoPopulatingList<ErrorMessage>>> i =
+                for (Iterator<Map.Entry<String, List<ErrorMessage>>> i =
                              GlobalVariables.getMessageMap().getAllPropertiesAndErrors().iterator(); i.hasNext(); ) {
-                    Map.Entry<String, AutoPopulatingList<ErrorMessage>> e = i.next();
+                    Map.Entry<String, List<ErrorMessage>> e = i.next();
 
                     StringBuffer logMessage = new StringBuffer();
                     logMessage.append("[" + e.getKey() + "] ");
                     boolean first = true;
 
-                    AutoPopulatingList<ErrorMessage> errorList = e.getValue();
+                    List<ErrorMessage> errorList = e.getValue();
                     for (Iterator<ErrorMessage> j = errorList.iterator(); j.hasNext(); ) {
                         ErrorMessage em = j.next();
 
@@ -686,20 +685,15 @@ public abstract class DocumentBase extends PersistableBusinessObjectBase impleme
      */
     @Override
     public List<PessimisticLock> getPessimisticLocks() {
-        return this.pessimisticLocks;
+        return pessimisticLocks;
     }
 
     /**
      * @see org.kuali.rice.krad.document.Document#refreshPessimisticLocks()
-     * @deprecated This is not needed with the relationship set up with JPA annotations
      */
     @Override
-    @Deprecated
     public void refreshPessimisticLocks() {
-        this.pessimisticLocks.clear();
-        // need to copy the list because the lock service returns an immutable list here
-        this.pessimisticLocks = new ArrayList<PessimisticLock>(KRADServiceLocatorWeb.getPessimisticLockService().getPessimisticLocksForDocument(
-                this.documentNumber));
+        pessimisticLocks = KRADServiceLocatorWeb.getPessimisticLockService().getPessimisticLocksForDocument(documentNumber);
     }
 
     /**
@@ -714,7 +708,7 @@ public abstract class DocumentBase extends PersistableBusinessObjectBase impleme
      */
     @Override
     public void addPessimisticLock(PessimisticLock lock) {
-        this.pessimisticLocks.add(lock);
+        pessimisticLocks.add(lock);
     }
 
     /**

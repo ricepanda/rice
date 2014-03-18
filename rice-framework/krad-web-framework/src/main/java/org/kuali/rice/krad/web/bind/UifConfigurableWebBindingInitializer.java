@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ public class UifConfigurableWebBindingInitializer extends ConfigurableWebBinding
 
         binder.registerCustomEditor(KualiPercent.class, new UifPercentageEditor());
 
+        binder.registerCustomEditor(java.sql.Time.class, new UifTimeEditor());
         binder.registerCustomEditor(java.sql.Date.class, new UifDateEditor());
         binder.registerCustomEditor(java.util.Date.class, new UifDateEditor());
         binder.registerCustomEditor(Timestamp.class, new UifTimestampEditor());

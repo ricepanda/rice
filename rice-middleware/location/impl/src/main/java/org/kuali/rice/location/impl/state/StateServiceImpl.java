@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ public class StateServiceImpl implements StateService {
         map.put("countryCode", countryCode);
         map.put("code", code);
 
-        return StateBo.to(dataObjectService.find(StateBo.class,new CompoundKey(map)));
+        return StateBo.to(getDataObjectService().find(StateBo.class,new CompoundKey(map)));
     }
 
     @Override
@@ -67,7 +67,7 @@ public class StateServiceImpl implements StateService {
         map.put("countryCode", countryCode);
         map.put("active", Boolean.TRUE);
 
-        QueryResults<StateBo> stateBos = dataObjectService.findMatching(StateBo.class,
+        QueryResults<StateBo> stateBos = getDataObjectService().findMatching(StateBo.class,
                 QueryByCriteria.Builder.andAttributes(map).build());
 
         if (stateBos == null) {
@@ -104,7 +104,7 @@ public class StateServiceImpl implements StateService {
     public StateQueryResults findStates(QueryByCriteria queryByCriteria) throws RiceIllegalArgumentException {
         incomingParamCheck(queryByCriteria, "queryByCriteria");
 
-        QueryResults<StateBo> results = dataObjectService.findMatching(StateBo.class, queryByCriteria);
+        QueryResults<StateBo> results = getDataObjectService().findMatching(StateBo.class, queryByCriteria);
 
         StateQueryResults.Builder builder = StateQueryResults.Builder.create();
         builder.setMoreResultsAvailable(results.isMoreResultsAvailable());

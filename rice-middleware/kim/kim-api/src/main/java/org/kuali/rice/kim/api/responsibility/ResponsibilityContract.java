@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import java.util.Map;
  * never against roles or groups.
  *  
  */
-public interface ResponsibilityContract extends Versioned, GloballyUnique, Inactivatable, Identifiable{;
+public interface ResponsibilityContract extends Versioned, GloballyUnique, Inactivatable, Identifiable {
     
     /**
      * The namespace code that this Responsibility belongs too.

@@ -1,6 +1,6 @@
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -25,11 +25,12 @@
                            http://www.springframework.org/schema/cache/spring-cache-3.1.xsd">
 
   <import resource="classpath:org/kuali/rice/core/CommonSpringBeans.xml"/>
+  <import resource="classpath:org/kuali/rice/krad/config/KRADDependentModuleCommonImports.xml" />
   <import resource="classpath:org/kuali/rice/kew/config/_KewCommonSpringBeans.xml"/>
   <import resource="classpath:org/kuali/rice/kew/config/_KewDataSourceSpringBeans.xml"/>
-  <import resource="classpath:org/kuali/rice/kew/config/_KewEmbeddedOjbSpringBeans.xml"/>
   <import resource="classpath:org/kuali/rice/kew/config/_KewEmbeddedRemoteSpringBeans.xml"/>
   <import resource="classpath:org/kuali/rice/kew/config/_KewEmbeddedServiceBusSpringBeans.xml"/>
+  <import resource="classpath:org/kuali/rice/kew/config/_KewJpaSpringBeans.xml"/>
 
   <!-- Forwards cache evictions to the kewCacheDistributionQueue on the standalone server, this allows the standalone
        server to handle distribution of cache flush messages -->
@@ -147,11 +148,14 @@
     <property name="dataObjectService" ref="dataObjectService"/>
   </bean>
 
+  <bean id="enActionRequestDao" class="org.kuali.rice.kew.actionrequest.dao.impl.ActionRequestDAOJpaImpl"/>
+
   <!--  ActionRequestService -->
   <bean id="enActionRequestService"
         class="org.kuali.rice.kew.actionrequest.service.impl.ActionRequestServiceImpl"
         lazy-init="true"
-        p:dataObjectService-ref="dataObjectService"/>
+        p:dataObjectService-ref="dataObjectService"
+        p:actionRequestDAO-ref="enActionRequestDAO"/>
 
   <!--  ActionListService -->
   <bean id="enActionListService" class="org.kuali.rice.kew.actionlist.service.impl.ActionListServiceImpl" lazy-init="true"
@@ -213,15 +217,6 @@
 
   <!-- Action Registry -->
   <bean id="enActionRegistry" class="org.kuali.rice.kew.actions.ActionRegistryImpl" lazy-init="true"/>
-
-  <bean id="enEncryptionService" class="org.kuali.rice.core.impl.encryption.DemonstrationGradeEncryptionServiceImpl"
-        lazy-init="true">
-    <property name="secretKey">
-      <bean class="org.kuali.rice.core.impl.config.property.ConfigPropertyFactoryBean">
-        <property name="name" value="encryption.key"/>
-      </bean>
-    </property>
-  </bean>
 
   <bean id="kewIdentityHelperService" class="org.kuali.rice.kew.identity.service.impl.IdentityHelperServiceImpl"/>
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,11 +45,11 @@ public final class NaturalLanguageUsageIntegrationGenTest extends AbstractBoTest
     @Before
     public void setup() {
         naturalLanguageUsageBoServiceImpl = new NaturalLanguageUsageBoServiceImpl();
-        naturalLanguageUsageBoServiceImpl.setBusinessObjectService(getBoService());
+        naturalLanguageUsageBoServiceImpl.setDataObjectService(getDataObjectService());
 
         // NOTE: this is not fully wired, we only need the BusinessObjectService for what we do with this impl
         naturalLanguageTemplateBoServiceImpl = new NaturalLanguageTemplateBoServiceImpl();
-        naturalLanguageTemplateBoServiceImpl.setBusinessObjectService(getBoService());
+        naturalLanguageTemplateBoServiceImpl.setDataObjectService(getDataObjectService());
     }
 
     @Test(expected = java.lang.IllegalArgumentException.class)
@@ -81,6 +81,15 @@ public final class NaturalLanguageUsageIntegrationGenTest extends AbstractBoTest
     public void test_createNaturalLanguageUsage() {
         NaturalLanguageUsageBoServiceImplGenTest test = NaturalLanguageUsageBoServiceImplGenTest.create(naturalLanguageUsageBoServiceImpl);
         test.test_createNaturalLanguageUsage();
+        naturalLanguageUsage = test.getNaturalLanguageUsage();
+        assert(naturalLanguageUsage != null);
+        assert(naturalLanguageUsage.getId() != null);
+    }
+
+    @Test
+    public void test_createNaturalLanguageUsageGeneratedId() {
+        NaturalLanguageUsageBoServiceImplGenTest test = NaturalLanguageUsageBoServiceImplGenTest.create(naturalLanguageUsageBoServiceImpl);
+        test.test_createNaturalLanguageUsageGeneratedId();
         naturalLanguageUsage = test.getNaturalLanguageUsage();
         assert(naturalLanguageUsage != null);
         assert(naturalLanguageUsage.getId() != null);
@@ -144,4 +153,16 @@ public final class NaturalLanguageUsageIntegrationGenTest extends AbstractBoTest
         (NaturalLanguageUsageBoServiceImplGenTest.create(naturalLanguageUsageBoServiceImpl)).test_deleteNaturalLanguageUsage_null_fail();
     }
 
+    @Test(expected = java.lang.IllegalStateException.class)
+    public void test_createNaturalLanguageUsageDuplicateNamespaceAndName() {
+        NaturalLanguageUsageBoServiceImplGenTest test = NaturalLanguageUsageBoServiceImplGenTest.create(naturalLanguageUsageBoServiceImpl);
+        test.test_createNaturalLanguageUsageGeneratedId();
+        naturalLanguageUsage = test.getNaturalLanguageUsage();
+        assert(naturalLanguageUsage != null);
+        assert(naturalLanguageUsage.getId() != null);
+
+        NaturalLanguageUsageBoServiceImplGenTest test2 = NaturalLanguageUsageBoServiceImplGenTest.create(naturalLanguageUsageBoServiceImpl);
+        test2.test_createNaturalLanguageUsageGeneratedId();
+        naturalLanguageUsage = test2.getNaturalLanguageUsage();
+    }
 }

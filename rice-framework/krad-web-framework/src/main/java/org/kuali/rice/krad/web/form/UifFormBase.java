@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.kuali.rice.krad.web.form;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -34,6 +35,10 @@ import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.UifConstants.ViewType;
 import org.kuali.rice.krad.uif.UifParameters;
+import org.kuali.rice.krad.uif.UifPropertyPaths;
+import org.kuali.rice.krad.uif.component.Component;
+import org.kuali.rice.krad.uif.lifecycle.ViewPostMetadata;
+import org.kuali.rice.krad.uif.service.ViewHelperService;
 import org.kuali.rice.krad.uif.service.ViewService;
 import org.kuali.rice.krad.uif.util.SessionTransient;
 import org.kuali.rice.krad.uif.view.DialogManager;
@@ -43,22 +48,16 @@ import org.kuali.rice.krad.util.KRADUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * Base form class for views within the KRAD User Interface Framework
+ * Base form class for views within the KRAD User Interface Framework.
  *
- * <p>
- * Holds properties necessary to determine the {@code View} instance that
- * will be used to render the UI
- * </p>
+ * <p>Holds properties necessary to determine the {@link org.kuali.rice.krad.uif.view.View} instance that
+ * will be used to render the user interface</p>
  *
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 public class UifFormBase implements ViewModel {
     private static final long serialVersionUID = 8432543267099454434L;
 
-    // logger
-    private static final Log LOG = LogFactory.getLog(UifFormBase.class);
-
-    // current view
     protected String viewId;
     protected String viewName;
     protected ViewType viewTypeName;
@@ -95,14 +94,16 @@ public class UifFormBase implements ViewModel {
     protected String state;
     protected boolean defaultsApplied;
     protected boolean renderedInLightBox;
+    protected boolean renderedInIframe;
 
     @SessionTransient
     protected String growlScript;
     @SessionTransient
     protected String lightboxScript;
 
+    @SessionTransient
     protected View view;
-    protected View postedView;
+    protected ViewPostMetadata viewPostMetadata;
 
     protected Map<String, String> viewRequestParameters;
     protected List<String> readOnlyFieldsList;
@@ -113,6 +114,8 @@ public class UifFormBase implements ViewModel {
     protected Map<String, Object> clientStateForSyncing;
     @SessionTransient
     protected Map<String, Set<String>> selectedCollectionLines;
+
+    protected Set<String> selectedLookupResultsCache;
 
     protected List<Object> addedCollectionItems;
 
@@ -130,7 +133,7 @@ public class UifFormBase implements ViewModel {
     @SessionTransient
     private String requestJsonTemplate;
     @SessionTransient
-    private boolean originalComponentRequest;
+    private boolean collectionPagingRequest;
 
     // dialog fields
     @SessionTransient
@@ -141,14 +144,20 @@ public class UifFormBase implements ViewModel {
 
     @SessionTransient
     protected boolean requestRedirected;
+
     @SessionTransient
     protected String updateComponentId;
+    @SessionTransient
+    private Component updateComponent;
 
     protected Map<String, Object> extensionData;
+
+    protected Map<String, String> queryParameters;
 
     public UifFormBase() {
         defaultsApplied = false;
         renderedInLightBox = false;
+        renderedInIframe = false;
         requestRedirected = false;
 
         readOnlyFieldsList = new ArrayList<String>();
@@ -157,9 +166,11 @@ public class UifFormBase implements ViewModel {
         actionParameters = new HashMap<String, String>();
         clientStateForSyncing = new HashMap<String, Object>();
         selectedCollectionLines = new HashMap<String, Set<String>>();
-        addedCollectionItems = new ArrayList();
+        selectedLookupResultsCache = new HashSet<String>();
+        addedCollectionItems = new ArrayList<Object>();
         dialogManager = new DialogManager();
         extensionData = new HashMap<String, Object>();
+        queryParameters = new HashMap<String, String>();
     }
 
     /**
@@ -169,7 +180,7 @@ public class UifFormBase implements ViewModel {
     public void preBind(HttpServletRequest request) {
         // do nothing - here for framework
     }
-    
+
     /**
      * @see org.kuali.rice.krad.uif.view.ViewModel#postBind(javax.servlet.http.HttpServletRequest)
      */
@@ -194,19 +205,19 @@ public class UifFormBase implements ViewModel {
 
         // get any sent client view state and parse into map
         if (request.getParameterMap().containsKey(UifParameters.CLIENT_VIEW_STATE)) {
-            String clientStateJSON = request.getParameter(UifParameters.CLIENT_VIEW_STATE);
-            if (StringUtils.isNotBlank(clientStateJSON)) {
-                // change single quotes to double quotes (necessary because the reverse was done for sending)
-                clientStateJSON = StringUtils.replace(clientStateJSON, "'", "\"");
+                    String clientStateJSON = request.getParameter(UifParameters.CLIENT_VIEW_STATE);
+                    if (StringUtils.isNotBlank(clientStateJSON)) {
+                        // change single quotes to double quotes (necessary because the reverse was done for sending)
+                        clientStateJSON = StringUtils.replace(clientStateJSON, "'", "\"");
 
-                ObjectMapper mapper = new ObjectMapper();
-                try {
-                    clientStateForSyncing = mapper.readValue(clientStateJSON, Map.class);
-                } catch (IOException e) {
-                    throw new RuntimeException("Unable to decode client side state JSON", e);
+                        ObjectMapper mapper = new ObjectMapper();
+                        try {
+                            clientStateForSyncing = mapper.readValue(clientStateJSON, Map.class);
+                        } catch (IOException e) {
+                            throw new RuntimeException("Unable to decode client side state JSON", e);
+                        }
+                    }
                 }
-            }
-        }
 
         // populate read only fields list
         if (request.getParameter(UifParameters.READ_ONLY_FIELDS) != null) {
@@ -495,7 +506,7 @@ public class UifFormBase implements ViewModel {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.view.ViewModel#getViewRequestParameters()
+     * {@inheritDoc}
      */
     @Override
     public Map<String, String> getViewRequestParameters() {
@@ -503,7 +514,7 @@ public class UifFormBase implements ViewModel {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.view.ViewModel#setViewRequestParameters(java.util.Map<String,String>)
+     * {@inheritDoc}
      */
     @Override
     public void setViewRequestParameters(Map<String, String> viewRequestParameters) {
@@ -511,7 +522,7 @@ public class UifFormBase implements ViewModel {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.view.ViewModel#getReadOnlyFieldsList()
+     * {@inheritDoc}
      */
     @Override
     public List<String> getReadOnlyFieldsList() {
@@ -519,7 +530,7 @@ public class UifFormBase implements ViewModel {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.view.ViewModel#setReadOnlyFieldsList(java.util.List<String>)
+     * {@inheritDoc}
      */
     @Override
     public void setReadOnlyFieldsList(List<String> readOnlyFieldsList) {
@@ -535,7 +546,7 @@ public class UifFormBase implements ViewModel {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.view.ViewModel#setNewCollectionLines(java.util.Map<String,Object>)
+     * {@inheritDoc}
      */
     @Override
     public void setNewCollectionLines(Map<String, Object> newCollectionLines) {
@@ -560,7 +571,7 @@ public class UifFormBase implements ViewModel {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.view.ViewModel#setActionParameters(java.util.Map<String,String>)
+     * {@inheritDoc}
      */
     @Override
     public void setActionParameters(Map<String, String> actionParameters) {
@@ -628,11 +639,32 @@ public class UifFormBase implements ViewModel {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.view.ViewModel#setSelectedCollectionLines(java.util.Map<String,java.util.Set<String>>)
+     * {@inheritDoc}
      */
     @Override
     public void setSelectedCollectionLines(Map<String, Set<String>> selectedCollectionLines) {
         this.selectedCollectionLines = selectedCollectionLines;
+    }
+
+    /**
+     * Holds Set of String identifiers for lines that were selected in a lookup collection results
+     * across multiple pages.
+     * The value in the cache is preserved in the session across multiple requests. This allows for the
+     * server side paging of results to retain the user choices as they move through the pages.
+     * 
+     * @return set of identifiers
+     */
+    public Set<String> getSelectedLookupResultsCache() {
+        return selectedLookupResultsCache;
+    }
+
+    /**
+     * Sets the lookup result selection cache values
+     *
+     * @param selectedLookupResultsCache
+     */
+    public void setSelectedLookupResultsCache(Set<String> selectedLookupResultsCache) {
+        this.selectedLookupResultsCache = selectedLookupResultsCache;
     }
 
     /**
@@ -747,6 +779,20 @@ public class UifFormBase implements ViewModel {
     }
 
     /**
+     * @see org.kuali.rice.krad.uif.view.ViewModel#getUpdateComponent()
+     */
+    public Component getUpdateComponent() {
+        return updateComponent;
+    }
+
+    /**
+     * @see org.kuali.rice.krad.uif.view.ViewModel#setUpdateComponent(org.kuali.rice.krad.uif.component.Component)
+     */
+    public void setUpdateComponent(Component updateComponent) {
+        this.updateComponent = updateComponent;
+    }
+
+    /**
      * @see org.kuali.rice.krad.uif.view.ViewModel#getView()
      */
     @Override
@@ -763,33 +809,62 @@ public class UifFormBase implements ViewModel {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.view.ViewModel#getPostedView()
-     */
-    @Override
-    public View getPostedView() {
-        return this.postedView;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.uif.view.ViewModel#setPostedView(org.kuali.rice.krad.uif.view.View)
-     */
-    @Override
-    public void setPostedView(View postedView) {
-        this.postedView = postedView;
-    }
-
-    /**
-     * Returns the view that is active for a given post request (either the posted view for ajax requests, or the
-     * view instance that will be built).
+     * Returns an instance of the view's configured view helper service.
      *
-     * @return view instance to use for post operations
+     * <p>First checks if there is an initialized view containing a view helper instance. If not, and there is
+     * a view id on the form, a call is made to retrieve the view helper instance or class configuration.</p>
+     *
+     * {@inheritDoc}
      */
-    public View getActiveView() {
-        if (ajaxRequest || isUpdateNoneRequest()) {
-            return this.postedView;
+    @Override
+    public ViewHelperService getViewHelperService() {
+        if ((getView() != null) && (getView().getViewHelperService() != null)) {
+            return getView().getViewHelperService();
         }
 
-        return this.view;
+        String viewId = getViewId();
+        if (StringUtils.isBlank(viewId) && (getView() != null)) {
+            viewId = getView().getId();
+        }
+
+        if (StringUtils.isBlank(viewId)) {
+            return null;
+        }
+
+        ViewHelperService viewHelperService =
+                (ViewHelperService) KRADServiceLocatorWeb.getDataDictionaryService().getDictionaryBeanProperty(viewId,
+                        UifPropertyPaths.VIEW_HELPER_SERVICE);
+        if (viewHelperService == null) {
+            Class<?> viewHelperServiceClass =
+                    (Class<?>) KRADServiceLocatorWeb.getDataDictionaryService().getDictionaryBeanProperty(viewId,
+                            UifPropertyPaths.VIEW_HELPER_SERVICE_CLASS);
+
+            if (viewHelperServiceClass != null) {
+                try {
+                    viewHelperService = (ViewHelperService) viewHelperServiceClass.newInstance();
+                } catch (Exception e) {
+                    throw new RuntimeException("Unable to instantiate view helper class: " + viewHelperServiceClass, e);
+                }
+            }
+        }
+
+        return viewHelperService;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ViewPostMetadata getViewPostMetadata() {
+        return viewPostMetadata;
+    }
+
+    /**
+     * @see UifFormBase#getViewPostMetadata()
+     */
+    @Override
+    public void setViewPostMetadata(ViewPostMetadata viewPostMetadata) {
+        this.viewPostMetadata = viewPostMetadata;
     }
 
     /**
@@ -922,6 +997,22 @@ public class UifFormBase implements ViewModel {
     }
 
     /**
+     * Indicates whether the view is rendered within an iframe (this setting must be passed to the View on the url)
+     *
+     * @return boolean true if view is rendered within a iframe, false if not
+     */
+    public boolean isRenderedInIframe() {
+        return renderedInIframe;
+    }
+
+    /**
+     * @see org.kuali.rice.krad.web.form.UifFormBase#isRenderedInIframe()
+     */
+    public void setRenderedInIframe(boolean renderedInIframe) {
+        this.renderedInIframe = renderedInIframe;
+    }
+
+    /**
      * @see org.kuali.rice.krad.uif.view.ViewModel#getGrowlScript()
      */
     @Override
@@ -1040,26 +1131,6 @@ public class UifFormBase implements ViewModel {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.view.ViewModel#isBuildViewRequest()
-     */
-    @Override
-    public boolean isBuildViewRequest() {
-        return !isAjaxRequest() || (StringUtils.isNotBlank(getAjaxReturnType()) && (getAjaxReturnType().equals(
-                UifConstants.AjaxReturnTypes.UPDATEVIEW.getKey()) || isUpdatePageRequest()));
-    }
-
-    /**
-     * @see org.kuali.rice.krad.uif.view.ViewModel#isUpdateViewRequest()
-     */
-    @Override
-    public boolean isUpdateViewRequest() {
-        return isAjaxRequest() &&
-                StringUtils.isNotBlank(getAjaxReturnType()) &&
-                (isUpdateComponentRequest() || getAjaxReturnType().equals(
-                        UifConstants.AjaxReturnTypes.DISPLAYLIGHTBOX.getKey()));
-    }
-
-    /**
      * @see org.kuali.rice.krad.uif.view.ViewModel#isJsonRequest()
      */
     @Override
@@ -1084,22 +1155,19 @@ public class UifFormBase implements ViewModel {
     }
 
     /**
-     * True if the current request is attempting to retrieve the originally generated component; the request
-     * must be an update-component request for this to be taken into account
-     *
-     * @return true if retrieving the original component
+     * {@inheritDoc}
      */
-    public boolean isOriginalComponentRequest() {
-        return originalComponentRequest;
+    @Override
+    public boolean isCollectionPagingRequest() {
+        return collectionPagingRequest;
     }
 
     /**
-     * Set the originalComponentRequest flag
-     *
-     * @param originalComponentRequest
+     * {@inheritDoc}
      */
-    public void setOriginalComponentRequest(boolean originalComponentRequest) {
-        this.originalComponentRequest = originalComponentRequest;
+    @Override
+    public void setCollectionPagingRequest(boolean collectionPagingRequest) {
+        this.collectionPagingRequest = collectionPagingRequest;
     }
 
     /**
@@ -1154,7 +1222,7 @@ public class UifFormBase implements ViewModel {
      * The DialogManager tracks modal dialog interactions with the user
      * </p>
      *
-     * @return
+     * @return dialog manager
      */
     public DialogManager getDialogManager() {
         return dialogManager;
@@ -1178,11 +1246,29 @@ public class UifFormBase implements ViewModel {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.view.ViewModel#setExtensionData(java.util.Map<String,Object>)
+     * {@inheritDoc}
      */
     @Override
     public void setExtensionData(Map<String, Object> extensionData) {
         this.extensionData = extensionData;
+    }
+
+    /**
+     * A generic map for query parameters
+     *
+     * @return Map<String, String>
+     */
+    public Map<String, String> getQueryParameters() {
+        return queryParameters;
+    }
+
+    /**
+     * Setter for the generic query parameters
+     *
+     * @param queryParameters
+     */
+    public void setQueryParameters(Map<String, String> queryParameters) {
+        this.queryParameters = queryParameters;
     }
 
     /**

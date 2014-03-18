@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ public class Space extends ContentElementBase {
      * </p>
      *
      * @return true - this object renders itself
-     * @see org.kuali.rice.krad.uif.component.Component#isSelfRendered()
+     * {@inheritDoc}
      */
     @Override
     public boolean isSelfRendered() {
@@ -52,7 +52,7 @@ public class Space extends ContentElementBase {
      * <p>The HTML for a Space element is <code>&amp;nbsp;</code></p>
      *
      * @return the HTML string for a non-breaking space
-     * @see org.kuali.rice.krad.uif.component.Component#getRenderedHtmlOutput()
+     * {@inheritDoc}
      */
     @Override
     public String getRenderedHtmlOutput() {

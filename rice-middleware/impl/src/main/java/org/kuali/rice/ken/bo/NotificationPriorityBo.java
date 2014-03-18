@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.kuali.rice.ken.bo;
 import org.kuali.rice.ken.api.notification.NotificationPriority;
 import org.kuali.rice.ken.api.notification.NotificationPriorityContract;
 import org.kuali.rice.krad.bo.PersistableBusinessObjectBase;
+import org.kuali.rice.krad.data.jpa.PortableSequenceGenerator;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -37,6 +38,7 @@ import javax.persistence.Table;
 public class NotificationPriorityBo extends PersistableBusinessObjectBase implements NotificationPriorityContract {
     @Id
     @GeneratedValue(generator="KREN_PRIO_S")
+    @PortableSequenceGenerator(name="KREN_PRIO_S")
 	@Column(name="PRIO_ID")
 	private Long id;
     @Column(name="NM", nullable=false)

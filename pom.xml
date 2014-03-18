@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -21,14 +21,14 @@
   <parent>
     <groupId>org.kuali.pom</groupId>
     <artifactId>kuali-common</artifactId>
-    <version>3.3.26</version>
+    <version>3.3.44</version>
   </parent>
   <groupId>org.kuali.rice</groupId>
   <artifactId>rice</artifactId>
   <packaging>pom</packaging>
   <name>Rice</name>
   <inceptionYear>2005</inceptionYear>
-  <version>2.4.0-M3-SNAPSHOT</version>
+  <version>2.4.0-M5-SNAPSHOT</version>
   <description>
     The Kuali Rice effort provides an enterprise class middleware suite of integrated products that allows
     both Kuali and non-Kuali applications
@@ -46,8 +46,6 @@
   </ciManagement>
 
   <properties>
-    <project.scm.url>https://svn.kuali.org/repos/rice/trunk</project.scm.url>
-  
     <!-- This works for Linux/Windows. See the MacOSX profile for the equivalent of this for Mac -->
     <tools.jar.path>${java.home}/../lib/tools.jar</tools.jar.path>
 
@@ -65,13 +63,7 @@
     <oracle.jdbc.artifactId>ojdbc14</oracle.jdbc.artifactId>
     <mysql.jdbc.version>5.1.24</mysql.jdbc.version>
     <mysql.jdbc.artifactId>mysql-connector-java</mysql.jdbc.artifactId>
-    <maven.skip.packaging>false</maven.skip.packaging>
-    <maven.failsafe.forkmode>once</maven.failsafe.forkmode>
-    <maven.failsafe.forkedProcessTimeoutInSeconds>7200</maven.failsafe.forkedProcessTimeoutInSeconds>
-    <maven.failsafe.useSystemClassLoader>true</maven.failsafe.useSystemClassLoader>
-    <maven.failsafe.skip>true</maven.failsafe.skip>
-    <maven.failsafe.includes>**/*Test.java</maven.failsafe.includes>
-    <maven.failsafe.excludes>NOT_NULL</maven.failsafe.excludes>
+
     <jmeter.phase>verify</jmeter.phase>
     <jmeter.goal>jmeter</jmeter.goal>
     <jmeter.testFilesDirectory>${basedir}/src/test/resources/jmeter</jmeter.testFilesDirectory>
@@ -89,6 +81,14 @@
     <jmeter.counterconfigstart>1</jmeter.counterconfigstart>
     <jmeter.counterconfigend>6</jmeter.counterconfigend>
     <jmeter.counterconfigincr>1</jmeter.counterconfigincr>
+
+    <maven.skip.packaging>false</maven.skip.packaging>
+    <maven.failsafe.forkmode>once</maven.failsafe.forkmode>
+    <maven.failsafe.forkedProcessTimeoutInSeconds>7200</maven.failsafe.forkedProcessTimeoutInSeconds>
+    <maven.failsafe.useSystemClassLoader>true</maven.failsafe.useSystemClassLoader>
+    <maven.failsafe.skip>true</maven.failsafe.skip>
+    <maven.failsafe.includes>**/*Test.java</maven.failsafe.includes>
+    <maven.failsafe.excludes>NOT_NULL</maven.failsafe.excludes>
 
     <readme.date.format>MMMM d, yyyy</readme.date.format>
 
@@ -111,14 +111,14 @@
     <commons-codec.version>1.6</commons-codec.version>
     <commons-collections.version>3.2.1</commons-collections.version>
     <commons-dbcp.version>1.4</commons-dbcp.version>
-    <commons-fileupload.version>1.2.2</commons-fileupload.version>
+    <commons-fileupload.version>1.3.1</commons-fileupload.version>
     <commons-httpclient.version>3.1</commons-httpclient.version>
     <commons-io.version>2.1</commons-io.version>
     <commons-lang.version>2.6</commons-lang.version>
+    <commons-lang3.version>3.2.1</commons-lang3.version>
     <commons-pool.version>1.5.7</commons-pool.version>
     <commons-digester.version>2.0</commons-digester.version>
     <commons-validator.version>1.3.1</commons-validator.version>
-    <connector-api.version>1.5</connector-api.version>
     <cxf.version>2.7.0</cxf.version>
     <jaxb-impl.version>2.2.6</jaxb-impl.version>
     <!--
@@ -147,6 +147,7 @@
     <groovy.version>1.8.5</groovy.version>
     <guava.version>11.0</guava.version>
     <eclipselink.version>2.5.1</eclipselink.version>
+    <jpa.version>2.1.0</jpa.version>
     <jackson.version>1.8.8</jackson.version>
     <javassist.version>3.15.0-GA</javassist.version>
     <javax.inject.version>1</javax.inject.version>
@@ -159,10 +160,11 @@
     <plugin.gmaven.version>1.5</plugin.gmaven.version>
     <joda-time.version>2.0</joda-time.version>
     <joda-time-jsptags.version>1.1.1</joda-time-jsptags.version>
-    <jotm.version>2.1.10</jotm.version>
+    <jotm.version>2.1.10-kuali-1</jotm.version>
     <json-api.version>1.0</json-api.version>
     <jsp-api.version>2.1</jsp-api.version>
     <jsr311-api.version>1.1.1</jsr311-api.version>
+    <validation.version>1.0.0.GA</validation.version>
 
     <!--
       KULRICE-7262: Bad jstl version in maven repository
@@ -187,12 +189,14 @@
     <saucelabs.connect.excludes>NOT_NULL</saucelabs.connect.excludes>
     <saucelabs.connect.includes>**/*SeAFT.java</saucelabs.connect.includes>
     <saucelabs.connect.skip>true</saucelabs.connect.skip>
+    <saucelabs.connect.failsafe.timeout>0</saucelabs.connect.failsafe.timeout>
     <saucelabs.user>SAUCELABS_USER</saucelabs.user>
     <saucelabs.key>SAUCELABS_KEY</saucelabs.key>
-    <selenium-java.version>2.35.0</selenium-java.version>
+    <selenium-java.version>2.37.0</selenium-java.version>
     <stests.excludes>NOT_NULL</stests.excludes>
     <stests.includes>**/*SeTest.java</stests.includes>
     <stests.skip>true</stests.skip>
+    <stests.failsafe.timeout>0</stests.failsafe.timeout>
     <xalan.version>2.7.1</xalan.version>
     <serializer.version>2.7.1</serializer.version>
     <servlet-api.version>2.5</servlet-api.version>
@@ -214,6 +218,7 @@
     <xercesImpl.version>2.9.1</xercesImpl.version>
     <xmlunit.version>1.3</xmlunit.version>
     <xstream.version>1.2.2</xstream.version>
+    <reflections.version>0.9.9-RC1</reflections.version>
 
     <!-- database drivers location -->
     <jdbc.drivers.location>${settings.localRepository}</jdbc.drivers.location>
@@ -260,9 +265,10 @@
       -javaagent:${spring-instrument.jar}
     </spring.instrument.javaagent>
 
-
     <!-- Pin the tomcat7 plugin to an explicit version -->
     <plugin.tomcat7.version>2.1</plugin.tomcat7.version>
+
+    <plugin.selenium.version>2.3</plugin.selenium.version>
   </properties>
 
   <profiles>
@@ -306,6 +312,58 @@
       </properties>
     </profile>
     <!-- Setup the dependency tree needed by the deploy logic -->
+    <profile>
+      <id>jmeter</id>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>com.lazerycode.jmeter</groupId>
+              <artifactId>jmeter-maven-plugin</artifactId>
+              <version>${plugin.jmeter.version}</version>
+              <executions>
+                <execution>
+                  <id>jmeter-tests</id>
+                  <phase>${jmeter.phase}</phase>
+                  <goals>
+                    <goal>${jmeter.goal}</goal>
+                  </goals>
+                  <configuration>
+                    <testFilesDirectory>${jmeter.testFilesDirectory}</testFilesDirectory>
+                    <testFilesIncluded>
+                      <jMeterTestFile>${jmeter.jMeterTestFile}</jMeterTestFile>
+                    </testFilesIncluded>
+                    <testFilesExcluded>
+                      <excludeJmeterTestFile>${jmeter.excludeJmeterTestFile}</excludeJmeterTestFile>
+                    </testFilesExcluded>
+                    <testResultsTimestamp>${jmeter.testResultsTimestamp}</testResultsTimestamp>
+                    <propertiesUser>
+                      <!-- server and port must be defined (and used) in the JMeter jmx file as User Defined Variables
+                        ${__P(server,localhost)}
+                        ${__P(port,80)}
+                        See http://jmeter.apache.org/usermanual/component_reference.html#User_Defined_Variables
+                        http://jmeter.apache.org/usermanual/test_plan.html#using_variables
+                        http://jmeter.apache.org/usermanual/functions.html#__P
+                        http://jmeter.apache.org/usermanual/best-practices.html#parameterising_tests
+                      -->
+                      <server>${jmeter.server}</server>
+                      <port>${jmeter.port}</port>
+                      <threads>${jmeter.threads}</threads>
+                      <loops>${jmeter.loops}</loops>
+                      <rampseconds>${jmeter.rampseconds}</rampseconds>
+                      <userprefix>${jmeter.userprefix}</userprefix>
+                      <counterconfigstart>${jmeter.counterconfigstart}</counterconfigstart>
+                      <counterconfigend>${jmeter.counterconfigend}</counterconfigend>
+                      <counterconfigincr>${jmeter.counterconfigincr}</counterconfigincr>
+                    </propertiesUser>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
     <profile>
       <id>kdo</id>
       <properties>
@@ -398,14 +456,23 @@
                 <exclude>db/impex/**</exclude>
                 <exclude>config/ide/**</exclude>
                 <exclude>**/.idea/**</exclude>
-                <exclude>rice-middleware/it/**</exclude>
-                <exclude>rice-framework/krad-it/**</exclude>
                 <exclude>src/site/docbook/**</exclude>
-                <exclude>**/src/it/**</exclude>
                 <exclude>rice-framework/krad-web/src/main/webapp/plugins/**</exclude>
                 <exclude>rice-framework/config/ide/**</exclude>
                 <exclude>rice-middleware/config/ide/**</exclude>
                 <exclude>rice-middleware/web/src/main/webapp/kr/scripts/jscalendar-1.0/**</exclude>
+
+                <!-- all IT tests license headers are skipped TODO don't skip IT java files -->
+                <exclude>rice-middleware/it/**</exclude>
+                <exclude>rice-framework/krad-it/**</exclude>
+
+                <!-- test generation files -->
+                <!-- rice-middleware/sampleapp/src/it/resources/Gen/*.ftl are used to generate java so ftl headers cause errors, update manually -->
+                <exclude>rice-middleware/sampleapp/src/it/resources/Gen/*.ftl</exclude>
+                <!-- rice-middleware/sampleapp/src/it/resources/XML/*.ftl are used to generate js or xml so ftl headers cause errors, update manually -->
+                <exclude>rice-middleware/sampleapp/src/it/resources/XML/*.ftl</exclude>
+                <!-- rice-framework/krad-sampleapp/web/src/test/resources/jmeter/KRAD-JMeter.ftl is used to generate jmx so ftl headers cause errors, update manually -->
+                <exclude>rice-framework/krad-sampleapp/web/src/test/resources/jmeter/KRAD-JMeter.ftl</exclude>
 
                 <!-- js plugin folders -->
                 <exclude>**/datatables/**</exclude>
@@ -472,59 +539,6 @@
     </profile>
 
     <profile>
-      <id>jmeter</id>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>com.lazerycode.jmeter</groupId>
-              <artifactId>jmeter-maven-plugin</artifactId>
-              <version>${plugin.jmeter.version}</version>
-              <executions>
-                <execution>
-                  <id>jmeter-tests</id>
-                  <phase>${jmeter.phase}</phase>
-                  <goals>
-                    <goal>${jmeter.goal}</goal>
-                  </goals>
-                  <configuration>
-                    <testFilesDirectory>${jmeter.testFilesDirectory}</testFilesDirectory>
-                    <testFilesIncluded>
-                      <jMeterTestFile>${jmeter.jMeterTestFile}</jMeterTestFile>
-                    </testFilesIncluded>
-                    <testFilesExcluded>
-                      <excludeJmeterTestFile>${jmeter.excludeJmeterTestFile}</excludeJmeterTestFile>
-                    </testFilesExcluded>
-                    <testResultsTimestamp>${jmeter.testResultsTimestamp}</testResultsTimestamp>
-                    <propertiesUser>
-                      <!-- server and port must be defined (and used) in the JMeter jmx file as User Defined Variables
-                        ${__P(server,localhost)}
-                        ${__P(port,80)}
-                        See http://jmeter.apache.org/usermanual/component_reference.html#User_Defined_Variables
-                        http://jmeter.apache.org/usermanual/test_plan.html#using_variables
-                        http://jmeter.apache.org/usermanual/functions.html#__P
-                        http://jmeter.apache.org/usermanual/best-practices.html#parameterising_tests
-                      -->
-                      <server>${jmeter.server}</server>
-                      <port>${jmeter.port}</port>
-                      <threads>${jmeter.threads}</threads>
-                      <loops>${jmeter.loops}</loops>
-                      <rampseconds>${jmeter.rampseconds}</rampseconds>
-                      <userprefix>${jmeter.userprefix}</userprefix>
-                      <counterconfigstart>${jmeter.counterconfigstart}</counterconfigstart>
-                      <counterconfigend>${jmeter.counterconfigend}</counterconfigend>
-                      <counterconfigincr>${jmeter.counterconfigincr}</counterconfigincr>
-                    </propertiesUser>
-                  </configuration>
-                </execution>
-              </executions>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
-    </profile>
-
-    <profile>
       <id>sauceconnect</id>
       <properties>
         <!-- Should these be maven.failsafes or saucelabs.connect -->
@@ -532,6 +546,7 @@
         <maven.failsafe.includes>${saucelabs.connect.includes}</maven.failsafe.includes>
         <!-- exclude krad/labs and krad/demo which only work against krad-sampleapp (env11) -->
         <maven.failsafe.excludes>${saucelabs.connect.excludes}</maven.failsafe.excludes>
+        <maven.failsafe.forkedProcessTimeoutInSeconds>${saucelabs.connect.failsafe.timeout}</maven.failsafe.forkedProcessTimeoutInSeconds>
       </properties>
       <build>
         <plugins>
@@ -593,6 +608,7 @@
         <maven.failsafe.skip>${stests.skip}</maven.failsafe.skip>
         <maven.failsafe.includes>${stests.includes}</maven.failsafe.includes>
         <maven.failsafe.excludes>${stests.excludes}</maven.failsafe.excludes>
+        <maven.failsafe.forkedProcessTimeoutInSeconds>${stests.failsafe.timeout}</maven.failsafe.forkedProcessTimeoutInSeconds>
       </properties>
       <build>
         <plugins>
@@ -777,6 +793,8 @@
                     <excludes>
                       <!-- using the kuali version of ojb -->
                       <exclude>ojb</exclude>
+                      <!-- using the kuali version of jotm-core -->
+                      <exclude>org.ow2.jotm:jotm-core</exclude>
 
                       <!-- renamed (decrecated) groupids -->
                       <exclude>struts</exclude>
@@ -932,6 +950,10 @@
             <fork>true</fork>
             <meminitial>256</meminitial>
             <maxmem>1024</maxmem>
+<!-- 
+			  <source>1.7</source>
+			  <target>1.7</target>
+ -->
           </configuration>
         </plugin>
         <plugin>
@@ -1149,7 +1171,7 @@
             <reportFormat>plain</reportFormat>
             <argLine>-Dalt.config.location="${build.alt.config.location}" -Xmx1024m -XX:MaxPermSize=512m
               -XX:+UseConcMarkSweepGC
-              -XX:+CMSClassUnloadingEnabled ${spring.instrument.javaagent}
+              -XX:+CMSClassUnloadingEnabled ${spring.instrument.javaagent} -Dspring.instrument.javaagent="${spring.instrument.javaagent}"
             </argLine>
           </configuration>
           <dependencies>
@@ -1170,7 +1192,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>selenium-maven-plugin</artifactId>
-          <version>2.0</version>
+          <version>${plugin.selenium.version}</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -1229,9 +1251,53 @@
                     <ignore />
                   </action>
                 </pluginExecution>
+                <pluginExecution>
+                	<pluginExecutionFilter>
+                		<groupId>au.com.alderaan</groupId>
+                		<artifactId>
+                			eclipselink-staticweave-maven-plugin
+                		</artifactId>
+                		<versionRange>[1.0.4,)</versionRange>
+                		<goals>
+                			<goal>weave</goal>
+                		</goals>
+                	</pluginExecutionFilter>
+                	<action>
+                		<ignore />
+                	</action>
+                </pluginExecution>
               </pluginExecutions>
             </lifecycleMappingMetadata>
           </configuration>
+        </plugin>
+        <plugin>
+          <groupId>au.com.alderaan</groupId>
+          <artifactId>eclipselink-staticweave-maven-plugin</artifactId>
+          <version>1.0.4</version>
+          <executions>
+            <execution>
+              <goals>
+                <goal>weave</goal>
+              </goals>
+              <phase>process-classes</phase>
+              <configuration>
+                <logLevel>FINER</logLevel>
+                <persistenceXMLLocation>META-INF/persistence-weaving.xml</persistenceXMLLocation>
+              </configuration>
+            </execution>
+          </executions>
+          <dependencies>
+            <dependency>
+              <groupId>org.eclipse.persistence</groupId>
+              <artifactId>eclipselink</artifactId>
+              <version>${eclipselink.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>org.eclipse.persistence</groupId>
+              <artifactId>javax.persistence</artifactId>
+              <version>${jpa.version}</version>
+            </dependency>
+          </dependencies>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -1416,6 +1482,7 @@
     </plugins>
 
   </build>
+
   <modules>
     <module>db</module>
     <module>development-tools</module>
@@ -1533,6 +1600,12 @@
         <groupId>commons-lang</groupId>
         <artifactId>commons-lang</artifactId>
         <version>${commons-lang.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>${commons-lang3.version}</version>
       </dependency>
 
       <dependency>
@@ -1656,14 +1729,6 @@
         </exclusions>
       </dependency>
 
-      <!-- required by jotm -->
-      <dependency>
-        <groupId>javax.resource</groupId>
-        <artifactId>connector-api</artifactId>
-        <version>${connector-api.version}</version>
-        <scope>runtime</scope>
-      </dependency>
-
       <dependency>
         <groupId>org.glassfish</groupId>
         <artifactId>javax.json</artifactId>
@@ -1718,6 +1783,13 @@
         <artifactId>jsr311-api</artifactId>
         <version>${jsr311-api.version}</version>
       </dependency>
+
+      <dependency>
+        <groupId>javax.validation</groupId>
+        <artifactId>validation-api</artifactId>
+        <version>${validation.version}</version>
+      </dependency>
+
 
       <!-- explicitly including jaxen to change version number from what maven would have resolved it to -->
       <dependency>
@@ -1782,6 +1854,7 @@
         <groupId>com.sun.xml.bind</groupId>
         <artifactId>jaxb-impl</artifactId>
         <version>${jaxb-impl.version}</version>
+        <scope>runtime</scope>
       </dependency>
 
       <dependency>
@@ -2021,9 +2094,20 @@
 
       <dependency>
         <groupId>org.eclipse.persistence</groupId>
+        <artifactId>org.eclipse.persistence.core</artifactId>
+        <version>${eclipselink.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.persistence</groupId>
         <artifactId>org.eclipse.persistence.jpa</artifactId>
         <version>${eclipselink.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.eclipse.persistence</groupId>
+        <artifactId>javax.persistence</artifactId>
+        <version>${jpa.version}</version>
+      </dependency>
+
 
       <dependency>
         <groupId>org.jasig.cas.client</groupId>
@@ -2283,7 +2367,7 @@
       </dependency>
 
       <dependency>
-        <groupId>org.ow2.jotm</groupId>
+        <groupId>org.kuali.jotm</groupId>
         <artifactId>jotm-core</artifactId>
         <version>${jotm.version}</version>
         <exclusions>
@@ -2451,6 +2535,17 @@
         <artifactId>velocity</artifactId>
         <version>${velocity.version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.reflections</groupId>
+        <artifactId>reflections</artifactId>
+        <version>${reflections.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>xml-apis</groupId>
+            <artifactId>xml-apis</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -2460,9 +2555,9 @@
   </issueManagement>
 
   <scm>
-    <connection>scm:${project.scm.vendor}:${project.scm.url}</connection>
-    <developerConnection>scm:${project.scm.vendor}:${project.scm.url}</developerConnection>
-    <url>${project.scm.url}</url>
+    <connection>scm:${project.scm.vendor}:https://svn.kuali.org/repos/rice/trunk</connection>
+    <developerConnection>scm:${project.scm.vendor}:https://svn.kuali.org/repos/rice/trunk</developerConnection>
+    <url>https://svn.kuali.org/repos/rice/trunk</url>
   </scm>
 
 </project>

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -129,7 +129,7 @@ public class FixedPointPatternConstraint extends ValidDataPatternConstraint {
                         UifConstants.Messages.VALIDATION_MSG_KEY_PREFIX + "positiveOrNegative"));
             } else {
                 validationMessageParams.add(messageService.getMessageText(
-                        UifConstants.Messages.VALIDATION_MSG_KEY_PREFIX + "positive"));
+                        UifConstants.Messages.VALIDATION_MSG_KEY_PREFIX + "positiveOrZero"));
             }
 
             validationMessageParams.add(Integer.toString(precision));

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,9 +74,10 @@ public class ValidationController {
     /**
      * Validates a collection of Spring Beans with no output
      *
-     * @param xmlFiles - The collection of xml files used to load the provided beans
-     * @param beans - Collection of preloaded beans
-     * @param failOnWarning - Whether detecting a warning should cause the validation to fail
+     * @param xmlFiles The collection of xml files used to load the provided beans
+     * @param loader resource loader
+     * @param beans Collection of preloaded beans
+     * @param failOnWarning Whether detecting a warning should cause the validation to fail
      * @return Returns true if the beans past validation
      */
     public boolean validate(String[] xmlFiles, ResourceLoader loader, DefaultListableBeanFactory beans,

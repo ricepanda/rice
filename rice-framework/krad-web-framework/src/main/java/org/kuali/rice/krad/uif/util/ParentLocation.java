@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.container.PageGroup;
 import org.kuali.rice.krad.uif.element.Header;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.view.ExpressionEvaluator;
 import org.kuali.rice.krad.uif.view.View;
 
@@ -73,8 +74,7 @@ public class ParentLocation extends UifDictionaryBeanBase implements Serializabl
         }
 
         //evaluate expressions on relevant content before comparisons
-        this.handleExpressions(view, currentModel, currentContext,
-                view.getViewHelperService().getExpressionEvaluator());
+        this.handleExpressions(view, currentModel, currentContext, ViewLifecycle.getExpressionEvaluator());
 
         //set url values into breadcrumb objects
         if (StringUtils.isNotBlank(parentViewUrl.getOriginalHref()) || (StringUtils.isNotBlank(
@@ -137,7 +137,7 @@ public class ParentLocation extends UifDictionaryBeanBase implements Serializabl
     private void processParentViewDerivedContent(View parentView, String parentViewId, View currentView,
             Object currentModel, Map<String, Object> currentContext) {
         //populate expression graph
-        ExpressionUtils.populatePropertyExpressionsFromGraph(parentView, false);
+        ViewLifecycle.getExpressionEvaluator().populatePropertyExpressionsFromGraph(parentView, false);
 
         //chain parent locations if not null on parent
         if (((View) parentView).getParentLocation() != null) {
@@ -146,8 +146,7 @@ public class ParentLocation extends UifDictionaryBeanBase implements Serializabl
                             currentModel, currentContext));
         }
 
-        handleLabelExpressions(parentView, currentModel, currentContext,
-                currentView.getViewHelperService().getExpressionEvaluator());
+        handleLabelExpressions(parentView, currentModel, currentContext, ViewLifecycle.getExpressionEvaluator());
 
         //label automation, if parent has a label for its breadcrumb and one is not set here use that value
         //it is assumed that if the label contains a SpringEL expression, those properties are available on the
@@ -203,8 +202,7 @@ public class ParentLocation extends UifDictionaryBeanBase implements Serializabl
             BreadcrumbItem breadcrumbItem = parentView.getBreadcrumbItem();
 
             if (breadcrumbItem != null) {
-                expressionEvaluator.evaluateExpressionsOnConfigurable(parentView, breadcrumbItem,
-                        currentContext);
+                expressionEvaluator.evaluateExpressionsOnConfigurable(parentView, breadcrumbItem, currentContext);
             }
 
             if (pageBreadcrumbItem != null && pageBreadcrumbItem.getUrl() != null && StringUtils.isNotBlank(
@@ -227,7 +225,7 @@ public class ParentLocation extends UifDictionaryBeanBase implements Serializabl
                 }
 
                 //populate from expression graph
-                ExpressionUtils.populatePropertyExpressionsFromGraph(thePage, false);
+                ViewLifecycle.getExpressionEvaluator().populatePropertyExpressionsFromGraph(thePage, false);
 
                 Header pageHeader = thePage.getHeader();
 
@@ -238,15 +236,13 @@ public class ParentLocation extends UifDictionaryBeanBase implements Serializabl
                                 thePage.getPropertyExpressions().get(UifConstants.ComponentProperties.HEADER_TEXT));
                     }
 
-                    expressionEvaluator.evaluateExpressionsOnConfigurable(parentView, pageHeader,
-                            currentContext);
+                    expressionEvaluator.evaluateExpressionsOnConfigurable(parentView, pageHeader, currentContext);
                 }
 
                 BreadcrumbItem pageBreadcrumb = thePage.getBreadcrumbItem();
 
                 if (pageBreadcrumb != null) {
-                    expressionEvaluator.evaluateExpressionsOnConfigurable(parentView, pageBreadcrumb,
-                            currentContext);
+                    expressionEvaluator.evaluateExpressionsOnConfigurable(parentView, pageBreadcrumb, currentContext);
                 }
             }
         } catch (RuntimeException e) {
@@ -503,36 +499,4 @@ public class ParentLocation extends UifDictionaryBeanBase implements Serializabl
         return resolvedBreadcrumbItems;
     }
 
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    protected <T> void copyProperties(T parentLocation) {
-        super.copyProperties(parentLocation);
-
-        ParentLocation parentLocationCopy = (ParentLocation) parentLocation;
-
-        if (this.parentViewUrl != null) {
-            parentLocationCopy.setParentViewUrl((UrlInfo) this.parentViewUrl.copy());
-        }
-
-        if (this.parentPageUrl != null) {
-            parentLocationCopy.setParentPageUrl((UrlInfo) this.parentPageUrl.copy());
-        }
-
-        parentLocationCopy.setParentViewLabel(this.parentViewLabel);
-        parentLocationCopy.setParentPageLabel(this.parentPageLabel);
-
-        if (this.viewBreadcrumbItem != null) {
-            parentLocationCopy.setViewBreadcrumbItem((BreadcrumbItem) this.viewBreadcrumbItem.copy());
-        }
-
-        if (this.pageBreadcrumbItem != null) {
-            parentLocationCopy.setPageBreadcrumbItem((BreadcrumbItem) this.pageBreadcrumbItem.copy());
-        }
-
-        if (this.resolvedBreadcrumbItems != null) {
-            List<BreadcrumbItem> resolvedBreadcrumbItemsCopy = ComponentUtils.copy(resolvedBreadcrumbItems);
-            parentLocationCopy.resolvedBreadcrumbItems = resolvedBreadcrumbItemsCopy;
-        }
-    }
 }

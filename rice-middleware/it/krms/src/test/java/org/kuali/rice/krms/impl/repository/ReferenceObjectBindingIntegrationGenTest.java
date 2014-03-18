@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ public final class ReferenceObjectBindingIntegrationGenTest extends AbstractBoTe
     @Before
     public void setup() {
         referenceObjectBindingBoServiceImpl = new ReferenceObjectBindingBoServiceImpl();
-        referenceObjectBindingBoServiceImpl.setBusinessObjectService(getBoService());
+        referenceObjectBindingBoServiceImpl.setDataObjectService(getDataObjectService());
     }
 
     @Test(expected = java.lang.IllegalArgumentException.class)
@@ -156,7 +156,6 @@ public final class ReferenceObjectBindingIntegrationGenTest extends AbstractBoTe
         query.setPredicates(PredicateFactory.equal("id", "ID"));
         CriteriaLookupServiceImpl criteria = new CriteriaLookupServiceImpl();
         criteria.setCriteriaLookupDao(new CriteriaLookupDaoProxy());
-        referenceObjectBindingBoServiceImpl.setCriteriaLookupService(criteria);
         assert(referenceObjectBindingBoServiceImpl.findReferenceObjectBindingIds(query.build()).isEmpty());
         test_createReferenceObjectBinding();
         assert(!referenceObjectBindingBoServiceImpl.findReferenceObjectBindingIds(query.build()).isEmpty());

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -182,12 +182,10 @@ public interface WorkflowDocumentActionsService {
     @WebMethod(operationName = "create")
     @WebResult(name = "document")
     @XmlElement(name = "document", required = true)
-    Document create(
-            @WebParam(name = "documentTypeName") String documentTypeName,
+    Document create(@WebParam(name = "documentTypeName") String documentTypeName,
             @WebParam(name = "initiatorPrincipalId") String initiatorPrincipalId,
-            @WebParam(name = "documentUpdate") DocumentUpdate documentUpdate,
-            @WebParam(name = "documentContentUpdate") DocumentContentUpdate documentContentUpdate)
-            throws RiceIllegalArgumentException, IllegalDocumentTypeException, InvalidActionTakenException;
+            @WebParam(name = "documentUpdate") DocumentUpdate documentUpdate, @WebParam(
+            name = "documentContentUpdate") DocumentContentUpdate documentContentUpdate) throws RiceIllegalArgumentException, IllegalDocumentTypeException, InvalidActionTakenException;
 
     /**
      * Determines which actions against the document with the given id are valid for the principal

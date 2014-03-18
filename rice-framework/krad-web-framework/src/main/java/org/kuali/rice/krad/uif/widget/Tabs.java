@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.component.ClientSideState;
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.container.TabGroup;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 
 /**
  * Widget used for configuring tab options, use componentOptions for most options.
@@ -53,14 +54,14 @@ public class Tabs extends WidgetBase {
      * </ul>
      */
     @Override
-    public void performFinalize(Object model, Component component) {
-        super.performFinalize(model, component);
+    public void performFinalize(Object model, LifecycleElement parent) {
+        super.performFinalize(model, parent);
 
-        if (!(component instanceof TabGroup)) {
-            throw new RuntimeException("Parent for tabs widget should be tab group, not " + component.getClass());
+        if (!(parent instanceof TabGroup)) {
+            throw new RuntimeException("Parent for tabs widget should be tab group, not " + parent.getClass());
         }
 
-        TabGroup tabGroup = (TabGroup) component;
+        TabGroup tabGroup = (TabGroup) parent;
 
         if (StringUtils.isNotBlank(defaultActiveTabId)) {
             // need to find the index of the item to set the plugin active option
@@ -127,18 +128,5 @@ public class Tabs extends WidgetBase {
      */
     public void setPosition(UifConstants.Position position) {
         this.position = position;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        Tabs tabsCopy = (Tabs) component;
-
-        tabsCopy.setDefaultActiveTabId(this.defaultActiveTabId);
-        tabsCopy.setPosition(this.position);
     }
 }

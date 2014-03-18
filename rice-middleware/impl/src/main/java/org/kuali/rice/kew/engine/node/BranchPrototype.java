@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 package org.kuali.rice.kew.engine.node;
-
-import org.kuali.rice.core.framework.persistence.jpa.OrmUtils;
-import org.kuali.rice.kew.service.KEWServiceLocator;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -71,11 +68,6 @@ public class BranchPrototype implements Serializable {
 
 	public void setLockVerNbr(Integer lockVerNbr) {
 		this.lockVerNbr = lockVerNbr;
-	}
-	
-	//@PrePersist
-	public void beforeInsert(){
-		OrmUtils.populateAutoIncValue(this, KEWServiceLocator.getEntityManagerFactory().createEntityManager());
 	}
 	
 }

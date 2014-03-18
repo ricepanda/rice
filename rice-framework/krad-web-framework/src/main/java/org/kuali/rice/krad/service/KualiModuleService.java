@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ public interface KualiModuleService {
     /**
      * get the list of all installed module services
      *
-     * @return
+     * @return list of installed module services
      */
     List<ModuleService> getInstalledModuleServices();
 
@@ -32,7 +32,7 @@ public interface KualiModuleService {
      * Returns the module service with the given ID or null if the module ID is not found.
      *
      * @param moduleId
-     * @return
+     * @return module service
      */
     ModuleService getModuleService(String moduleId);
 
@@ -40,7 +40,7 @@ public interface KualiModuleService {
      * Returns the module service with the given moduleCode or null if the moduleCode is not found.
      *
      * @param namespaceCode
-     * @return
+     * @return module service
      */
     ModuleService getModuleServiceByNamespaceCode(String namespaceCode);
 
@@ -64,8 +64,8 @@ public interface KualiModuleService {
      *
      * This method gets namespace name for the given namespace code
      *
-     * @param namespaceCode
-     * @return
+     * @param namespaceCode namespace code
+     * @return namespace name
      */
     public String getNamespaceName(String namespaceCode);
 

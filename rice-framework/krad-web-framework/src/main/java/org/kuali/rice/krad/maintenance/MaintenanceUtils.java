@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -131,8 +131,7 @@ public class MaintenanceUtils {
      * probably should use Authorization instead? See KULNRVSYS-948
      *
      * @param lockedDocument
-     * @return
-     * @throws org.kuali.rice.kew.api.exception.WorkflowException
+     * @return true if the document lock can be ignored
      *
      */
     private static boolean lockCanBeIgnored(WorkflowDocument lockedDocument) {

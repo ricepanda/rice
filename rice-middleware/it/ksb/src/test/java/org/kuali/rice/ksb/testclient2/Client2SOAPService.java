@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import org.kuali.rice.ksb.messaging.remotedservices.ServiceCallInformationHolder
 public class Client2SOAPService implements SOAPService {
 
 	public String doTheThing(String param) {
-		ServiceCallInformationHolder.stuff.put("Client1SOAPServiceCalled", Boolean.TRUE);
+		ServiceCallInformationHolder.flags.put("Client1SOAPServiceCalled", Boolean.TRUE);
 		return "Client1SOAPService";
 	}
 

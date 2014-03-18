@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ public abstract class ValidCharactersPatternConstraint extends ValidCharactersCo
      * should not include the start(^) and end($) symbols or any length related symbols (*, {0,},
      * etc)
      *
-     * @return
+     * @return regular expression
      */
     abstract protected String getRegexString();
 

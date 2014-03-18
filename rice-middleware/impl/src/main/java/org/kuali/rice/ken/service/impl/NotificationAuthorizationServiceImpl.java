@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.kuali.rice.ken.service.impl;
 
-import org.kuali.rice.core.framework.persistence.dao.GenericDao;
 import org.kuali.rice.ken.bo.NotificationChannelBo;
 import org.kuali.rice.ken.bo.NotificationProducerBo;
 import org.kuali.rice.ken.service.NotificationAuthorizationService;
@@ -35,16 +34,6 @@ import java.util.List;
  */
 public class NotificationAuthorizationServiceImpl implements NotificationAuthorizationService {
     private static org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(NotificationAuthorizationServiceImpl.class);
-
-    private GenericDao businessObjectDao;
-
-    /**
-     * Constructs a NotificationAuthorizationServiceImpl class instance.
-     * @param businessObjectDao
-     */
-    public NotificationAuthorizationServiceImpl(GenericDao businessObjectDao) {
-        this.businessObjectDao = businessObjectDao;
-    }
 
     /**
      * @see org.kuali.rice.ken.service.NotificationAuthorizationService#isProducerAuthorizedToSendNotificationForChannel(org.kuali.rice.ken.bo.NotificationProducerBo, org.kuali.rice.ken.bo.NotificationChannelBo)

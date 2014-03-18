@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import java.util.List;
 @SOAPBinding(style = SOAPBinding.Style.DOCUMENT, use = SOAPBinding.Use.LITERAL, parameterStyle = SOAPBinding.ParameterStyle.WRAPPED)
 public interface ExtensionRepositoryService {
     /**
-     * Returns the {@link ExtensionDefinition} of the {@Link RuleAttribute} for the given id.
+     * Returns the {@link ExtensionDefinition} of the RuleAttribute for the given id.
      * @param id the id to search by.
      * @return the extension definition found for the matching rule attribute service
      * @throws RiceIllegalArgumentException if id is null or blank
@@ -47,7 +47,7 @@ public interface ExtensionRepositoryService {
     ExtensionDefinition getExtensionById(String id) throws RiceIllegalArgumentException;
 
     /**
-     * Returns the {@link ExtensionDefinition} of the {@Link RuleAttribute} for the given name.
+     * Returns the {@link ExtensionDefinition} of the RuleAttribute for the given name.
      * @param name the name to search by.
      * @return the extension definition found for the matching rule attribute service
      * @throws RiceIllegalArgumentException if name is null or blank
@@ -58,7 +58,7 @@ public interface ExtensionRepositoryService {
     ExtensionDefinition getExtensionByName(String name) throws RiceIllegalArgumentException;
 
     /**
-     * Returns the {@link ExtensionDefinition} of the {@Link RuleAttribute} for the given resourceDescriptor.
+     * Returns the {@link ExtensionDefinition} of the {@link RuleAttribute} for the given resourceDescriptor.
      * @param resourceDescriptor the resourceDescriptor to search by.
      * @return the extension definition found for the matching rule attribute service
      * @throws RiceIllegalArgumentException if resourceDescriptor is null or blank

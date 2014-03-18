@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ public class BusinessObjectPropertySerializibilityEvaluator extends PropertySeri
     /**
      * Reads the data dictionary to determine which properties of the document should be serialized.
      *
-     * @see org.kuali.rice.krad.util.documentserializer.PropertySerializabilityEvaluator#initializeEvaluator(org.kuali.rice.krad.document.Document)
+     * {@inheritDoc}
      */
 	@Override
     public void initializeEvaluatorForDocument(Document document) {

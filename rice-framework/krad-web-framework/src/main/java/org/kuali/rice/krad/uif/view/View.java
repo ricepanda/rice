@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.core.api.CoreApiServiceLocator;
-import org.kuali.rice.krad.data.DataObjectUtils;
+import org.kuali.rice.krad.uif.element.HeadLink;
 import org.kuali.rice.krad.datadictionary.DataDictionary;
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
@@ -39,6 +39,7 @@ import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.UifConstants.ViewStatus;
 import org.kuali.rice.krad.uif.UifConstants.ViewType;
 import org.kuali.rice.krad.uif.component.Component;
+import org.kuali.rice.krad.uif.component.DelayedCopy;
 import org.kuali.rice.krad.uif.component.ReferenceCopy;
 import org.kuali.rice.krad.uif.component.RequestParameter;
 import org.kuali.rice.krad.uif.container.ContainerBase;
@@ -46,28 +47,28 @@ import org.kuali.rice.krad.uif.container.Group;
 import org.kuali.rice.krad.uif.container.PageGroup;
 import org.kuali.rice.krad.uif.element.Header;
 import org.kuali.rice.krad.uif.element.Link;
+import org.kuali.rice.krad.uif.element.MetaTag;
 import org.kuali.rice.krad.uif.element.ViewHeader;
-import org.kuali.rice.krad.uif.lifecycle.LifecycleTaskFactory;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleRestriction;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleTask;
-import org.kuali.rice.krad.uif.lifecycle.finalize.FinalizeViewTask;
 import org.kuali.rice.krad.uif.service.ViewHelperService;
-import org.kuali.rice.krad.uif.util.BooleanMap;
 import org.kuali.rice.krad.uif.util.BreadcrumbItem;
 import org.kuali.rice.krad.uif.util.BreadcrumbOptions;
 import org.kuali.rice.krad.uif.util.ClientValidationUtils;
-import org.kuali.rice.krad.uif.util.CloneUtils;
 import org.kuali.rice.krad.uif.util.ComponentFactory;
 import org.kuali.rice.krad.uif.util.ComponentUtils;
 import org.kuali.rice.krad.uif.util.LifecycleAwareList;
 import org.kuali.rice.krad.uif.util.LifecycleAwareMap;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.util.ParentLocation;
 import org.kuali.rice.krad.uif.util.ScriptUtils;
 import org.kuali.rice.krad.uif.widget.BlockUI;
 import org.kuali.rice.krad.uif.widget.Breadcrumbs;
 import org.kuali.rice.krad.uif.widget.Growls;
 import org.kuali.rice.krad.util.KRADConstants;
+import org.kuali.rice.krad.util.KRADUtils;
 import org.kuali.rice.krad.web.form.UifFormBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,9 +102,7 @@ import org.slf4j.LoggerFactory;
 @BeanTags({@BeanTag(name = "view-bean", parent = "Uif-View"),
         @BeanTag(name = "view-knsTheme-bean", parent = "Uif-View-KnsTheme")})
 public class View extends ContainerBase {
-    
     private static final long serialVersionUID = -1220009725554576953L;
-    
     private static final Logger LOG = LoggerFactory.getLogger(ContainerBase.class);
 
     private String namespaceCode;
@@ -130,6 +129,8 @@ public class View extends ContainerBase {
     private boolean stickyApplicationHeader;
     private boolean stickyFooter;
     private boolean stickyApplicationFooter;
+
+    private List<String> contentContainerCssClasses;
 
     // Breadcrumbs
     private Breadcrumbs breadcrumbs;
@@ -158,6 +159,8 @@ public class View extends ContainerBase {
 
     private List<String> additionalScriptFiles;
     private List<String> additionalCssFiles;
+    private List<HeadLink> additionalHeadLinks;
+    private List<MetaTag> additionalMetaTags;
     private boolean useLibraryCssClasses;
 
     private ViewType viewTypeName;
@@ -193,7 +196,9 @@ public class View extends ContainerBase {
 
     private String preLoadScript;
 
-    private List<Group> items;
+    @DelayedCopy
+    private List<? extends Component> items;
+    
     private List<String> viewTemplates;
     
     private Class<? extends ViewHelperService> viewHelperServiceClass;
@@ -218,6 +223,8 @@ public class View extends ContainerBase {
 
         additionalScriptFiles = Collections.emptyList();
         additionalCssFiles = Collections.emptyList();
+        additionalHeadLinks = Collections.emptyList();
+        additionalMetaTags = Collections.emptyList();
         objectPathToConcreteClassMapping = Collections.emptyMap();
         viewRequestParameters = Collections.emptyMap();
         expressionVariables = Collections.emptyMap();
@@ -225,8 +232,10 @@ public class View extends ContainerBase {
         dialogs = Collections.emptyList();
 
         items = Collections.emptyList();
-        viewTemplates = Collections.emptyList();
+        viewTemplates = new LifecycleAwareList<String>(this);
     }
+
+
 
     /**
      * The following initialization is performed:
@@ -238,14 +247,14 @@ public class View extends ContainerBase {
      * views list of dialog groups</li>
      * </ul>
      *
-     * @see org.kuali.rice.krad.uif.container.ContainerBase#performInitialization(org.kuali.rice.krad.uif.view.View,
-     *      Object)
+     * {@inheritDoc}
      */
     @SuppressWarnings("unchecked")
     @Override
     public void performInitialization(Object model) {
         if (model instanceof UifFormBase) {
             UifFormBase form = (UifFormBase) model;
+
             // set view page to page requested on form
             if (StringUtils.isNotBlank(form.getPageId())) {
                 setCurrentPageId(form.getPageId());
@@ -264,14 +273,13 @@ public class View extends ContainerBase {
                     page.setItems(new ArrayList<Group>());
                 }
 
-                // TODO: REMOVE
-                // assignComponentIds(page);
-
                 // add the items configured on the view to the page items, and set as the
                 // new page items
                 List<Component> newItems = (List<Component>) page.getItems();
                 newItems.addAll(items);
                 page.setItems(newItems);
+
+                page.sortItems();
 
                 // reset the items list to include the one page
                 items = new ArrayList<Group>();
@@ -311,12 +319,12 @@ public class View extends ContainerBase {
      * </ul>
      */
     @Override
-    public void performApplyModel(Object model, Component parent) {
+    public void performApplyModel(Object model, LifecycleElement parent) {
         super.performApplyModel(model, parent);
 
         View view = ViewLifecycle.getView();
         if (theme != null) {
-            ViewLifecycle.getHelper().getExpressionEvaluator()
+            ViewLifecycle.getExpressionEvaluator()
                 .evaluateExpressionsOnConfigurable(view, theme, getContext());
 
             theme.configureThemeDefaults();
@@ -334,16 +342,15 @@ public class View extends ContainerBase {
      * up the validator for this view</li>
      * </ul>
      *
-     * @see org.kuali.rice.krad.uif.container.ContainerBase#performFinalize(org.kuali.rice.krad.uif.view.View,
-     *      Object, org.kuali.rice.krad.uif.component.Component)
+     * {@inheritDoc}
      */
     @SuppressWarnings("unchecked")
     @Override
-    public void performFinalize(Object model, Component parent) {
+    public void performFinalize(Object model, LifecycleElement parent) {
         super.performFinalize(model, parent);
         
         assert this == ViewLifecycle.getView();
-
+        
         String preLoadScript = "";
         if (this.getPreLoadScript() != null) {
             preLoadScript = this.getPreLoadScript();
@@ -409,46 +416,55 @@ public class View extends ContainerBase {
 
         this.setOnDocumentReadyScript(onReadyScript);
 
-        // breadcrumb handling
+        // Breadcrumb handling
         breadcrumbOptions.finalizeBreadcrumbs(model, this, breadcrumbItem);
 
-        // add validation default js options for validation framework to View's data attributes
-        Object groupValidationDataDefaults = KRADServiceLocatorWeb.getDataDictionaryService().getDictionaryObject(
+        // Add validation default js options for validation framework to View's data attributes
+        Object groupValidationDataDefaults = KRADServiceLocatorWeb.getDataDictionaryService().getDictionaryBean(
                 UifConstants.GROUP_VALIDATION_DEFAULTS_MAP_ID);
-        Object fieldValidationDataDefaults = KRADServiceLocatorWeb.getDataDictionaryService().getDictionaryObject(
+        Object fieldValidationDataDefaults = KRADServiceLocatorWeb.getDataDictionaryService().getDictionaryBean(
                 UifConstants.FIELD_VALIDATION_DEFAULTS_MAP_ID);
+        Object actionDataDefaults = KRADServiceLocatorWeb.getDataDictionaryService().getDictionaryBean(
+                UifConstants.ACTION_DEFAULTS_MAP_ID);
+        Object requiredIndicator = KRADServiceLocatorWeb.getDataDictionaryService().getDictionaryBean(
+                UifConstants.REQUIRED_INDICATOR_ID);
 
-        this.addDataAttribute(UifConstants.DataAttributes.GROUP_VALIDATION_DEFAULTS, ScriptUtils.convertToJsValue(
-                (Map<String, String>) groupValidationDataDefaults));
-        this.addDataAttribute(UifConstants.DataAttributes.FIELD_VALIDATION_DEFAULTS, ScriptUtils.convertToJsValue(
-                (Map<String, String>) fieldValidationDataDefaults));
+        // Add data defaults for common components to the view for use in js (to reduce size of individual components)
+        this.addScriptDataAttribute(UifConstants.DataAttributes.GROUP_VALIDATION_DEFAULTS,
+                ScriptUtils.convertToJsValue((Map<String, String>) groupValidationDataDefaults));
+        this.addScriptDataAttribute(UifConstants.DataAttributes.FIELD_VALIDATION_DEFAULTS,
+                ScriptUtils.convertToJsValue((Map<String, String>) fieldValidationDataDefaults));
+        this.addScriptDataAttribute(UifConstants.DataAttributes.ACTION_DEFAULTS,
+                ScriptUtils.convertToJsValue((Map<String, String>) actionDataDefaults));
+        this.addScriptDataAttribute(UifConstants.DataAttributes.REQ_INDICATOR,
+                (String) requiredIndicator);
 
         // give view role attribute for js selections
-        this.addDataAttribute(UifConstants.DataAttributes.ROLE, "view");
+        this.addDataAttribute(UifConstants.DataAttributes.ROLE, UifConstants.RoleTypes.VIEW);
+
+        // Add state mapping to post metadata
+        ViewLifecycle.getViewPostMetadata().addComponentPostData(this, "stateObjectBindingPath",
+                stateObjectBindingPath);
+        ViewLifecycle.getViewPostMetadata().addComponentPostData(this, "stateMapping",
+                stateMapping);
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.container.ContainerBase#initializePendingTasks(org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase, java.util.Queue)
+     * {@inheritDoc}
      */
     @Override
-    public void initializePendingTasks(ViewLifecyclePhase phase, Queue<ViewLifecycleTask> pendingTasks) {
+    public void initializePendingTasks(ViewLifecyclePhase phase, Queue<ViewLifecycleTask<?>> pendingTasks) {
         super.initializePendingTasks(phase, pendingTasks);
-        
-        if (UifConstants.ViewPhases.FINALIZE.equals(phase.getViewPhase())) {
-            pendingTasks.offer(LifecycleTaskFactory.getTask(FinalizeViewTask.class, phase));
-        }
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#notifyCompleted(org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase)
+     * {@inheritDoc}
      */
     @Override
     public void notifyCompleted(ViewLifecyclePhase phase) {
         super.notifyCompleted(phase);
 
         if (phase.getViewPhase().equals(UifConstants.ViewPhases.INITIALIZE)) {
-            // initialize the expression evaluator impl
-            viewHelperService.getExpressionEvaluator().initializeEvaluationContext(phase.getModel());
 
             // get the list of dialogs from the view and then set the refreshedByAction on the
             // dialog to true.
@@ -460,65 +476,35 @@ public class View extends ContainerBase {
             }
         }
 
-        // do indexing                               
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("processing indexing for view: " + getId() + " after phase " + phase);
-        }
-        index();
-        
         if (phase.getViewPhase().equals(UifConstants.ViewPhases.FINALIZE)) {
             ViewLifecycle.getHelper().performCustomViewFinalize(phase.getModel());
         }
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#getComponentsForLifecycle()
+     * Gets all breadcrumb items related to this view's parent location. 
+     * 
+     * @return breadcrumb items
      */
-    @Override
-    public List<Component> getComponentsForLifecycle() {
-        List<Component> components = new ArrayList<Component>();
-
-        components.add(applicationHeader);
-        components.add(applicationFooter);
-        components.add(topGroup);
-        components.add(navigation);
-        components.add(breadcrumbs);
-        components.add(growls);
-        components.addAll(dialogs);
-        components.add(viewMenuLink);
-        components.add(navigationBlockUI);
-        components.add(refreshBlockUI);
-        components.add(breadcrumbItem);
-
-        if (parentLocation != null) {
-            components.add(parentLocation.getPageBreadcrumbItem());
-            components.add(parentLocation.getViewBreadcrumbItem());
-            for (BreadcrumbItem item : parentLocation.getResolvedBreadcrumbItems()) {
-                if (!components.contains(item)) {
-                    components.add(item);
-                }
+    public List<BreadcrumbItem> getBreadcrumbItems() {
+        if (parentLocation == null) {
+            return Collections.emptyList();
+        }
+        
+        List<BreadcrumbItem> breadcrumbItems = new ArrayList<BreadcrumbItem>();
+        breadcrumbItems.add(parentLocation.getPageBreadcrumbItem());
+        breadcrumbItems.add(parentLocation.getViewBreadcrumbItem());
+        for (BreadcrumbItem item : parentLocation.getResolvedBreadcrumbItems()) {
+            if (!breadcrumbItems.contains(item)) {
+                breadcrumbItems.add(item);
             }
         }
-
-        // Note super items should be added after navigation and other view components so
-        // conflicting ids between nav and page do not occur on page navigation via ajax
-        components.addAll(super.getComponentsForLifecycle());
-
-        // remove all pages that are not the current page
-        if (!singlePageView && (this.getItems() != null)) {
-            for (Group group : this.getItems()) {
-                if ((group instanceof PageGroup) && !StringUtils.equals(group.getId(), getCurrentPageId()) && components
-                        .contains(group)) {
-                    components.remove(group);
-                }
-            }
-        }
-
-        return components;
+        
+        return breadcrumbItems;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.container.Container#getSupportedComponents()
+     * {@inheritDoc}
      */
     @Override
     public Set<Class<? extends Component>> getSupportedComponents() {
@@ -529,7 +515,7 @@ public class View extends ContainerBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getComponentTypeName()
+     * {@inheritDoc}
      */
     @Override
     public String getComponentTypeName() {
@@ -537,15 +523,20 @@ public class View extends ContainerBase {
     }
 
     /**
-     * Iterates through the contained page items and returns the Page that
-     * matches the set current page id
+     * Iterates through the contained page items and returns the Page that matches the set current page id or
+     * the first page in the case of a single page view.
      *
-     * @return Page instance
+     * @return page group instance
      */
+    @ViewLifecycleRestriction(exclude=UifConstants.ViewPhases.PRE_PROCESS)
     public PageGroup getCurrentPage() {
-        for (Group pageGroup : this.getItems()) {
-            if (StringUtils.equals(pageGroup.getId(), getCurrentPageId()) && pageGroup instanceof PageGroup) {
-                return (PageGroup) pageGroup;
+        for (Component item : this.getItems()) {
+            if (!(item instanceof PageGroup)) {
+                continue;
+            }
+
+            if (singlePageView || StringUtils.equals(item.getId(), getCurrentPageId())) {
+                return (PageGroup) item;
             }
         }
 
@@ -553,13 +544,33 @@ public class View extends ContainerBase {
     }
 
     /**
+     * Getter for returning the view's items and page for inclusion in the pre-process phase.
+     *
+     * <p>Note this is necessary so we get IDs assigned for all the pages during the pre-process phase. For other
+     * phases, only the current page is picked up.</p>
+     *
+     * @return list of components to include for the pre-process phase
+     */
+    @ViewLifecycleRestriction(UifConstants.ViewPhases.PRE_PROCESS)
+    public List<Component> getPagesForPreprocessing() {
+        List<Component> items = (List<Component>) getItems();
+
+        if (getPage() != null) {
+            items = new ArrayList<Component>();
+            items.add(getPage());
+        }
+
+        return items;
+    }
+
+    /**
      * Override sort method to prevent sorting in the case of a single page view, since the items
      * will get pushed into the configured page and sorted through the page
      */
     @Override
-    protected void sortItems(Object model) {
+    public void sortItems() {
         if (!singlePageView) {
-            super.sortItems(model);
+            super.sortItems();
         }
     }
 
@@ -842,6 +853,43 @@ public class View extends ContainerBase {
     }
 
     /**
+     * List of CSS style classes that will be applied to a div that wraps the content.
+     *
+     * <p>Wrapping the content gives the ability to move between a fluid width container or a fixed width
+     * container. The div is also wraps content inside sticky elements (header and footer), so visual treatment
+     * can be given to the full width of the screen while restricting the area of the content.</p>
+     *
+     * <p>In Bootstrap, use 'container-fluid' for a fluid width container, and 'container' for a fixed width
+     * container.</p>
+     *
+     * @return List of css classes to apply to content wrapper div
+     */
+    public List<String> getContentContainerCssClasses() {
+        return contentContainerCssClasses;
+    }
+
+    /**
+     * @see View#getContentContainerCssClasses()
+     */
+    public void setContentContainerCssClasses(List<String> contentContainerCssClasses) {
+        this.contentContainerCssClasses = contentContainerCssClasses;
+    }
+
+    /**
+     * Returns the list of {@link View#getContentContainerCssClasses()} as a concatenated string (each class
+     * is separated by a space).
+     *
+     * @return String of content css classes
+     */
+    public String getContentContainerClassesAsString() {
+        if (contentContainerCssClasses != null) {
+            return StringUtils.join(contentContainerCssClasses, " ");
+        }
+
+        return "";
+    }
+
+    /**
      * Specifies what page should be rendered by default. This is the page that
      * will be rendered when the <code>View</code> is first rendered or when the
      * current page is not set
@@ -874,17 +922,15 @@ public class View extends ContainerBase {
      * @return id of the page that should be displayed
      */
     public String getCurrentPageId() {
-        if (!isFinal()) {
-            checkMutable(true);
-        }
-        
         // default current page if not set
         if (StringUtils.isBlank(currentPageId)) {
             if (StringUtils.isNotBlank(entryPageId)) {
                 currentPageId = entryPageId;
             } else if ((getItems() != null) && !getItems().isEmpty()) {
-                Group firstPageGroup = getItems().get(0);
-                currentPageId = firstPageGroup.getId();
+                Component firstPageGroup = getItems().get(0);
+                if (firstPageGroup instanceof PageGroup) {
+                    currentPageId = firstPageGroup.getId();
+                }
             }
         }
 
@@ -1088,6 +1134,54 @@ public class View extends ContainerBase {
     }
 
     /**
+     * Declares additional link tags that should be included with the
+     * <code>View</code> in the <head></head>. These files are brought into the HTML page along with
+     * common CSS files configured for the Rice application. Each entry should
+     * contain the path to the CSS file, either a relative path, path from web
+     * root, or full URI
+     * <p>
+     * e.g. '/krad/css/stacked-view.css', '../css/stacked-view.css',
+     * 'http://my.edu/web/stacked-view.css'
+     * </p>
+     *
+     * @return headlink objects
+     */
+    @BeanTagAttribute(name = "additionalHeadLinks", type = BeanTagAttribute.AttributeType.LISTVALUE)
+    public List<HeadLink> getAdditionalHeadLinks() {
+        return additionalHeadLinks;
+    }
+
+    /**
+     * Setter for the List of additional <link> tags to included in the
+     * <head></head>
+     *
+     * @param additionalHeadLinks
+     */
+    public void setAdditionalHeadLinks(List<HeadLink> additionalHeadLinks) {
+
+        this.additionalHeadLinks = additionalHeadLinks;
+    }
+
+    /**
+     *
+     * @return   additionalMetaTags
+     */
+    @BeanTagAttribute(name = "additionalMetaTags", type = BeanTagAttribute.AttributeType.LISTVALUE)
+    public List<MetaTag> getAdditionalMetaTags() {
+        return additionalMetaTags;
+    }
+
+    /**
+     *
+     * @param additionalMetaTags
+     */
+    public void setAdditionalMetaTags(List<MetaTag> additionalMetaTags) {
+        this.additionalMetaTags = additionalMetaTags;
+    }
+
+
+
+    /**
      * True if the libraryCssClasses set on components will be output to their class attribute, false otherwise.
      *
      * @return true if using libraryCssClasses on components
@@ -1125,10 +1219,6 @@ public class View extends ContainerBase {
      * @return list of template names that should be included for rendering the view
      */
     public List<String> getViewTemplates() {
-        if (viewTemplates == Collections.EMPTY_LIST && isMutable(true)) {
-            viewTemplates = new LifecycleAwareList<String>(this);
-        }
-        
         return viewTemplates;
     }
 
@@ -1141,13 +1231,11 @@ public class View extends ContainerBase {
         if (StringUtils.isEmpty(template)) {
             return;
         }
-        
-        if (viewTemplates.isEmpty()) {
-            setViewTemplates(new ArrayList<String>());
-        }
-        
+
         if (!viewTemplates.contains(template)) {
-            viewTemplates.add(template);
+            synchronized (viewTemplates) {
+                viewTemplates.add(template);
+            }
         }
     }
 
@@ -1160,7 +1248,7 @@ public class View extends ContainerBase {
         checkMutable(true);
         
         if (viewTemplates == null) {
-            this.viewTemplates = Collections.emptyList();
+            this.viewTemplates = new LifecycleAwareList<String>(this);
         } else {
             this.viewTemplates = new LifecycleAwareList<String>(this, viewTemplates);
         }
@@ -1216,7 +1304,7 @@ public class View extends ContainerBase {
         checkMutable(true);
         this.viewHelperServiceClass = viewHelperServiceClass;
         if ((this.viewHelperService == null) && (this.viewHelperServiceClass != null)) {
-            viewHelperService = DataObjectUtils.newInstance(viewHelperServiceClass);
+            viewHelperService = KRADUtils.createNewObjectFromClass(viewHelperServiceClass);
         }
     }
 
@@ -1243,11 +1331,11 @@ public class View extends ContainerBase {
     /**
      * Invoked to produce a ViewIndex of the current view's components
      */
-    public void index() {
+    public void clearIndex() {
         if (this.viewIndex == null) {
             this.viewIndex = new ViewIndex();
         }
-        this.viewIndex.index(this);
+        this.viewIndex.clearIndex(this);
     }
 
     /**
@@ -1382,7 +1470,7 @@ public class View extends ContainerBase {
     public void setPresentationControllerClass(
             Class<? extends ViewPresentationController> presentationControllerClass) {
         checkMutable(true);
-        this.presentationController = DataObjectUtils.newInstance(presentationControllerClass);
+        this.presentationController = KRADUtils.createNewObjectFromClass(presentationControllerClass);
     }
 
     /**
@@ -1423,7 +1511,7 @@ public class View extends ContainerBase {
      */
     public void setAuthorizerClass(Class<? extends ViewAuthorizer> authorizerClass) {
         checkMutable(true);
-        this.authorizer = DataObjectUtils.newInstance(authorizerClass);
+        this.authorizer = KRADUtils.createNewObjectFromClass(authorizerClass);
     }
 
     /**
@@ -1576,6 +1664,7 @@ public class View extends ContainerBase {
      *
      * @return page group for single page views
      */
+    @ViewLifecycleRestriction
     @BeanTagAttribute(name = "page", type = BeanTagAttribute.AttributeType.SINGLEBEAN)
     public PageGroup getPage() {
         return this.page;
@@ -1592,13 +1681,14 @@ public class View extends ContainerBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.container.ContainerBase#getItems()
+     * {@inheritDoc}
      */
     @Override
+    @ViewLifecycleRestriction
     @BeanTagAttribute(name = "items", type = BeanTagAttribute.AttributeType.LISTBEAN)
-    public List<? extends Group> getItems() {
+    public List<? extends Component> getItems() {
         if (items == Collections.EMPTY_LIST && isMutable(true)) {
-            items = new LifecycleAwareList<Group>(this);
+            items = new LifecycleAwareList<Component>(this);
         }
         
         return items;
@@ -1615,10 +1705,10 @@ public class View extends ContainerBase {
         checkMutable(true);
         
         if (items == null) {
-            items = Collections.emptyList();
+            this.items = Collections.emptyList();
         } else {
             // TODO: Fix this unchecked condition.
-            this.items = new LifecycleAwareList<Group>(this, (List<Group>) items);
+            this.items = new LifecycleAwareList<Component>(this, (List<Component>) items);
         }
     }
 
@@ -1629,6 +1719,10 @@ public class View extends ContainerBase {
      */
     @BeanTagAttribute(name = "dialogs", type = BeanTagAttribute.AttributeType.LISTBEAN)
     public List<Group> getDialogs() {
+        if (dialogs == Collections.EMPTY_LIST && isMutable(true)) {
+            dialogs = new LifecycleAwareList<Group>(this);
+        }
+
         return dialogs;
     }
 
@@ -1639,7 +1733,12 @@ public class View extends ContainerBase {
      */
     public void setDialogs(List<Group> dialogs) {
         checkMutable(true);
-        this.dialogs = Collections.unmodifiableList(dialogs);
+
+        if (dialogs == null) {
+            this.dialogs = Collections.emptyList();
+        } else {
+            this.dialogs = new LifecycleAwareList<Group>(this, dialogs);
+        }
     }
 
     /**
@@ -1788,7 +1887,7 @@ public class View extends ContainerBase {
     }
 
     /**
-     * The pathBasedBreadcrumbs for this View.  This has been added for copyProperties().
+     * The pathBasedBreadcrumbs for this View.
      *
      * @param pathBasedBreadcrumbs
      */
@@ -2105,7 +2204,6 @@ public class View extends ContainerBase {
      * Returns the general context that is available before the apply model phase (during the
      * initialize phase)
      * 
-     * @param view view instance for context
      * @return context map
      */
     public Map<String, Object> getPreModelContext() {
@@ -2114,6 +2212,11 @@ public class View extends ContainerBase {
 
             context.put(UifConstants.ContextVariableNames.VIEW, this);
             context.put(UifConstants.ContextVariableNames.VIEW_HELPER, viewHelperService);
+
+            ViewTheme theme = getTheme();
+            if (theme != null) {
+                context.put(UifConstants.ContextVariableNames.THEME_IMAGES, theme.getImageDirectory());
+            }
 
             Map<String, String> properties = CoreApiServiceLocator.getKualiConfigurationService().getAllProperties();
             context.put(UifConstants.ContextVariableNames.CONFIG_PROPERTIES, properties);
@@ -2127,175 +2230,23 @@ public class View extends ContainerBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
+     * This overridden method ...
+     * 
+     * @see org.kuali.rice.krad.uif.component.ComponentBase#clone()
      */
     @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        View viewCopy = (View) component;
-
-        viewCopy.setNamespaceCode(this.namespaceCode);
-        viewCopy.setViewName(this.viewName);
-
-        if (this.theme != null) {
-            viewCopy.setTheme((ViewTheme) this.theme.copy());
-        }
-
-        viewCopy.setStateObjectBindingPath(this.stateObjectBindingPath);
-
-        if (this.stateMapping != null) {
-            viewCopy.setStateMapping(CloneUtils.deepClone(this.stateMapping));
-        }
-
-        viewCopy.setUnifiedHeader(this.unifiedHeader);
-
-        if (this.topGroup != null) {
-            viewCopy.setTopGroup((Group) this.topGroup.copy());
-        }
-
-        if (this.applicationHeader != null) {
-            viewCopy.setApplicationHeader((Header) this.applicationHeader.copy());
-        }
-
-        if (this.applicationFooter != null) {
-            viewCopy.setApplicationFooter((Group) this.applicationFooter.copy());
-        }
-
-        viewCopy.setStickyApplicationFooter(this.stickyApplicationFooter);
-        viewCopy.setStickyApplicationHeader(this.stickyApplicationHeader);
-        viewCopy.setStickyBreadcrumbs(this.stickyBreadcrumbs);
-        viewCopy.setStickyFooter(this.stickyFooter);
-        viewCopy.setStickyHeader(this.stickyHeader);
-        viewCopy.setStickyTopGroup(this.stickyTopGroup);
-
-        if (this.breadcrumbItem != null) {
-            viewCopy.setBreadcrumbItem((BreadcrumbItem) this.breadcrumbItem.copy());
-        }
-
-        if (this.breadcrumbs != null) {
-            viewCopy.setBreadcrumbs((Breadcrumbs) this.breadcrumbs.copy());
-        }
-
-        if (this.breadcrumbOptions != null) {
-            viewCopy.setBreadcrumbOptions((BreadcrumbOptions) this.breadcrumbOptions.copy());
-        }
-
-        if (this.parentLocation != null) {
-            viewCopy.setParentLocation((ParentLocation) this.parentLocation.copy());
-        }
-
-        if (this.pathBasedBreadcrumbs != null) {
-            List<BreadcrumbItem> pathBasedBreadcrumbsCopy = ComponentUtils.copy(pathBasedBreadcrumbs);
-            viewCopy.setPathBasedBreadcrumbs(pathBasedBreadcrumbsCopy);
-        }
-
-        viewCopy.setGrowlMessagingEnabled(this.growlMessagingEnabled);
-
-        if (this.growls != null) {
-            viewCopy.setGrowls((Growls) this.growls.copy());
-        }
-
-        if (this.refreshBlockUI != null) {
-            viewCopy.setRefreshBlockUI((BlockUI) this.refreshBlockUI.copy());
-        }
-
-        if (this.navigationBlockUI != null) {
-            viewCopy.setNavigationBlockUI((BlockUI) this.navigationBlockUI.copy());
-        }
-
-        viewCopy.setEntryPageId(this.entryPageId);
-        viewCopy.setCurrentPageId(this.currentPageId);
-
-        if (this.navigation != null) {
-            viewCopy.setNavigation((Group) this.navigation.copy());
-        }
-
-        viewCopy.setFormClass(this.formClass);
-        viewCopy.setDefaultBindingObjectPath(this.defaultBindingObjectPath);
-
-        if (this.objectPathToConcreteClassMapping != null) {
-            viewCopy.setObjectPathToConcreteClassMapping(new HashMap<String, Class<?>>(this.objectPathToConcreteClassMapping));
-        }
-
-        if (this.additionalCssFiles != null) {
-            viewCopy.setAdditionalCssFiles(new ArrayList<String>(this.additionalCssFiles));
-        }
-
-        if (this.additionalScriptFiles != null) {
-            viewCopy.setAdditionalScriptFiles(new ArrayList<String>(this.additionalScriptFiles));
-        }
-
-        viewCopy.setUseLibraryCssClasses(this.useLibraryCssClasses);
-        viewCopy.setViewTypeName(this.viewTypeName);
+    public View clone() throws CloneNotSupportedException {
+        View viewCopy = (View) super.clone();
 
         if (this.viewIndex != null) {
             viewCopy.viewIndex = this.viewIndex.copy();
         }
 
-        if (this.viewRequestParameters != null) {
-            viewCopy.setViewRequestParameters(new HashMap<String, String>(this.viewRequestParameters));
-        }
-
-        viewCopy.setPersistFormToSession(this.persistFormToSession);
-
-        if (this.sessionPolicy != null) {
-            viewCopy.setSessionPolicy(CloneUtils.deepClone(this.sessionPolicy));
-        }
-
-        viewCopy.setPresentationController(this.presentationController);
-        viewCopy.setAuthorizer(this.authorizer);
-
-        if (this.actionFlags != null) {
-            viewCopy.setActionFlags(new BooleanMap(this.actionFlags));
-        }
-
-        if (this.editModes != null) {
-            viewCopy.setEditModes(new BooleanMap(this.editModes));
-        }
-
-        if (this.expressionVariables != null) {
-            viewCopy.setExpressionVariables(new HashMap<String, String>(this.expressionVariables));
-        }
-
-        viewCopy.setSinglePageView(this.singlePageView);
-        viewCopy.setMergeWithPageItems(this.mergeWithPageItems);
-
-        if (this.page != null) {
-            viewCopy.setPage((PageGroup) this.page.copy());
-        }
-
-        if (this.dialogs != null) {
-            List<Group> dialogsCopy = ComponentUtils.copy(dialogs);
-            viewCopy.setDialogs(dialogsCopy);
-        }
-
-        if (this.viewMenuLink != null) {
-            viewCopy.setViewMenuLink((Link) this.viewMenuLink.copy());
-        }
-
-        viewCopy.setViewMenuGroupName(this.viewMenuGroupName);
-        viewCopy.setApplyDirtyCheck(this.applyDirtyCheck);
-        viewCopy.setTranslateCodesOnReadOnlyDisplay(this.translateCodesOnReadOnlyDisplay);
-        viewCopy.setSupportsRequestOverrideOfReadOnlyFields(this.supportsRequestOverrideOfReadOnlyFields);
-        viewCopy.setDisableBrowserCache(this.disableBrowserCache);
-        viewCopy.setDisableNativeAutocomplete(this.disableNativeAutocomplete);
-        viewCopy.setPreLoadScript(this.preLoadScript);
-
-        if (this.viewTemplates != null) {
-            viewCopy.setViewTemplates(new ArrayList<String>(this.viewTemplates));
-        }
-
-        if (this.viewHelperServiceClass != null) {
-            viewCopy.setViewHelperServiceClass(this.viewHelperServiceClass);
-        }
-        else if (this.viewHelperService != null) {
-            viewCopy.setViewHelperService(CloneUtils.deepClone(this.viewHelperService));
-        }
+        return viewCopy;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#completeValidation
+     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
      */
     @Override
     public void completeValidation(ValidationTrace tracer) {

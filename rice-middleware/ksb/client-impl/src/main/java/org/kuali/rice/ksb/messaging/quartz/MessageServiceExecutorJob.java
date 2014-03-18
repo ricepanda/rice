@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,8 +46,9 @@ public class MessageServiceExecutorJob implements Job, Serializable {
     public void execute(JobExecutionContext jec) throws JobExecutionException {
 	try {
 	    PersistedMessageBO message = (PersistedMessageBO) jec.getJobDetail().getJobDataMap().get(MESSAGE_KEY);
-	    message.setQueueStatus(KSBConstants.ROUTE_QUEUE_ROUTING);
-	    KSBServiceLocator.getMessageQueueService().save(message);
+ 	    message.setQueueStatus(KSBConstants.ROUTE_QUEUE_ROUTING);
+        message.setLockVerNbr(null);
+	    message = KSBServiceLocator.getMessageQueueService().save(message);
 	    KSBServiceLocator.getThreadPool().execute(new MessageServiceInvoker(message));
 	} catch (Throwable t) {
 	    LOG.error("Caught throwable attempting to process message in exception messaging queue.", t);

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.kuali.rice.krad.uif.view;
 
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
+import org.kuali.rice.krad.inquiry.InquirableImpl;
 import org.kuali.rice.krad.uif.UifConstants.ViewType;
 
 /**
@@ -60,7 +61,7 @@ public class InquiryView extends FormView {
      * <li>Set the abstractTypeClasses map for the inquiry object path</li>
      * </ul>
      *
-     * @see org.kuali.rice.krad.uif.container.ContainerBase#performInitialization(org.kuali.rice.krad.uif.view.View, java.lang.Object)
+     * {@inheritDoc}
      */
     @Override
     public void performInitialization(Object model) {
@@ -96,14 +97,20 @@ public class InquiryView extends FormView {
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
+     * Clones the {@code InquiryView} with a deep copy so that a nested inquiry can be called within an inquiry.
+     *
+     * @return a clone of the current {@code InquiryView}
+     *
+     * @see org.kuali.rice.krad.uif.component.ComponentBase#clone()
      */
     @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
+    public InquiryView clone() throws CloneNotSupportedException {
+        InquiryView inquiryViewCopy = (InquiryView) super.clone();
 
-        InquiryView inquiryViewCopy = (InquiryView) component;
+        if (getViewHelperService() != null) {
+            inquiryViewCopy.setViewHelperService(((InquirableImpl) getViewHelperService()).copy());
+        }
 
-        inquiryViewCopy.setDataObjectClassName(this.dataObjectClassName);
+        return inquiryViewCopy;
     }
 }

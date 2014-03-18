@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -455,7 +455,7 @@ public abstract class AllowCharacterConstraint extends ValidCharactersPatternCon
      * flags set. This string is intended to be placed within the or set of a regex, ie between the
      * [ ] symbols
      *
-     * @return
+     * @return regular expression for matching allowed characters
      */
     protected String getAllowedCharacterRegex() {
         StringBuilder regexString = new StringBuilder("");

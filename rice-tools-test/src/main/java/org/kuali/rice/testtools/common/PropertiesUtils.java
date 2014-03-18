@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,18 +30,24 @@ import java.util.Properties;
 
 /**
  * <p>
- * Util Properties methods which have come from refactoring test generation using freemarker.
+ * Util Properties methods which have come from refactoring test generation using freemarker, providing overriding of
+ * file properties from System Properties as well as setting file properties as System Properties, as well as turning
+ * numbered properties to a List.
  * </p>
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 public class PropertiesUtils {
 
     /**
+     * <p>
+     * Plain load Properties from the given inputStream.
+     * </p>
+     *
      * @param inputStream to read properties from
      * @return Properties read from given Inputstream
      * @throws IOException
      */
-    public static Properties loadProperties(InputStream inputStream) throws IOException {
+    public Properties loadProperties(InputStream inputStream) throws IOException {
         Properties props = new Properties();
 
         if(inputStream != null) {
@@ -57,10 +63,12 @@ public class PropertiesUtils {
      * </p><p>
      * If a FileNotFoundException is thrown opening the InputStream an attempt will be made to read as a resource.
      * </p>
+     *
      * @param fileLocation null means use resourceLocation
      * @param resourceLocation load resource as a stream {@code getClass().getClassLoader().getResourceAsStream(resourceLocation);}
      * @return Properties read from given Inputstream or Resource Loaction if the InputStream is null
      * @throws IOException
+     * @deprecated {@see #loadProperties(String)}
      */
     public Properties loadProperties(String fileLocation, String resourceLocation) throws IOException {
         Properties props = null;
@@ -70,13 +78,19 @@ public class PropertiesUtils {
                 in = new FileInputStream(fileLocation);
             } catch (FileNotFoundException fio) {
                 System.out.println(fio.getMessage() + " trying to read as resource.");
-                in = getClass().getClassLoader().getResourceAsStream(resourceLocation);
+                if (resourceLocation != null) {
+                    System.out.println("Trying to read as " + resourceLocation+ " as a resource.");
+                    in = getClass().getClassLoader().getResourceAsStream(resourceLocation);
+                }
             }
         } else {
             in = getClass().getClassLoader().getResourceAsStream(resourceLocation);
+            if (in == null) {
+                System.out.println("Unable to read " + fileLocation + " as a file or " + resourceLocation + " as a resource stream");
+            }
         }
         if(in != null) {
-            props = PropertiesUtils.loadProperties(in);
+            props = loadProperties(in);
             in.close();
         }
 
@@ -85,17 +99,84 @@ public class PropertiesUtils {
 
     /**
      * <p>
+     * Read Properties from given Loaction
+     * </p><p>
+     * If a FileNotFoundException is thrown opening the InputStream an attempt will be made to read as a resource.
+     * </p>
+     *
+     * @param location
+     * @return Properties read from given Inputstream or Resource Loaction if the InputStream is null
+     * @throws IOException
+     */
+    public Properties loadProperties(String location) throws IOException {
+        Properties props = null;
+        InputStream in = null;
+        try {
+            in = new FileInputStream(location);
+        } catch (FileNotFoundException fio) {
+            System.out.println(fio.getMessage() + " trying to read as resource.");
+            in = getClass().getClassLoader().getResourceAsStream(location);
+            if (in == null) {
+                System.out.println("Unable to read " + location + " as a resource stream");
+            }
+        }
+        if(in != null) {
+            props = loadProperties(in);
+            in.close();
+        }
+
+        return props;
+    }
+
+    public Properties loadPropertiesWithSystemAndOverrides(String location) throws IOException {
+        Properties properties =  loadProperties(location);
+        return systemPropertiesAndOverride(properties);
+    }
+
+    /**
+     * <p>
+     * Beware of classloader/timing issues!  Sometimes properties get added to the System properties after the point
+     * you might expect.  Resulting in the System property not really being set for when you expected, such as with
+     * settign statics.  Looks like WebDriverLegacyITBase has this going on with public.remote.url
+     * </p>
+     *
+     * @param location file or resource to load properties from, file is attempted first
+     * @return Properties
+     * @throws IOException
+     */
+    public Properties loadPropertiesWithSystemAndOverridesIntoSystem(String location) throws IOException {
+        Properties properties = loadProperties(location);
+        properties = systemPropertiesAndOverride(properties);
+
+        Iterator propKeys = properties.keySet().iterator();
+        while (propKeys.hasNext()) {
+            String key = (String)propKeys.next();
+            if (System.getProperty(key) == null) {
+                System.setProperty(key, properties.getProperty(key));
+            }
+        }
+        return properties;
+    }
+
+    public Properties loadPropertiesWithSystemOverrides(String location) throws IOException {
+        Properties properties =  loadProperties(location);
+        return systemPropertiesOverride(properties);
+    }
+
+    /**
+     * <p>
      * Read the properties from an inputStream overridding keys defined as JVM arguments.
      * </p><p>
-     * {see #systemPropertiesOverride}
+     * {@see #systemPropertiesOverride}
      * </p>
+     *
      * @param inputStream to read properties from
      * @return Properties loaded from inputStream and overridden with JVM arguments
      * @throws IOException
      */
-    public static Properties loadPropertiesWithSystemOverrides(InputStream inputStream) throws IOException {
-        Properties props = PropertiesUtils.loadProperties(inputStream);
-        PropertiesUtils.systemPropertiesOverride(props);
+    public  Properties loadPropertiesWithSystemOverrides(InputStream inputStream) throws IOException {
+        Properties props = loadProperties(inputStream);
+        props = systemPropertiesOverride(props);
         return props;
     }
 
@@ -104,7 +185,7 @@ public class PropertiesUtils {
      * Read the properties from an inputStream overridding keys defined as JVM arguments and transforming numbered keys
      * into a list.
      * </p><p>
-     * {see #systemPropertiesOverride}
+     * {@see #systemPropertiesOverride}
      * {@see #transformNumberedPropertiesToList}
      * </p>
      *
@@ -112,10 +193,10 @@ public class PropertiesUtils {
      * @return Properties loaded from inputStream, overridden with JVM arguments, and keys ending in numbers transformed to a List
      * @throws IOException
      */
-    public static Properties loadPropertiesWithSystemOverridesAndNumberedPropertiesToList(InputStream inputStream) throws IOException {
-        Properties props = PropertiesUtils.loadProperties(inputStream);
-        PropertiesUtils.systemPropertiesOverride(props);
-        PropertiesUtils.transformNumberedPropertiesToList(props);
+    public Properties loadPropertiesWithSystemOverridesAndNumberedPropertiesToList(InputStream inputStream) throws IOException {
+        Properties props = loadProperties(inputStream);
+        props = systemPropertiesOverride(props);
+        props = transformNumberedPropertiesToList(props);
         return props;
     }
 
@@ -123,10 +204,11 @@ public class PropertiesUtils {
      * <p>
      * Given a key that ends in a number, remove the number.
      * </p>
+     *
      * @param numberedKey in the form of some.key.number
      * @return some.key part of some.key.number
      */
-    public static String removeNumber(final String numberedKey) {
+    public String removeNumber(final String numberedKey) {
         String unnumberedKey = numberedKey;
         int firstNumberIndex = unnumberedKey.length() - 1;
         while (Character.isDigit(unnumberedKey.charAt(firstNumberIndex))) {
@@ -137,25 +219,65 @@ public class PropertiesUtils {
         return unnumberedKey;
     }
 
+    public Properties systemPropertiesAndOverride(Properties props) {
+        return systemPropertiesAndOverride(props, null);
+    }
+
     /**
      * <p>
      * Override the given Properties with JVM argument {@code -Dkey=value}.
      * </p>
+     *
      * @param props properties to update with System.getProperty overrides.
      */
-    public static void systemPropertiesOverride(Properties props) {
-        PropertiesUtils.systemPropertiesOverride(props, null);
+    public Properties systemPropertiesOverride(Properties props) {
+        return systemPropertiesOverride(props, null);
+    }
+
+    /**
+     * <p>
+     * In addition to overriding file properties from System Properties, System properties are added to the returned
+     * Properties.
+     * </p><p>
+     * {@see #systemPropertiesOverride}
+     * </p>
+     *
+     *
+     * @param props Properties with System Properties added and Overriding file properties
+     * @param arg filter System Properties added to Properties by the Property key starting with arg
+     * @return
+     */
+    public Properties systemPropertiesAndOverride(Properties props, String arg) {
+        PropertiesUtils propUtils = new PropertiesUtils();
+        props = propUtils.systemPropertiesOverride(props, arg);
+
+        Iterator iter = System.getProperties().stringPropertyNames().iterator();
+        while (iter.hasNext()) {
+            String key = (String) iter.next();
+            if (arg == null || arg.equals("")) {
+                if (!props.contains(key)) {
+                    props.setProperty(key, System.getProperty(key));
+                }
+            } else {
+                if (key.startsWith(arg) && !props.contains(key)) {
+                    props.setProperty(key, System.getProperty(key));
+                }
+            }
+        }
+        return props;
     }
 
     /**
      * <p>
      * Override the given Properties with JVM argument {@code -Darg.key=value}.
-     * </p>
+     * </p><p>
      * -Dkey.propertyname= to override the property value for propertyname.
+     * </p>
+     *
      * @param props properties to update with System.getProperty overrides.
      * @param arg optional value that the property names will be appended to.
      */
-    public static void systemPropertiesOverride(Properties props, String arg) {
+    public Properties systemPropertiesOverride(Properties props, String arg) {
         Enumeration<?> names = props.propertyNames();
         Object nameObject;
         String key;
@@ -172,6 +294,7 @@ public class PropertiesUtils {
                 }
             }
         }
+        return props;
     }
 
     /**
@@ -179,9 +302,10 @@ public class PropertiesUtils {
      * Transform the given Properties keys which end in numbers to a List placed in a Map with the map key being the unumbered
      * part of the Properties key with an s appended to it.
      * </p>
+     *
      * @param props Properties to have keys ending in
      */
-    public static void transformNumberedPropertiesToList(Properties props) {
+    public Properties transformNumberedPropertiesToList(Properties props) {
         String key = null;
         String unnumberedKey = null;
         List<String> keyList = null;
@@ -222,5 +346,6 @@ public class PropertiesUtils {
             newKey = (String)newKeys.next();
             props.put(newKey + "s", keysLists.get(newKey));
         }
+        return props;
     }
 }

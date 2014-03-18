@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,9 @@ import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.component.DataBinding;
 import org.kuali.rice.krad.uif.element.Message;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleRestriction;
 import org.kuali.rice.krad.uif.util.ComponentUtils;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.util.ObjectPropertyUtils;
 
 /**
@@ -44,7 +46,7 @@ import org.kuali.rice.krad.uif.util.ObjectPropertyUtils;
 @BeanTags({@BeanTag(name = "treeGroup-bean", parent = "Uif-TreeGroup"),
         @BeanTag(name = "treeSection-bean", parent = "Uif-TreeSection"),
         @BeanTag(name = "treeSubSection-bean", parent = "Uif-TreeSubSection")})
-public class TreeGroup extends Group implements DataBinding {
+public class TreeGroup extends GroupBase implements DataBinding {
     private static final long serialVersionUID = 5841343037089286740L;
 
     private String propertyName;
@@ -87,7 +89,7 @@ public class TreeGroup extends Group implements DataBinding {
     }
 
     @Override
-    public void performApplyModel(Object model, Component parent) {
+    public void performApplyModel(Object model, LifecycleElement parent) {
         super.performApplyModel(model, parent);
 
         buildTreeGroups(model);
@@ -104,7 +106,6 @@ public class TreeGroup extends Group implements DataBinding {
      * to be read by the renderer
      * </p>
      *
-     * @param view view instance the tree group belongs to
      * @param model object containing the view data from which the tree data will be retrieved
      */
     protected void buildTreeGroups(Object model) {
@@ -196,24 +197,24 @@ public class TreeGroup extends Group implements DataBinding {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getComponentsForLifecycle()
+     * Gets all node components within the tree.
+     * 
+     * @return list of node components
      */
-    @Override
-    public List<Component> getComponentsForLifecycle() {
-        List<Component> components = super.getComponentsForLifecycle();
-
-        components.add(tree);
+    public List<Component> getNodeComponents() {
+        List<Component> components = new ArrayList<Component>();
         addNodeComponents(treeGroups.getRootElement(), components);
-
         return components;
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.component.Component#getComponentPrototypes()
+     * Gets all node components prototypes within the tree.
+     * 
+     * @return list of node component prototypes
      */
-    @Override
+    @ViewLifecycleRestriction(UifConstants.ViewPhases.INITIALIZE)
     public List<Component> getComponentPrototypes() {
-        List<Component> components = super.getComponentPrototypes();
+        List<Component> components = new ArrayList<Component>();
 
         if (defaultNodePrototype != null) {
             components.add(defaultNodePrototype.getLabelPrototype());
@@ -232,7 +233,7 @@ public class TreeGroup extends Group implements DataBinding {
 
         return components;
     }
-
+    
     /**
      * Retrieves the <code>Component</code> instances from the node for building the nested
      * components list
@@ -315,47 +316,6 @@ public class TreeGroup extends Group implements DataBinding {
 
     public void setTree(org.kuali.rice.krad.uif.widget.Tree tree) {
         this.tree = tree;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        TreeGroup treeGroupCopy = (TreeGroup) component;
-
-        treeGroupCopy.setPropertyName(this.propertyName);
-
-        if (this.bindingInfo != null) {
-            treeGroupCopy.setBindingInfo((BindingInfo) this.bindingInfo.copy());
-        }
-
-        if (this.defaultNodePrototype != null) {
-            treeGroupCopy.setDefaultNodePrototype((NodePrototype) this.defaultNodePrototype.copy());
-        }
-
-        if (this.treeGroups != null) {
-            Tree<Group, Message> treeGroupsCopy = new Tree<Group, Message>();
-            treeGroupsCopy.setRootElement(copyNode(this.treeGroups.getRootElement()));
-
-            treeGroupCopy.setTreeGroups(treeGroupsCopy);
-        }
-
-        if (this.tree != null) {
-            treeGroupCopy.setTree((org.kuali.rice.krad.uif.widget.Tree) this.tree.copy());
-        }
-
-        if (this.nodePrototypeMap != null) {
-            Map<Class<?>, NodePrototype> nodePrototypeMapCopy = new HashMap<Class<?>, NodePrototype>();
-            for (Map.Entry<Class<?>, NodePrototype> nodePrototypeMapEntry : nodePrototypeMap.entrySet()) {
-                NodePrototype prototypeCopy = nodePrototypeMapEntry.getValue().copy();
-                nodePrototypeMapCopy.put(nodePrototypeMapEntry.getKey(), prototypeCopy);
-            }
-
-            treeGroupCopy.setNodePrototypeMap(nodePrototypeMapCopy);
-        }
     }
 
     /**

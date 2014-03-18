@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ public class HelpDefinition extends DataDictionaryDefinitionBase implements Seri
     public HelpDefinition() {}
 
     /**
-     * @return
+     * @return parameter name
      */
     @BeanTagAttribute(name = "parameterName")
     public String getParameterName() {
@@ -58,7 +58,7 @@ public class HelpDefinition extends DataDictionaryDefinitionBase implements Seri
     }
 
     /**
-     * parameterName: name of the parameter that has the path to the help page
+     * @param parameterName name of the parameter that has the path to the help page
      */
     public void setParameterName(String parameterName) {
         if (StringUtils.isBlank(parameterName)) {
@@ -68,7 +68,7 @@ public class HelpDefinition extends DataDictionaryDefinitionBase implements Seri
     }
 
     /**
-     * @return
+     * @return parameter namespace
      */
     @BeanTagAttribute(name = "parameterNamespace")
     public String getParameterNamespace() {

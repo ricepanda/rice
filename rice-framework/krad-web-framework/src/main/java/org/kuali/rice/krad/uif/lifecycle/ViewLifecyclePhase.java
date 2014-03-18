@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,117 +15,95 @@
  */
 package org.kuali.rice.krad.uif.lifecycle;
 
-import java.util.List;
-
-import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle.LifecycleEvent;
+
+import java.util.List;
 
 /**
  * Represents a phase in the view lifecycle. 
  * 
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-public interface ViewLifecyclePhase extends Runnable {
+public interface ViewLifecyclePhase extends LifecycleElementState, Runnable {
     
     /**
-     * Get the component this lifecycle phase is responsible for processing.
+     * Gets the model to use in processing this phase.
      * 
-     * @return The component this lifecycle phase is responsible for processing.
-     */
-    Component getComponent();
-    
-    /**
-     * Get the model to use in processing this phase.
-     * 
-     * @return The model to use in processing this phase.
+     * @return model to use in processing this phase
      */
     Object getModel();
     
     /**
-     * Get the index within a parent phase's original list of successors of this phase.
+     * Gets the parent component.
      * 
-     * @return The index within a parent phase's list of successors of this phase.
+     * @return parent component
      */
-    int getIndex();
+    Component getParent();
+
+    /**
+     * When a refresh component lifecycle is being processed, list of paths the lifecycle should be invoked
+     * on (including the path for the component that is being refreshed).
+     *
+     * @return list of component paths (relative to the view)
+     */
+    List<String> getRefreshPaths();
     
     /**
-     * Determine if this lifecycle phase has completed processing.
+     * Determines if this lifecycle phase has completed processing.
      * 
-     * @return True if this phase has been processed, false if not.
+     * <p>
+     * This method will return true when this phase's tasks have been processed, but does not
+     * necessarily indicate that successor phases have been completed. Use {@link #isComplete()} to
+     * determine if the lifecycle has been fully completed for this phase.
+     * </p>
+     * 
+     * @return true if this phase has been processed, false if not
      */
     boolean isProcessed();
     
     /**
-     * Determine if this lifecycle phase, and all successor phases, have completed processing.
+     * Determines if this lifecycle phase and all successor phases, have completed processing.
      * 
-     * @return True if this phase and all successor phases have been processed, false if not.
+     * @return true if this phase and all successor phases have been processed, false if not
+     * @see Component#notifyCompleted(ViewLifecyclePhase)
      */
     boolean isComplete();
     
     /**
-     * Get the view lifecycle phase constant that corresponds to this phase processing task.
+     * Gets the task currently running.
      * 
-     * @return The view lifecycle phase constant that corresponds to this phase processing task.
-     * @see UifConstants.ViewPhases
+     * @return the task currently running, null if this phase is not active.
      */
-    String getViewPhase();
-
+    ViewLifecycleTask<?> getCurrentTask();
+    
     /**
-     * Get the event to notify on completion.
+     * Gets the event to notify on completion.
      * 
-     * @return The lifecycle event to notify on completion.
+     * @return lifecycle event to notify on completion
      * @see ViewLifecycle.LifecycleEvent
      */
     LifecycleEvent getEventToNotify();
 
     /**
-     * Get the expected view status prior to phase execution.
+     * Gets the expected view status prior to phase execution.
      * 
-     * @return The expected view status prior to phase execution.
+     * @return expected view status prior to phase execution
      */
     String getStartViewStatus();
 
     /**
-     * Get the expected view status after phase execution.
+     * Gets the expected view status after phase execution.
      * 
-     * @return The expected view status after phase execution.
+     * @return expected view status after phase execution
      */
     String getEndViewStatus();
     
     /**
-     * Add a lifecycle task to this phase's task queue.
+     * Gets the lifecycle phase that directly precedes this phase.
      * 
-     * @param The task to add.
+     * @return lifecycle phase that directly precedes this phase
      */
-    void addTask(ViewLifecycleTask task);
-    
-    /**
-     * Get the task currently active on this lifecycle phase.
-     * 
-     * @return The task currently active on this lifecycle phase.
-     */
-    ViewLifecycleTask getActiveTask();
-    
-    /**
-     * Get a list of the pending tasks for this phase.
-     * 
-     * @return A list of the pending tasks for this phase.  These tasks have not yet been processed.
-     */
-    List<? extends ViewLifecycleTask> getPendingTasks();
+    ViewLifecyclePhase getPredecessor();
 
-    /**
-     * Get a list of child lifecycle phases to process before processing this phase.
-     * 
-     * @return A list of child lifecycle phases to process before processing this phase.
-     */
-    List<? extends ViewLifecyclePhase> getPredecessors();
-    
-    /**
-     * Get a list of child lifecycle phases to process after processing this phase.
-     * 
-     * @return A list of child lifecycle phases to process after processing this phase.
-     */
-    List<? extends ViewLifecyclePhase> getSuccessors();
-    
 }

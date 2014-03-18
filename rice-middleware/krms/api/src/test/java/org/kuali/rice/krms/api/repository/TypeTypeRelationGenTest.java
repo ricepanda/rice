@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -176,4 +176,9 @@ public final class TypeTypeRelationGenTest {
         return typeTypeRelation;
     }
 
+    public static TypeTypeRelation buildFullFKTypeTypeRelationNoId(KrmsTypeDefinition fromType, KrmsTypeDefinition toType) {
+        TypeTypeRelation.Builder builder = TypeTypeRelation.Builder.create(fromType.getId(), RELATIONSHIP_TYPE, SEQUENCE_NUMBER, toType.getId());
+        TypeTypeRelation typeTypeRelation = builder.build();
+        return typeTypeRelation;
+    }
 }

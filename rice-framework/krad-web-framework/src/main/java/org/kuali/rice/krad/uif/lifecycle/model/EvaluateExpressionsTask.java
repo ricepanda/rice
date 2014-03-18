@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import org.kuali.rice.krad.uif.component.DataBinding;
 import org.kuali.rice.krad.uif.component.PropertyReplacer;
 import org.kuali.rice.krad.uif.container.Container;
 import org.kuali.rice.krad.uif.layout.LayoutManager;
-import org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleTaskBase;
 import org.kuali.rice.krad.uif.lifecycle.ApplyModelComponentPhase;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase;
@@ -39,7 +39,7 @@ import org.kuali.rice.krad.uif.view.View;
  * 
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-public class EvaluateExpressionsTask extends AbstractViewLifecycleTask {
+public class EvaluateExpressionsTask extends ViewLifecycleTaskBase<Component> {
 
     /**
      * Constructor.
@@ -47,19 +47,18 @@ public class EvaluateExpressionsTask extends AbstractViewLifecycleTask {
      * @param phase The apply model phase for the component.
      */
     public EvaluateExpressionsTask(ViewLifecyclePhase phase) {
-        super(phase);
+        super(phase, Component.class);
     }
 
     /**
      * Checks against the visited ids to see if the id is duplicate, if so it is adjusted to make an
      * unique id by appending an unique identifier
      * 
-     * @param id id to adjust if necessary
-     * @param visitedIds tracks components ids that have been seen for adjusting duplicates
+     * @param element The component or layout manager to adjust the ID on.
      * @return original or adjusted id
      */
     public String adjustIdIfNecessary(LifecycleElement element) {
-        ApplyModelComponentPhase phase = (ApplyModelComponentPhase) getPhase();
+        ApplyModelComponentPhase phase = (ApplyModelComponentPhase) getElementState();
         String id = element.getId();
         
         if (phase.visit(element)) {
@@ -72,13 +71,13 @@ public class EvaluateExpressionsTask extends AbstractViewLifecycleTask {
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask#performLifecycleTask()
+     * {@inheritDoc}
      */
     @Override
     protected void performLifecycleTask() {
-        ExpressionEvaluator expressionEvaluator = ViewLifecycle.getHelper().getExpressionEvaluator();
+        ExpressionEvaluator expressionEvaluator = ViewLifecycle.getExpressionEvaluator();
         View view = ViewLifecycle.getView();
-        Component component = getPhase().getComponent();
+        Component component = (Component) getElementState().getElement();
 
         List<PropertyReplacer> componentPropertyReplacers = component.getPropertyReplacers();
         if (componentPropertyReplacers != null) {
@@ -89,7 +88,7 @@ public class EvaluateExpressionsTask extends AbstractViewLifecycleTask {
 
         List<ComponentModifier> componentModifiers = component.getComponentModifiers();
         if (componentModifiers != null) {
-            for (ComponentModifier modifier : component.getComponentModifiers()) {
+            for (ComponentModifier modifier : componentModifiers) {
                 expressionEvaluator.evaluateExpressionsOnConfigurable(view, modifier, component.getContext());
             }
         }
@@ -117,9 +116,6 @@ public class EvaluateExpressionsTask extends AbstractViewLifecycleTask {
                 adjustIdIfNecessary(layoutManager);
             }
         }
-
-        // TODO: is this needed?
-        // adjustIdIfNecessary(component);
     }
 
 }

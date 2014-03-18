@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.kuali.rice.krad.datadictionary.validation.constraint.provider;
 
 import org.kuali.rice.krad.datadictionary.AttributeDefinition;
+import org.kuali.rice.krad.datadictionary.validation.ViewAttributeValueReader;
 import org.kuali.rice.krad.datadictionary.validation.capability.Constrainable;
 import org.kuali.rice.krad.datadictionary.validation.constraint.CaseConstraint;
 import org.kuali.rice.krad.datadictionary.validation.constraint.DataTypeConstraint;
@@ -67,7 +68,9 @@ public class AttributeDefinitionConstraintProvider extends BaseConstraintProvide
     @Override
     public boolean isSupported(Constrainable definition) {
 
-        if (definition instanceof AttributeDefinition || definition instanceof InputField) {
+        if (definition instanceof AttributeDefinition
+                || definition instanceof InputField
+                || definition instanceof ViewAttributeValueReader.InputFieldConstrainableInfo) {
             return true;
         }
 

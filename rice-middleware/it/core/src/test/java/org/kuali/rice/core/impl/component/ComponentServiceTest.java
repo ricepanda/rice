@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,16 @@
  */
 package org.kuali.rice.core.impl.component;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.junit.Before;
 import org.junit.Test;
+import org.kuali.rice.core.api.criteria.QueryByCriteria;
+import org.kuali.rice.core.api.criteria.QueryResults;
 import org.kuali.rice.core.test.CORETestCase;
 import org.kuali.rice.coreservice.api.CoreServiceApiServiceLocator;
 import org.kuali.rice.coreservice.api.component.Component;
 import org.kuali.rice.coreservice.api.component.ComponentService;
 import org.kuali.rice.coreservice.impl.component.ComponentBo;
-import org.kuali.rice.kns.service.KNSServiceLocator;
 import org.kuali.rice.krad.service.KRADServiceLocator;
 
 import java.util.ArrayList;
@@ -39,15 +41,43 @@ import static org.junit.Assert.*;
  *
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
+
 public class ComponentServiceTest extends CORETestCase {
 
     private ComponentService componentService;
+
+    private static boolean suiteLoaded;
+
+    @Before
+    public void setUp() throws Exception {
+
+        if (!suiteLoaded) {
+            try {
+                super.loadSuiteTestData();
+                suiteLoaded = true;
+            } catch (Exception e) {
+                // ignore
+            }
+        }
+        super.setUp();
+    }
 
     @Before
     public void establishComponentService() {
         componentService = CoreServiceApiServiceLocator.getComponentService();
         assertNotNull("Failed to locate ComponentService", componentService);
     }
+
+
+    @Test
+    public void testGetComponentByDataObjectService() {
+        QueryByCriteria.Builder qbc = QueryByCriteria.Builder.forAttribute("namespace.code", "KR-NS");
+        QueryResults<ComponentBo> results = KRADServiceLocator.getDataObjectService().findMatching(ComponentBo.class, qbc.build());
+
+        assertNotNull(results);
+        assertTrue(CollectionUtils.isNotEmpty(results.getResults()));
+    }
+
 
     @Test
     /**
@@ -88,7 +118,8 @@ public class ComponentServiceTest extends CORETestCase {
         // | KR-NS    | PurgeSessionDocumentsStep   |
         // | KR-NS    | ScheduleStep                |
         // +----------+-----------------------------+
-        
+
+
         components = componentService.getAllComponentsByNamespaceCode("KR-NS");
         assertEquals(7, components.size());
 
@@ -104,7 +135,7 @@ public class ComponentServiceTest extends CORETestCase {
 
         // inactivate schedule step component
         scheduleStepComponent.setActive(false);
-        KNSServiceLocator.getBusinessObjectService().save(scheduleStepComponent);
+        KRADServiceLocator.getDataObjectService().save(scheduleStepComponent);
 
         components = componentService.getAllComponentsByNamespaceCode("KR-NS");
         assertEquals(7, components.size());
@@ -163,7 +194,7 @@ public class ComponentServiceTest extends CORETestCase {
 
         // inactivate schedule step component
         scheduleStepComponent.setActive(false);
-        KNSServiceLocator.getBusinessObjectService().save(scheduleStepComponent);
+        KRADServiceLocator.getDataObjectService().save(scheduleStepComponent);
 
         components = componentService.getActiveComponentsByNamespaceCode("KR-NS");
         assertEquals(6, components.size());

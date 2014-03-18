@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,14 @@
  */
 package org.kuali.rice.krad.uif.service.impl;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.core.api.data.DataType;
+import org.kuali.rice.krad.data.DataObjectService;
 import org.kuali.rice.krad.data.metadata.DataObjectAttribute;
 import org.kuali.rice.krad.data.metadata.DataObjectAttributeRelationship;
 import org.kuali.rice.krad.data.metadata.DataObjectMetadata;
 import org.kuali.rice.krad.data.metadata.DataObjectRelationship;
-import org.kuali.rice.krad.data.metadata.MetadataRepository;
 import org.kuali.rice.krad.data.provider.annotation.UifDisplayHint;
 import org.kuali.rice.krad.data.provider.annotation.UifDisplayHintType;
 import org.kuali.rice.krad.datadictionary.AttributeDefinition;
@@ -53,16 +47,24 @@ import org.kuali.rice.krad.uif.util.ComponentFactory;
 import org.kuali.rice.krad.uif.view.InquiryView;
 import org.kuali.rice.krad.util.KRADPropertyConstants;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+
 public class UifDefaultingServiceImpl implements UifDefaultingService {
     private static final org.apache.log4j.Logger LOG = org.apache.log4j.Logger.getLogger(UifDefaultingServiceImpl.class);
 
     protected DataDictionaryService dataDictionaryService;
-    protected MetadataRepository metadataRepository;
+    protected DataObjectService dataObjectService;
 
     protected static final String ANY_CHARACTER_PATTERN_CONSTRAINT = "UTF8AnyCharacterPatternConstraint";
     protected static final String DATE_PATTERN_CONSTRAINT = "BasicDatePatternConstraint";
     protected static final String FLOATING_POINT_PATTERN_CONSTRAINT = "FloatingPointPatternConstraintTemplate";
     protected static final String TIMESTAMP_PATTERN_CONSTRAINT = "TimestampPatternConstraint";
+    protected static final String CURRENCY_PATTERN_CONSTRAINT = "CurrencyPatternConstraint";
 
     @Override
     public String deriveHumanFriendlyNameFromPropertyName(String camelCasedName) {
@@ -99,6 +101,9 @@ public class UifDefaultingServiceImpl implements UifDefaultingService {
     /**
      * Check the {@link UifDisplayHint}s on an attribute, return true if any of them have the
      * given type.
+     * @param attr data object attribute
+     * @param hintType hint type
+     * @return true if the hint type is present on the attribute
      */
     protected boolean hasHintOfType( DataObjectAttribute attr, UifDisplayHintType hintType ) {
         return getHintOfType(attr, hintType) != null;
@@ -123,10 +128,11 @@ public class UifDefaultingServiceImpl implements UifDefaultingService {
             // Need to find the relationship information
             // get the relationship ID by removing .principalName from the attribute name
             String relationshipName = StringUtils.removeEnd(attrDef.getName(), ".principalName");
-            DataObjectMetadata metadata = metadataRepository.getMetadata(dataObjectAttribute.getOwningType());
+            DataObjectMetadata metadata = dataObjectService.getMetadataRepository().getMetadata(
+                    dataObjectAttribute.getOwningType());
             if ( metadata != null ) {
                 DataObjectRelationship relationship = metadata.getRelationship(relationshipName);
-                if ( relationship != null ) {
+                if ( relationship != null && CollectionUtils.isNotEmpty(relationship.getAttributeRelationships())) {
                     ((UserControl)c).setPrincipalIdPropertyName(relationship.getAttributeRelationships().get(0).getParentAttributeName());
                     ((UserControl)c).setPersonObjectPropertyName(relationshipName);
                 }
@@ -214,7 +220,7 @@ public class UifDefaultingServiceImpl implements UifDefaultingService {
         // First - see if one was defined in the metadata (provided by krad-data module annotations)
         if (attrDef.getDataObjectAttribute() != null) {
             if (StringUtils.isNotBlank(attrDef.getDataObjectAttribute().getValidCharactersConstraintBeanName())) {
-                Object consObj = dataDictionaryService.getDictionaryObject(attrDef.getDataObjectAttribute()
+                Object consObj = dataDictionaryService.getDictionaryBean(attrDef.getDataObjectAttribute()
                         .getValidCharactersConstraintBeanName());
                 if (consObj != null && consObj instanceof ValidCharactersConstraint) {
                     validCharactersConstraint = (ValidCharactersConstraint) consObj;
@@ -224,16 +230,19 @@ public class UifDefaultingServiceImpl implements UifDefaultingService {
         // if not, make an intelligent guess from the data type
         if (validCharactersConstraint == null) {
             if (attrDef.getDataType() != null) {
-                if (attrDef.getDataType().isNumeric()) {
+                if (attrDef.getDataType() == DataType.CURRENCY) {
                     validCharactersConstraint = (ValidCharactersConstraint) dataDictionaryService
-                            .getDictionaryObject(FLOATING_POINT_PATTERN_CONSTRAINT);
+                            .getDictionaryBean(CURRENCY_PATTERN_CONSTRAINT);
+                } else if (attrDef.getDataType().isNumeric()) {
+                    validCharactersConstraint = (ValidCharactersConstraint) dataDictionaryService
+                            .getDictionaryBean(FLOATING_POINT_PATTERN_CONSTRAINT);
                 } else if (attrDef.getDataType().isTemporal()) {
                     if (attrDef.getDataType() == DataType.DATE) {
                         validCharactersConstraint = (ValidCharactersConstraint) dataDictionaryService
-                                .getDictionaryObject(DATE_PATTERN_CONSTRAINT);
+                                .getDictionaryBean(DATE_PATTERN_CONSTRAINT);
                     } else if (attrDef.getDataType() == DataType.TIMESTAMP) {
                         validCharactersConstraint = (ValidCharactersConstraint) dataDictionaryService
-                                .getDictionaryObject(TIMESTAMP_PATTERN_CONSTRAINT);
+                                .getDictionaryBean(TIMESTAMP_PATTERN_CONSTRAINT);
                     }
                 }
             }
@@ -241,7 +250,7 @@ public class UifDefaultingServiceImpl implements UifDefaultingService {
         // default to UTF8
         if (validCharactersConstraint == null) {
             validCharactersConstraint = (ValidCharactersConstraint) dataDictionaryService
-                    .getDictionaryObject(ANY_CHARACTER_PATTERN_CONSTRAINT);
+                    .getDictionaryBean(ANY_CHARACTER_PATTERN_CONSTRAINT);
         }
 
         return validCharactersConstraint;
@@ -457,7 +466,7 @@ public class UifDefaultingServiceImpl implements UifDefaultingService {
         this.dataDictionaryService = dataDictionaryService;
     }
 
-    public void setMetadataRepository(MetadataRepository metadataRepository) {
-        this.metadataRepository = metadataRepository;
+    public void setDataObjectService(DataObjectService dataObjectService) {
+        this.dataObjectService = dataObjectService;
     }
 }

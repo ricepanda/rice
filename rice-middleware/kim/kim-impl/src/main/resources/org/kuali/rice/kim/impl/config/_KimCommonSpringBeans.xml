@@ -1,6 +1,6 @@
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -59,6 +59,10 @@
   <bean id="rice.kim.import.kualiModuleService"
         class="org.kuali.rice.core.framework.resourceloader.GlobalResourceLoaderServiceFactoryBean"
         p:serviceName="kualiModuleService"/>
+
+	<bean id="dateTimeService" p:serviceName="dateTimeService"
+		class="org.kuali.rice.core.framework.resourceloader.GlobalResourceLoaderServiceFactoryBean"
+		p:singleton="true" p:mustExist="true" />
 
   <bean id="kimServiceExporter"
         class="org.kuali.rice.ksb.api.bus.support.PropertyConditionalServiceBusExporter"

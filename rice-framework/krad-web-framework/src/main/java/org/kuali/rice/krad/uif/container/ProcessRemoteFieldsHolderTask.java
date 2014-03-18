@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,16 +21,17 @@ import java.util.List;
 import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.field.InputField;
 import org.kuali.rice.krad.uif.field.RemoteFieldsHolder;
-import org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
 import org.kuali.rice.krad.uif.lifecycle.ViewLifecyclePhase;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleTaskBase;
+import org.kuali.rice.krad.uif.view.ViewModel;
 
 /**
  * Process any remote fields holder that might be in the containers items.
  * 
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-public class ProcessRemoteFieldsHolderTask extends AbstractViewLifecycleTask {
+public class ProcessRemoteFieldsHolderTask extends ViewLifecycleTaskBase<Container> {
 
     /**
      * Constructor.
@@ -38,18 +39,21 @@ public class ProcessRemoteFieldsHolderTask extends AbstractViewLifecycleTask {
      * @param phase The initialize phase for this container.
      */
     public ProcessRemoteFieldsHolderTask(ViewLifecyclePhase phase) {
-        super(phase);
+        super(phase, Container.class);
     }
 
     /**
      * Invoke custom initialization based on the view helper.
      * 
-     * @see ViewHelperService#
-     * @see org.kuali.rice.krad.uif.lifecycle.AbstractViewLifecycleTask#performLifecycleTask()
+     * {@inheritDoc}
      */
     @Override
     protected void performLifecycleTask() {
-        Container container = (Container) getPhase().getComponent();
+        Container container = (Container) getElementState().getElement();
+        
+        if (!container.isProcessRemoteFieldHolders()) {
+            return;
+        }
         
         List<Component> processedItems = new ArrayList<Component>();
 
@@ -70,8 +74,8 @@ public class ProcessRemoteFieldsHolderTask extends AbstractViewLifecycleTask {
 
         
         // invoke hook point for adding components through code
-        ViewLifecycle.getHelper().addCustomContainerComponents(getPhase().getModel(),
-                (Container) getPhase().getComponent());
+        ViewLifecycle.getHelper().addCustomContainerComponents((ViewModel)ViewLifecycle.getModel(),
+                (Container) getElementState().getElement());
     }
 
 }

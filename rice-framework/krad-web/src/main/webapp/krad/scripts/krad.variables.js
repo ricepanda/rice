@@ -1,5 +1,5 @@
 /*
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 /**
  * Common constants and variables for KRAD
  */
@@ -21,11 +20,13 @@ function JavascriptKradVariables() {
 }
 
 JavascriptKradVariables.prototype = {
-    ACTIVE_CLASS: ".active",
+    ACTION_DEFAULTS: "action_defaults",
+    ACTION_ONCLICK_DATA: "onclick",
+    ACTIVE_CLASS: "active",
+    APPLICATION_HEADER_WRAPPER: "Uif-ApplicationHeader-Wrapper",
     APPLICATION_FOOTER_WRAPPER: "Uif-ApplicationFooter-Wrapper",
     APP_ID: "Uif-Application",
     APPLICATION_URL: "applicationUrl",
-
     ATTRIBUTES: {
         DATA_OPEN: "data-open",
         DATA_RETURN: "data-return"
@@ -34,6 +35,10 @@ JavascriptKradVariables.prototype = {
     CACHE_KEY: "cacheKey",
     CHANGED_HEADER_ICON_CLASS: "uif-changedHeaderIcon",
     CHANGE_COMPONENT_PROPERTIES: "changeProperties",
+    CLASSES: {
+        PLACEHOLDER: "uif-placeholder"
+    },
+
     CLEAR_FORM_METHOD_TO_CALL: "clearForm",
     CLIENT_MESSAGE_ITEMS_CLASS: "uif-clientMessageItems",
     CLIENT_WARNING_DIV_CLASS: "uif-clientWarningDiv",
@@ -46,17 +51,21 @@ JavascriptKradVariables.prototype = {
 
     // constants for data role attribute values
     DATA_ROLES: {
-        DISCLOSURE_LINK: "disclosureLink"
+        DISCLOSURE_LINK: "disclosureLink",
+        PLACEHOLDER: "placeholder"
     },
 
     DIRTY_CLASS: "dirty",
-    DISABLE_BROWSER_CACHE: "disableBrowserCache",
-    DISABLED_CLASS: ".disabled",
+    DIRTY_FORM: "dirtyForm",
+    DISABLE_BROWSER_CACHE: "view.disableBrowserCache",
+    DISABLED_CLASS: "disabled",
     DIALOG_PLACEHOLDER: "_dialogPlaceholder",
     ERROR_HIGHLIGHT_SECTION_CLASS: "uif-errorHighlight-section",
     ERROR_MESSAGE_ITEM_CLASS: "uif-errorMessageItem-field",
     FIELD_CLASS: "uif-field",
     FORM_KEY: "formKey",
+    FLOW_KEY: "flowKey",
+    FOCUS_ID: "focusid",
     GRID_LAYOUT_CELL_CLASS: "uif-gridLayoutCell",
     HAS_ERROR_CLASS: "uif-hasError",
     HAS_INFO_CLASS: "uif-hasInfo",
@@ -65,12 +74,17 @@ JavascriptKradVariables.prototype = {
     HEADER_TEXT_CLASS: "uif-headerText",
     IMAGE_LOCATION: "kradImageLocation",
 
+    // constants for element ids
+    IDS: {
+        DIALOGS: "Uif-Dialogs"
+    },
+
     // constants for id suffixes
     ID_SUFFIX: {
         DISCLOSURE_CONTENT: "_disclosureContent",
         DISCLOSURE_TOGGLE: "_toggle"
     },
-
+    JUMP_TO_ID: "jumptoid",
     PAGE_ID: "pageId",
     PORTAL_IFRAME_ID: "iframeportlet",
     INCIDENT_REPORT_VIEW_CLASS: "Uif-IncidentReportView",
@@ -81,6 +95,10 @@ JavascriptKradVariables.prototype = {
     KRAD_URL: "kradUrl",
     KUALI_FORM: "kualiForm",
     LIGHTBOX_PARAM: "lightbox",
+    MENU_COLLAPSE_ACTION: "sidebar-collapse",
+    MENU_COLLAPSE_ICON_RIGHT: "icon-angle-right",
+    MENU_COLLAPSE_ICON_LEFT: "icon-angle-left",
+    MENU_COLLAPSED: "sidebar-collapsed",
     MESSAGE_COUNT_CLASS: "uif-messageCount",
     MESSAGE_KEY_DIRTY_FIELDS: "message.dirtyFields",
     MESSAGE_ERROR: "message.error",
@@ -117,24 +135,27 @@ JavascriptKradVariables.prototype = {
     PAGE_VALIDATION_MESSAGE_ERROR_CLASS: "uif-pageValidationMessages-error",
     PAGE_VALIDATION_MESSAGE_INFO_CLASS: "uif-pageValidationMessages-info",
     PAGE_VALIDATION_MESSAGE_WARNING_CLASS: "uif-pageValidationMessages-warning",
+    PERFORM_DIRTY_VALIDATION: "performdirtyvalidation",
     PROGRESSIVE_DISCLOSURE_HIGHLIGHT_CLASS: "uif-progressiveDisclosure-highlight",
+    RENDERED_IN_LIGHTBOX: "renderedInLightBox",
     REFRESH_METHOD_TO_CALL: "refresh",
     RETRIEVE_MESSAGE_METHOD_TO_CALL: "retrieveMessage",
     RETRIEVE_COLLECTION_PAGE_METHOD_TO_CALL: "retrieveCollectionPage",
-    RETRIEVE_ORIGINAL_COMPONENT_METHOD_TO_CALL: "retrieveOriginalComponent",
     RETURN_TYPE_UPDATE_COMPONENT: "update-component",
     RETURN_FROM_LIGHTBOX_METHOD_TO_CALL: "returnFromLightbox",
     RETURN_SELECTED_ACTION_CLASS: "uif-returnSelectedAction",
     REQUIRED_MESSAGE_CLASS: "uif-requiredMessage",
     SAVE_LINE_ACTION_CLASS: "uif-saveLineAction",
     SELECT_FIELD_STYLE_CLASS: "uif-select-line",
+    LOOKUP_COLLECTION_ID: "uLookupResults",
+    SELF: "SELF",
     SERVER_MESSAGE_ITEMS_CLASS: "uif-serverMessageItems",
     SESSION_TIMEOUT_WARNING_DIALOG: "Uif-SessionTimeoutWarning-DialogGroup",
     SESSION_TIMEOUT_DIALOG: "Uif-SessionTimeout-DialogGroup",
     SESSION_TIMEOUT_WARNING_TIMER: "sessionTimeoutWarningTimer",
     SESSION_TIMEOUT_TIMER: "sessionTimeoutTimer",
     SHOW_DIALOG_EVENT: "showdialog.uif",
-    SINGLE_PAGE_VIEW: "singlePageView",
+    SINGLE_PAGE_VIEW: "view.singlePageView",
     STACKED_COLLECTION_LAYOUT_CLASS: "uif-stackedCollectionLayout",
     STICKY_CLASS: "uif-sticky",
     SUCCESS_RESPONSE: "success",
@@ -143,10 +164,13 @@ JavascriptKradVariables.prototype = {
     TABLE_COLLECTION_LAYOUT_CLASS: "uif-tableCollectionLayout",
     TAB_GROUP_CLASS: "Uif-TabGroup",
     TAB_MENU_CLASS: "uif-tabMenu",
+    TOGGLE_ARROW_CLASS: "arrow",
     TOOLTIP_CLASS: "uif-tooltip",
     VALIDATION_IMAGE_CLASS: "uif-validationImage",
     SERVER_MESSAGES: "server_messages",
+    VIEW_ID: "viewId",
     VIEW_CONTENT_WRAPPER: "Uif-ViewContentWrapper",
+    VALIDATE_DIRTY: "view.applyDirtyCheck",
     VALIDATION_MESSAGES: "validation_messages",
     VALIDATION_MESSAGES_CLASS: "uif-validationMessagesList",
     VALIDATION_PAGE_HEADER_CLASS: "uif-pageValidationHeader",
@@ -172,6 +196,14 @@ JavascriptKradVariables.prototype = {
         tail: { align: 'left', hidden: false },
         manageMouseEvents: false,
         themeName: 'popup-form'
+    },
+    EVENT_NAMESPACE: "uif",
+    EVENTS: {
+        ADJUST_PAGE_MARGIN : "adjustpagemargin"  + JavascriptKradVariables.EVENT_NAMESPACE,
+        ADJUST_STICKY : "adjuststicky"  + JavascriptKradVariables.EVENT_NAMESPACE,
+        DIALOG_RESPONSE : "dialogresponse." + JavascriptKradVariables.EVENT_NAMESPACE,
+        SHOW_DIALOG : "showdialog." + JavascriptKradVariables.EVENT_NAMESPACE,
+        UPDATE_CONTENT : "updatecontent." + JavascriptKradVariables.EVENT_NAMESPACE
     }
 }
 

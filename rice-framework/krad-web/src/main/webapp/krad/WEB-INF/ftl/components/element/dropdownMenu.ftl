@@ -1,6 +1,6 @@
 <#--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -22,31 +22,33 @@
 
 <#macro uif_dropdownMenu element>
 
-    <#if element.dropdownToggle.render || element.renderToggleButton>
+    <#if !element.renderedInList>
         <div id="${element.id!}" ${krad.attrBuild(element)} ${element.simpleDataAttributes}>
-
-        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-            <@krad.template component=element.dropdownToggle/>
-
-            <#if element.renderToggleCaret || element.renderToggleButton>
-                <#local caretClass="caret"/>
-                <#if element.renderToggleButton>
-                    <#-- tmp until styling is fixed -->
-                    <#--<#local caretClass="${caretClass} btn btn-xs"/>-->
-                </#if>
-
-                <b class="${caretClass}"></b>
-            </#if>
-        </a>
     </#if>
 
-    <ul class="dropdown-menu">
-        <#list element.menuActions as menuAction>
-            <@krad.template component=menuAction/>
-        </#list>
-    </ul>
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
 
-    <#if element.dropdownToggle.render || element.renderToggleButton>
+        <#if element.iconClass?has_content>
+            <span class="${element.iconClass}"></span>
+        </#if>
+
+        <@krad.template component=element.toggleMessage/>
+
+        <#if element.toggleCaretClass?has_content>
+            <#local caretClass="class=\"${element.toggleCaretClass}\""/>
+
+<#--            <#if element.renderToggleButton>
+                &lt;#&ndash; tmp until styling is fixed &ndash;&gt;
+                &lt;#&ndash;<#local caretClass="${caretClass} btn btn-xs"/>&ndash;&gt;
+            </#if>-->
+
+            <span ${caretClass!}></span>
+        </#if>
+    </a>
+
+    <@krad.template component=element.menuGroup/>
+
+    <#if !element.renderedInList>
         </div>
     </#if>
 

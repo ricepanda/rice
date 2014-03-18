@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.kuali.rice.kew.mail;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.kuali.rice.core.api.mail.EmailContent;
 import org.kuali.rice.coreservice.api.CoreServiceApiServiceLocator;
@@ -38,7 +37,6 @@ import static org.junit.Assert.*;
  * Tests email content generation
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
-@Ignore
 public class EmailMessageTest extends KEWTestCase {
     private ActionListEmailServiceImpl actionListEmailService = new ActionListEmailServiceImpl();
     private StyleableEmailContentServiceImpl styleableContentService = new StyleableEmailContentServiceImpl();
@@ -58,22 +56,22 @@ public class EmailMessageTest extends KEWTestCase {
     }
 
     private int generateDocs(String[] docTypes, Person user) throws Exception {
-        String nid = getPrincipalNameForId(user.getPrincipalName());
+        String principalId = user.getPrincipalId();
 
         for (String docType: docTypes) {
-            WorkflowDocument document = WorkflowDocumentFactory.createDocument(nid, docType);
+            WorkflowDocument document = WorkflowDocumentFactory.createDocument(principalId, docType);
             document.setTitle("a title");
             document.route("");
-            document = WorkflowDocumentFactory.createDocument(nid, docType);
+            document = WorkflowDocumentFactory.createDocument(principalId, docType);
             document.setTitle("a title");
             document.route("");
-            document = WorkflowDocumentFactory.createDocument(nid, docType);
+            document = WorkflowDocumentFactory.createDocument(principalId, docType);
             document.setTitle("a title");
             document.route("");
-            document = WorkflowDocumentFactory.createDocument(nid, docType);
+            document = WorkflowDocumentFactory.createDocument(principalId, docType);
             document.setTitle("a title");
             document.route("");
-            document = WorkflowDocumentFactory.createDocument(nid, docType);
+            document = WorkflowDocumentFactory.createDocument(principalId, docType);
             document.setTitle("a title");
             document.route("");
         }
@@ -148,17 +146,4 @@ public class EmailMessageTest extends KEWTestCase {
         assertTrue("Unexpected body", content.getBody().startsWith("CUSTOM:"));
     }
 
-    /**
-     * tests loading a custom stylesheet that has entities that causes XPath to get confused down the ingestion pipeline...
-     * @throws Exception
-     */
-    @Test
-    public void testBadCustomStyleSheet() throws Exception {
-    	try {
-    		loadXmlFile("badCustomEmailStyleData.xml");
-    		fail("Loading of badCustomEmailStyleData.xml should have failed!");
-    	} catch (Exception e) {}
-        // this doesn't get loaded
-        assertNull(CoreServiceApiServiceLocator.getStyleService().getStyle("bad.kew.email.style"));
-    }
 }

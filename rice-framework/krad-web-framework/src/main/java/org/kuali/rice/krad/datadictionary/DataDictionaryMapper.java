@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,15 @@
  */
 package org.kuali.rice.krad.datadictionary;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.kuali.rice.krad.datadictionary.uif.UifDictionaryIndex;
 import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.UifConstants.ViewType;
 import org.kuali.rice.krad.uif.view.View;
 import org.springframework.beans.PropertyValues;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Maps one Document type to other document Type.
@@ -38,7 +38,7 @@ public interface DataDictionaryMapper {
      * This method gets the business object entry for a concrete class
      *
      * @param className
-     * @return
+     * @return business object entry
      */
     @Deprecated
     public BusinessObjectEntry getBusinessObjectEntryForConcreteClass(DataDictionaryIndex index, String className);
@@ -75,6 +75,11 @@ public interface DataDictionaryMapper {
      */
     @Deprecated
     public Map<String, BusinessObjectEntry> getBusinessObjectEntries(DataDictionaryIndex index);
+
+    /**
+     * @return Map of (classname, DataObjectEntry) pairs
+     */
+    public Map<String, DataObjectEntry> getDataObjectEntries(DataDictionaryIndex index);
 
     /**
      * @param className
@@ -121,7 +126,8 @@ public interface DataDictionaryMapper {
     /**
      * Returns mapped document type based on the given document type.
      *
-     * @param documentType
+     * @param index data dictionary index
+     * @param documentTypeName document type name to check for
      * @return new document type or null if given documentType was not found.
      */
     public String getDocumentTypeName(DataDictionaryIndex index, String documentTypeName);

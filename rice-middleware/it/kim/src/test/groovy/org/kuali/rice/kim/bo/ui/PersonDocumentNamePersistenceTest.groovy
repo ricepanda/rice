@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,11 @@
 package org.kuali.rice.kim.bo.ui
 
 import org.junit.Test
-import org.kuali.rice.kim.impl.identity.address.EntityAddressBo
 import org.kuali.rice.kim.impl.identity.entity.EntityBo
-import org.kuali.rice.kim.impl.identity.type.EntityTypeContactInfoBo
+import org.kuali.rice.kim.impl.identity.name.EntityNameBo
 import org.kuali.rice.kim.test.BoPersistenceTest
 import org.kuali.rice.kim.test.Factory
-import org.kuali.rice.kim.impl.identity.name.EntityNameBo
-import org.kuali.rice.kim.impl.identity.name.EntityNameTypeBo
-import org.joda.time.DateTime
+import org.kuali.rice.krad.data.PersistenceOption;
 
 /**
  * Tests persisting PersonDocumentName object in order to verify ORM mappings
@@ -31,9 +28,9 @@ import org.joda.time.DateTime
 class PersonDocumentNamePersistenceTest extends BoPersistenceTest {
     @Test
     void test_save_persondocumentname() {
-        EntityBo entity = Factory.make(EntityBo)
-        boService.save(entity)
-        EntityNameBo name = Factory.make(EntityNameBo, entity: entity)
+        EntityBo entity = Factory.make(EntityBo.class)
+        entity = boService.save(entity, PersistenceOption.FLUSH)
+        EntityNameBo name = Factory.make(EntityNameBo.class, entity: entity)
 
         PersonDocumentName pdn = new PersonDocumentName([
             entityId: entity.id,
@@ -44,11 +41,11 @@ class PersonDocumentNamePersistenceTest extends BoPersistenceTest {
             lastName: name.lastNameUnmasked,
             nameSuffix: name.nameSuffixUnmasked,
             entityNameType: name.nameType,
-            nameChangedDate: genDbTimestamp(),
+            nameChangedDate: name.nameChangedTimestamp,
             nameCode: name.nameType.code
         ])
 
-        boService.save(pdn)
+        pdn = boService.save(pdn, PersistenceOption.FLUSH)
 
         assertRow(kimdoc_fields(pdn) + [
             ENTITY_NM_ID: pdn.entityNameId,
@@ -59,7 +56,7 @@ class PersonDocumentNamePersistenceTest extends BoPersistenceTest {
             LAST_NM: pdn.lastName,
             SUFFIX_NM: pdn.nameSuffix,
             NOTE_MSG: pdn.noteMessage,
-            NM_CHNG_DT: toDbTimestamp(pdn.nameChangedDate.time),
+            NM_CHNG_DT: pdn.nameChangedDate,
             NM_TYP_CD: pdn.entityNameType.code
         ],
         "KRIM_PND_NM_MT", "ENTITY_NM_ID")

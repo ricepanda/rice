@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import org.kuali.rice.krad.bo.PersistableAttachment;
 import org.kuali.rice.krad.bo.PersistableAttachmentBase;
 import org.kuali.rice.krad.bo.PersistableAttachmentList;
 import org.kuali.rice.krad.bo.PersistableBusinessObject;
+import org.kuali.rice.krad.service.BusinessObjectSerializerService;
+import org.kuali.rice.krad.service.KRADServiceLocator;
 import org.kuali.rice.krad.util.ObjectUtils;
 
 import javax.persistence.Transient;
@@ -348,6 +350,14 @@ public class MaintenanceDocumentBase extends org.kuali.rice.krad.maintenance.Mai
             }
 
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected BusinessObjectSerializerService getBusinessObjectSerializerService() {
+        return KRADServiceLocator.getBusinessObjectSerializerService();
     }
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 package org.kuali.rice.core.framework.persistence.dao;
-
-import org.kuali.rice.core.framework.persistence.jpa.criteria.Criteria;
 
 import java.util.Collection;
 import java.util.List;
@@ -217,25 +215,5 @@ public interface GenericDao {
      * @param fieldValues
      */
     public void deleteMatching(Class clazz, Map fieldValues);
-    
-    /**
-     * This method allows for a more flexible search by allowing the programmer to 
-     * construct the criteria however they need to and then pass that in for execution.
-     * @param clazz
-     * @param criteria
-     * @return Collection
-     */
-    public Collection findMatching(Class clazz, Criteria criteria);
-
-    /**
-     * This method allows for a more flexible search by allowing the programmer to 
-     * construct the criteria however they need to and then pass that in for execution.
-     * @param clazz
-     * @param criteria
-     * @param selectForUpdate whether to perform a select for update query
-     * @param wait millis to wait for select for update
-     * @return Collection
-     */
-    public Collection findMatching(Class clazz, Criteria criteria, boolean selectForUpdate, long wait);
 
 }

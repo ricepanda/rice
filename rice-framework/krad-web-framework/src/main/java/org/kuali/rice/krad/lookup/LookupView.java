@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.core.api.mo.common.active.Inactivatable;
@@ -26,7 +27,9 @@ import org.kuali.rice.kim.api.identity.Person;
 import org.kuali.rice.krad.datadictionary.AttributeDefinition;
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
+import org.kuali.rice.krad.datadictionary.uif.UifDictionaryBean;
 import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
+import org.kuali.rice.krad.uif.UifConstants;
 import org.kuali.rice.krad.uif.UifConstants.ViewType;
 import org.kuali.rice.krad.uif.UifParameters;
 import org.kuali.rice.krad.uif.UifPropertyPaths;
@@ -40,9 +43,15 @@ import org.kuali.rice.krad.uif.control.TextControl;
 import org.kuali.rice.krad.uif.element.Message;
 import org.kuali.rice.krad.uif.field.FieldGroup;
 import org.kuali.rice.krad.uif.field.InputField;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleRestriction;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycleUtils;
+import org.kuali.rice.krad.uif.lifecycle.initialize.AssignIdsTask;
 import org.kuali.rice.krad.uif.util.ComponentFactory;
 import org.kuali.rice.krad.uif.util.ComponentUtils;
+import org.kuali.rice.krad.uif.util.LifecycleElement;
 import org.kuali.rice.krad.uif.view.FormView;
+import org.kuali.rice.krad.uif.view.View;
 import org.kuali.rice.krad.util.GlobalVariables;
 import org.kuali.rice.krad.util.KRADConstants;
 
@@ -67,6 +76,9 @@ public class LookupView extends FormView {
 
     private List<Component> criteriaFields;
     private Group criteriaGroup;
+
+    @RequestParameter
+    private boolean hideCriteriaOnSearch;
 
     private List<Component> resultFields;
     private CollectionGroup resultsGroup;
@@ -102,6 +114,8 @@ public class LookupView extends FormView {
 
     private boolean autoAddActiveCriteria;
 
+    private List<String> additionalSecurePropertyNames;
+
     public LookupView() {
         super();
 
@@ -112,6 +126,8 @@ public class LookupView extends FormView {
         renderLookupCriteria = true;
         renderCriteriaActions = true;
         renderResultActions = true;
+
+        additionalSecurePropertyNames = new ArrayList<String>();
     }
 
     /**
@@ -144,15 +160,19 @@ public class LookupView extends FormView {
      * {@inheritDoc}
      */
     @Override
-    public void performApplyModel(Object model, Component parent) {
+    public void performApplyModel(Object model, LifecycleElement parent) {
         LookupForm lookupForm = (LookupForm) model;
 
         if (!renderCriteriaActions) {
             criteriaGroup.getFooter().setRender(false);
         }
 
-        if (!renderLookupCriteria) {
+        if (!renderLookupCriteria || (hideCriteriaOnSearch && lookupForm.isDisplayResults())) {
             criteriaGroup.setRender(false);
+        }
+
+        if (hideCriteriaOnSearch && !lookupForm.isDisplayResults()) {
+            resultsGroup.setRender(false);
         }
 
         boolean returnLinkAllowed = false;
@@ -200,12 +220,12 @@ public class LookupView extends FormView {
      * {@inheritDoc}
      */
     @Override
-    public void performFinalize(Object model, Component parent) {
+    public void performFinalize(Object model, LifecycleElement parent) {
         super.performFinalize(model, parent);
 
         LookupForm lookupForm = (LookupForm) model;
 
-        List<InputField> fields = ComponentUtils.getComponentsOfTypeDeep(criteriaGroup, InputField.class);
+        List<InputField> fields = ViewLifecycleUtils.getElementsOfTypeDeep(criteriaGroup, InputField.class);
         for (InputField field : fields) {
             field.setForceSessionPersistence(true);
         }
@@ -274,9 +294,6 @@ public class LookupView extends FormView {
                 getResultsGroup().setCollectionObjectClass(getDataObjectClass());
             }
         }
-
-        // TODO: Confirm unneeded and remove since we don't have these as prototypes need to assign ids here
-        //        ComponentUtils.assignIds(Arrays.asList(getCriteriaGroup(), getResultsGroup()));
 
         if (getItems().isEmpty()) {
             setItems(Arrays.asList(getCriteriaGroup(), getResultsGroup()));
@@ -352,7 +369,12 @@ public class LookupView extends FormView {
      * @see LookupView#rangedToMessage
      */
     protected FieldGroup createDateRangeFieldGroup(LookupInputField toDate) {
-        FieldGroup rangeFieldGroup = ComponentUtils.copy(getRangeFieldGroupPrototype(), toDate.getId());
+        // Generate an ID when the "to date" field is out of the normal lifecycle flow
+        if (toDate.getId() == null) {
+            toDate.setId(AssignIdsTask.generateId(toDate, ViewLifecycle.getView()));
+        }
+
+        FieldGroup rangeFieldGroup = ComponentUtils.copy(getRangeFieldGroupPrototype());
 
         // Copy some properties from the "to date" field to the field group
         rangeFieldGroup.setFieldLabel(ComponentUtils.copy(toDate.getFieldLabel()));
@@ -384,22 +406,7 @@ public class LookupView extends FormView {
         fieldGroupItems.add(toDate);
         rangeFieldGroup.setItems(fieldGroupItems);
 
-        getViewIndex().getInitialComponentStates().put(rangeFieldGroup.getBaseId(), rangeFieldGroup);
-
         return rangeFieldGroup;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<Component> getComponentPrototypes() {
-        List<Component> components = super.getComponentPrototypes();
-
-        components.add(rangeFieldGroupPrototype);
-        components.add(rangedToMessage);
-
-        return components;
     }
 
     /**
@@ -530,6 +537,7 @@ public class LookupView extends FormView {
      *
      * @return List of components to render as the lookup criteria
      */
+    @ViewLifecycleRestriction
     @BeanTagAttribute(name = "criteriaFields", type = BeanTagAttribute.AttributeType.LISTBEAN)
     public List<Component> getCriteriaFields() {
         return this.criteriaFields;
@@ -560,6 +568,7 @@ public class LookupView extends FormView {
      *
      * @return group instance that will hold the search criteria fields
      */
+    @ViewLifecycleRestriction
     @BeanTagAttribute(name = "criteriaGroup", type = BeanTagAttribute.AttributeType.SINGLEBEAN)
     public Group getCriteriaGroup() {
         return this.criteriaGroup;
@@ -572,6 +581,14 @@ public class LookupView extends FormView {
         this.criteriaGroup = criteriaGroup;
     }
 
+    public boolean isHideCriteriaOnSearch() {
+        return hideCriteriaOnSearch;
+    }
+
+    public void setHideCriteriaOnSearch(boolean hideCriteriaOnSearch) {
+        this.hideCriteriaOnSearch = hideCriteriaOnSearch;
+    }
+
     /**
      * List of fields that will be rendered for the result collection group, each field will be a column
      * (assuming table layout is used).
@@ -582,6 +599,7 @@ public class LookupView extends FormView {
      *
      * @return List of components to render in the results group
      */
+    @ViewLifecycleRestriction
     @BeanTagAttribute(name = "resultFields", type = BeanTagAttribute.AttributeType.LISTBEAN)
     public List<Component> getResultFields() {
         return this.resultFields;
@@ -612,6 +630,7 @@ public class LookupView extends FormView {
      *
      * @return collection group instance to render for the lookup results
      */
+    @ViewLifecycleRestriction
     @BeanTagAttribute(name = "resultsGroup", type = BeanTagAttribute.AttributeType.SINGLEBEAN)
     public CollectionGroup getResultsGroup() {
         return this.resultsGroup;
@@ -759,6 +778,7 @@ public class LookupView extends FormView {
      *
      * @return field group instance to use for creating range field groups
      */
+    @ViewLifecycleRestriction(UifConstants.ViewPhases.INITIALIZE)
     public FieldGroup getRangeFieldGroupPrototype() {
         return rangeFieldGroupPrototype;
     }
@@ -776,6 +796,7 @@ public class LookupView extends FormView {
      *
      * @return message instance for range field group
      */
+    @ViewLifecycleRestriction(UifConstants.ViewPhases.INITIALIZE)
     public Message getRangedToMessage() {
         return rangedToMessage;
     }
@@ -805,58 +826,39 @@ public class LookupView extends FormView {
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
+     * List of secure property names that are in addition to the
+     * {@link org.kuali.rice.krad.uif.component.ComponentSecurity} or
+     * {@link org.kuali.rice.krad.datadictionary.AttributeSecurity} attributes.
+     *
+     * @return list of secure property names
+     */
+    @BeanTagAttribute(name = "additionalSecurePropertyNames", type = BeanTagAttribute.AttributeType.LISTVALUE)
+    public List<String> getAdditionalSecurePropertyNames() {
+        return additionalSecurePropertyNames;
+    }
+
+    /**
+     * @see LookupView#getAdditionalSecurePropertyNames()
+     */
+    public void setAdditionalSecurePropertyNames(List<String> additionalSecurePropertyNames) {
+        this.additionalSecurePropertyNames = additionalSecurePropertyNames;
+    }
+
+    /**
+     * Clones the {@code LookupView} with a deep copy.
+     *
+     * @return a clone of the current {@code LookupView}
+     *
+     * @see org.kuali.rice.krad.uif.component.ComponentBase#clone()
      */
     @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
+    public LookupView clone() throws CloneNotSupportedException {
+        LookupView lookupViewCopy = (LookupView) super.clone();
 
-        LookupView lookupViewCopy = (LookupView) component;
-
-        lookupViewCopy.setDataObjectClass(this.dataObjectClass);
-
-        if (this.criteriaGroup != null) {
-            lookupViewCopy.setCriteriaGroup((Group) this.criteriaGroup.copy());
+        if (getViewHelperService() != null) {
+            lookupViewCopy.setViewHelperService(((LookupableImpl) getViewHelperService()).copy());
         }
 
-        if (this.resultsGroup != null) {
-            lookupViewCopy.setResultsGroup((CollectionGroup) this.resultsGroup.copy());
-        }
-
-        if (this.criteriaFields != null) {
-            List<Component> criteriaFieldsCopy = ComponentUtils.copy(criteriaFields);
-            lookupViewCopy.setCriteriaFields(criteriaFieldsCopy);
-        }
-
-        if (this.resultFields != null) {
-            List<Component> resultFieldsCopy = ComponentUtils.copy(resultFields);
-            lookupViewCopy.setResultFields(resultFieldsCopy);
-        }
-
-        if (this.defaultSortAttributeNames != null) {
-            lookupViewCopy.setDefaultSortAttributeNames(new ArrayList<String>(defaultSortAttributeNames));
-        }
-
-        lookupViewCopy.setDefaultSortAscending(this.defaultSortAscending);
-        lookupViewCopy.setRenderReturnLink(this.renderReturnLink);
-        lookupViewCopy.setRenderResultActions(this.renderResultActions);
-        lookupViewCopy.setRenderMaintenanceLinks(this.renderMaintenanceLinks);
-        lookupViewCopy.setMaintenanceUrlMapping(this.maintenanceUrlMapping);
-        lookupViewCopy.setMultipleValuesSelect(this.multipleValuesSelect);
-        lookupViewCopy.setRenderLookupCriteria(this.renderLookupCriteria);
-        lookupViewCopy.setRenderCriteriaActions(this.renderCriteriaActions);
-        lookupViewCopy.setResultSetLimit(this.resultSetLimit);
-        lookupViewCopy.setMultipleValuesSelectResultSetLimit(this.multipleValuesSelectResultSetLimit);
-        lookupViewCopy.setMaintenanceUrlMapping(this.maintenanceUrlMapping);
-
-        if (this.rangeFieldGroupPrototype != null) {
-            lookupViewCopy.setRangeFieldGroupPrototype((FieldGroup) this.rangeFieldGroupPrototype.copy());
-        }
-
-        if (this.rangedToMessage != null) {
-            lookupViewCopy.setRangedToMessage((Message) this.rangedToMessage.copy());
-        }
-
-        lookupViewCopy.setAutoAddActiveCriteria(this.autoAddActiveCriteria);
+        return lookupViewCopy;
     }
 }

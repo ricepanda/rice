@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -63,19 +63,31 @@
     </property>
   </bean>
 
+  <bean id="Uif-DatePickerOnFocus" parent="Uif-DatePickerOnFocus-parentBean"/>
+  <bean id="Uif-DatePickerOnFocus-parentBean" abstract="true" scope="prototype" parent="Uif-DatePicker">
+    <property name="templateOptions">
+      <map>
+        <entry key="showAnim" value="slideDown"/>
+        <entry key="showButtonPanel" value="true"/>
+        <entry key="changeMonth" value="true"/>
+        <entry key="changeYear" value="true"/>
+      </map>
+    </property>
+  </bean>
+
   <bean id="Uif-LightBox" parent="Uif-LightBox-parentBean"/>
   <bean id="Uif-LightBox-parentBean" abstract="true" class="org.kuali.rice.krad.uif.widget.LightBox" scope="prototype"
         parent="Uif-WidgetBase">
     <property name="template" value="/krad/WEB-INF/ftl/components/widget/lightBox.ftl"/>
     <property name="templateName" value="uif_lightBox"/>
-    <property name="height" value="95%"/>
-    <property name="width" value="75%"/>
+    <!--<property name="height" value="95%"/>-->
+    <!--<property name="width" value="75%"/>-->
     <property name="templateOptions">
       <map>
-        <entry key="fitToView" value="true"/>
-        <entry key="height" value="95%"/>
-        <entry key="width" value="75%"/>
-        <entry key="autoSize" value="false"/>
+        <!--<entry key="fitToView" value="true"/>-->
+        <!--<entry key="height" value="95%"/>-->
+        <!--<entry key="width" value="75%"/>-->
+        <entry key="autoSize" value="true"/>
         <entry key="openEffect" value="fade"/>
         <entry key="closeEffect" value="fade"/>
         <entry key="openSpeed" value="200"/>
@@ -142,11 +154,8 @@
       <bean parent="Uif-LightBox"/>
     </property>
     <property name="quickfinderAction">
-      <bean parent="Uif-ActionImage" p:methodToCall="performLookup" p:focusOnIdAfterSubmit="NEXT_INPUT">
-        <property name="actionImage">
-          <bean parent="Uif-QuickLookupImage"/>
-        </property>
-      </bean>
+      <bean parent="Uif-ActionLink" p:iconClass="icon-search" p:methodToCall="performLookup"
+            p:focusOnIdAfterSubmit="NEXT_INPUT" p:wrapperCssClasses="input-group-btn"/>
     </property>
     <property name="render" value="@{!#parent.readOnly}"/>
   </bean>
@@ -202,8 +211,8 @@
         scope="prototype" parent="Uif-WidgetBase">
     <property name="template" value="/krad/WEB-INF/ftl/components/widget/disclosure.ftl"/>
     <property name="templateName" value="uif_disclosure"/>
-    <property name="collapseImageSrc" value="@{#ConfigProperties['krad.externalizable.images.url']}h3_expand.png"/>
-    <property name="expandImageSrc" value="@{#ConfigProperties['krad.externalizable.images.url']}h3_collapse.png"/>
+    <property name="collapsedIconClass" value="icon-caret-right"/>
+    <property name="expandedIconClass" value="icon-caret-down"/>
     <property name="animationSpeed" value="500"/>
     <property name="defaultOpen" value="true"/>
   </bean>

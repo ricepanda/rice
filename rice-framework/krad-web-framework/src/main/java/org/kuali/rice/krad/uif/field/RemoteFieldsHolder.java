@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -273,28 +273,6 @@ public class RemoteFieldsHolder extends ComponentBase implements DataBinding {
      */
     public void setFetchingMethodInvoker(MethodInvokerConfig fetchingMethodInvoker) {
         this.fetchingMethodInvoker = fetchingMethodInvoker;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        RemoteFieldsHolder remoteFieldsHolderCopy = (RemoteFieldsHolder) component;
-
-        remoteFieldsHolderCopy.setPropertyName(this.propertyName);
-
-        if(this.bindingInfo != null) {
-            remoteFieldsHolderCopy.setBindingInfo((BindingInfo)this.bindingInfo.copy());
-        }
-
-        remoteFieldsHolderCopy.setFetchingMethodToCall(this.fetchingMethodToCall);
-
-        if(this.fetchingMethodInvoker != null) {
-            this.setFetchingMethodInvoker(CloneUtils.deepClone(this.fetchingMethodInvoker));
-        }
     }
 
 }

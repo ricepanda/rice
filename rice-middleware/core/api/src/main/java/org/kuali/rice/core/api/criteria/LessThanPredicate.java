@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,8 @@ public final class LessThanPredicate extends AbstractPredicate implements Single
 	@XmlElements(value = {
             @XmlElement(name = CriteriaStringValue.Constants.ROOT_ELEMENT_NAME, type = CriteriaStringValue.class, required = true),
 			@XmlElement(name = CriteriaDecimalValue.Constants.ROOT_ELEMENT_NAME, type = CriteriaDecimalValue.class, required = true),
+            @XmlElement(name = CriteriaKualiDecimalValue.Constants.ROOT_ELEMENT_NAME, type = CriteriaKualiDecimalValue.class, required = true),
+            @XmlElement(name = CriteriaKualiPercentValue.Constants.ROOT_ELEMENT_NAME, type = CriteriaKualiPercentValue.class, required = true),
             @XmlElement(name = CriteriaIntegerValue.Constants.ROOT_ELEMENT_NAME, type = CriteriaIntegerValue.class, required = true),
             @XmlElement(name = CriteriaDateTimeValue.Constants.ROOT_ELEMENT_NAME, type = CriteriaDateTimeValue.class, required = true)
     })
@@ -78,6 +80,8 @@ public final class LessThanPredicate extends AbstractPredicate implements Single
 	 *   <li>{@link CriteriaDateTimeValue}</li>
 	 *   <li>{@link CriteriaDecimalValue}</li>
 	 *   <li>{@link CriteriaIntegerValue}</li>
+     *   <li>{@link CriteriaKualiDecimalValue}</li>
+     *   <li>{@link CriteriaKualiPercentValue}</li>
 	 * </ul>
 	 * 
 	 * @param propertyPath the property path for the predicate, must not be null or blank

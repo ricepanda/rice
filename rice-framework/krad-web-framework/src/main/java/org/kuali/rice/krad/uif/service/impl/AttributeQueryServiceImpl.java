@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,14 @@
  */
 package org.kuali.rice.krad.uif.service.impl;
 
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.lang.StringUtils;
 import org.kuali.rice.core.api.CoreApiServiceLocator;
 import org.kuali.rice.core.api.config.property.ConfigurationService;
@@ -25,21 +33,14 @@ import org.kuali.rice.krad.uif.UifParameters;
 import org.kuali.rice.krad.uif.component.MethodInvokerConfig;
 import org.kuali.rice.krad.uif.field.AttributeQuery;
 import org.kuali.rice.krad.uif.field.AttributeQueryResult;
-import org.kuali.rice.krad.uif.field.InputField;
+import org.kuali.rice.krad.uif.lifecycle.ComponentPostMetadata;
+import org.kuali.rice.krad.uif.lifecycle.ViewLifecycle;
+import org.kuali.rice.krad.uif.lifecycle.ViewPostMetadata;
 import org.kuali.rice.krad.uif.service.AttributeQueryService;
 import org.kuali.rice.krad.uif.util.ObjectPropertyUtils;
-import org.kuali.rice.krad.uif.view.View;
 import org.kuali.rice.krad.uif.widget.LocationSuggest;
 import org.kuali.rice.krad.uif.widget.Suggest;
 import org.kuali.rice.krad.util.BeanPropertyComparator;
-
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Implementation of <code>AttributeQueryService</code> that prepares the attribute queries and
@@ -55,33 +56,38 @@ public class AttributeQueryServiceImpl implements AttributeQueryService {
     private ConfigurationService configurationService;
 
     /**
-     * @see org.kuali.rice.krad.uif.service.AttributeQueryService#performFieldSuggestQuery(
-     *org.kuali.rice.krad.uif.view.View, java.lang.String, java.lang.String, java.util.Map<java.lang.String,
-     *      java.lang.String>)
+     * {@inheritDoc}
      */
     @Override
-    public AttributeQueryResult performFieldSuggestQuery(View view, String fieldId, String fieldTerm,
-            Map<String, String> queryParameters) {
+    public AttributeQueryResult performFieldSuggestQuery(ViewPostMetadata viewPostMetadata, String fieldId,
+            String fieldTerm, Map<String, String> queryParameters) {
         AttributeQueryResult queryResult = new AttributeQueryResult();
 
-        // retrieve attribute field from view index
-        InputField inputField = (InputField) view.getViewIndex().getComponentById(fieldId);
-        if (inputField == null) {
+        ComponentPostMetadata inputFieldMetaData = viewPostMetadata.getComponentPostMetadata(fieldId);
+        if (inputFieldMetaData == null) {
             throw new RuntimeException("Unable to find attribute field instance for id: " + fieldId);
         }
 
-        Suggest fieldSuggest = inputField.getSuggest();
-        AttributeQuery suggestQuery = fieldSuggest.getSuggestQuery();
+        Suggest.SuggestPostData suggestPostData = (Suggest.SuggestPostData) inputFieldMetaData.getData(
+                UifConstants.PostMetadata.SUGGEST);
+
+        AttributeQuery suggestQuery = suggestPostData.getSuggestQuery();
+
+        boolean isUppercaseValue = Boolean.TRUE.equals(inputFieldMetaData.getData(
+                UifConstants.PostMetadata.INPUT_FIELD_IS_UPPERCASE));
 
         // add term as a like criteria
         Map<String, String> additionalCriteria = new HashMap<String, String>();
-        additionalCriteria.put(fieldSuggest.getValuePropertyName(), fieldTerm + "*");
+        if (isUppercaseValue) {
+            additionalCriteria.put(suggestPostData.getValuePropertyName(), fieldTerm.toUpperCase() + "*");
+        } else {
+            additionalCriteria.put(suggestPostData.getValuePropertyName(), fieldTerm + "*");
+        }
 
         // execute suggest query
         Collection<?> results = null;
         if (suggestQuery.hasConfiguredMethod()) {
-            Object queryMethodResult = executeAttributeQueryMethod(view, suggestQuery, queryParameters, true,
-                    fieldTerm);
+            Object queryMethodResult = executeAttributeQueryMethod(suggestQuery, queryParameters, true, fieldTerm);
             if ((queryMethodResult != null) && (queryMethodResult instanceof Collection<?>)) {
                 results = (Collection<?>) queryMethodResult;
             }
@@ -91,10 +97,10 @@ public class AttributeQueryServiceImpl implements AttributeQueryService {
 
         // build list of suggest data from result records
         if (results != null) {
-            if (fieldSuggest.isReturnFullQueryObject()) {
+            if (suggestPostData.isReturnFullQueryObject()) {
                 queryResult.setResultData((List<Object>) results);
             } else {
-                retrievePropertiesOnResults(queryResult, results, fieldSuggest);
+                retrievePropertiesOnResults(queryResult, results, suggestPostData);
             }
         }
 
@@ -107,10 +113,10 @@ public class AttributeQueryServiceImpl implements AttributeQueryService {
      *
      * @param queryResult the queryResult to fill in
      * @param results the set of original results
-     * @param fieldSuggest the Suggest widget
+     * @param suggestPostData post data for the suggest widget
      */
     protected void retrievePropertiesOnResults(AttributeQueryResult queryResult, Collection<?> results,
-            Suggest fieldSuggest) {
+            Suggest.SuggestPostData suggestPostData) {
         List<Object> suggestData = new ArrayList<Object>();
         for (Object result : results) {
             if (result == null) {
@@ -127,8 +133,9 @@ public class AttributeQueryServiceImpl implements AttributeQueryService {
 
             // value prop
             Object suggestFieldValue = null;
-            if (StringUtils.isNotBlank(fieldSuggest.getValuePropertyName())) {
-                suggestFieldValue = ObjectPropertyUtils.getPropertyValue(result, fieldSuggest.getValuePropertyName());
+            if (StringUtils.isNotBlank(suggestPostData.getValuePropertyName())) {
+                suggestFieldValue = ObjectPropertyUtils.getPropertyValue(result,
+                        suggestPostData.getValuePropertyName());
             } else if (ObjectPropertyUtils.isReadableProperty(result, UifParameters.VALUE)) {
                 suggestFieldValue = ObjectPropertyUtils.getPropertyValue(result, UifParameters.VALUE);
             }
@@ -139,8 +146,9 @@ public class AttributeQueryServiceImpl implements AttributeQueryService {
 
             // label prop
             Object suggestFieldLabel = null;
-            if (StringUtils.isNotBlank(fieldSuggest.getLabelPropertyName())) {
-                suggestFieldLabel = ObjectPropertyUtils.getPropertyValue(result, fieldSuggest.getLabelPropertyName());
+            if (StringUtils.isNotBlank(suggestPostData.getLabelPropertyName())) {
+                suggestFieldLabel = ObjectPropertyUtils.getPropertyValue(result,
+                        suggestPostData.getLabelPropertyName());
             } else if (ObjectPropertyUtils.isReadableProperty(result, UifParameters.LABEL)) {
                 suggestFieldLabel = ObjectPropertyUtils.getPropertyValue(result, UifParameters.LABEL);
             }
@@ -150,12 +158,13 @@ public class AttributeQueryServiceImpl implements AttributeQueryService {
             }
 
             // location suggest specific properties
-            if (fieldSuggest instanceof LocationSuggest) {
-                handleLocationSuggestProperties((LocationSuggest) fieldSuggest, result, propMap);
+            if (suggestPostData instanceof LocationSuggest.LocationSuggestPostData) {
+                handleLocationSuggestProperties((LocationSuggest.LocationSuggestPostData) suggestPostData, result,
+                        propMap);
             }
 
             // additional properties
-            handleAdditionalSuggestProperties(fieldSuggest, result, propMap);
+            handleAdditionalSuggestProperties(suggestPostData, result, propMap);
 
             // only add if there was a property to send back
             if (!propMap.isEmpty()) {
@@ -170,22 +179,22 @@ public class AttributeQueryServiceImpl implements AttributeQueryService {
     /**
      * Handle the custom additionalProperties set back for a suggestion query.  These will be added to the propMap.
      *
-     * @param fieldSuggest the suggest
+     * @param suggestPostData post data for the suggest widget
      * @param result the result to pull properties from
      * @param propMap the propMap to add properties to
      */
-    private void handleAdditionalSuggestProperties(Suggest fieldSuggest, Object result, Map<String, String> propMap){
-        if (fieldSuggest.getAdditionalPropertiesToReturn() != null){
+    private void handleAdditionalSuggestProperties(Suggest.SuggestPostData suggestPostData, Object result,
+            Map<String, String> propMap) {
+        if (suggestPostData.getAdditionalPropertiesToReturn() != null) {
             //add properties for each valid property name
-            for(String propName: fieldSuggest.getAdditionalPropertiesToReturn()){
+            for (String propName : suggestPostData.getAdditionalPropertiesToReturn()) {
                 Object propValue = null;
 
-                if(StringUtils.isNotBlank(propName)
-                                        && ObjectPropertyUtils.isReadableProperty(result, propName)){
+                if (StringUtils.isNotBlank(propName) && ObjectPropertyUtils.isReadableProperty(result, propName)) {
                     propValue = ObjectPropertyUtils.getPropertyValue(result, propName);
                 }
 
-                if (propValue != null){
+                if (propValue != null) {
                     propMap.put(propName, propValue.toString());
                 }
             }
@@ -195,72 +204,72 @@ public class AttributeQueryServiceImpl implements AttributeQueryService {
     /**
      * Handle the LocationSuggest specific properties and add them to the map.
      *
-     * @param fieldSuggest the suggest
+     * @param suggestPostData oost data for the suggest widget
      * @param result the result to pull properties from
      * @param propMap the propMap to add properties to
      */
-    private void handleLocationSuggestProperties(LocationSuggest fieldSuggest, Object result, Map<String, String> propMap){
-
+    private void handleLocationSuggestProperties(LocationSuggest.LocationSuggestPostData suggestPostData, Object result,
+            Map<String, String> propMap) {
         // href property
         Object suggestHrefValue = null;
-        if(StringUtils.isNotBlank(fieldSuggest.getHrefPropertyName())
-                && ObjectPropertyUtils.isReadableProperty(result, fieldSuggest.getHrefPropertyName())){
-            suggestHrefValue = ObjectPropertyUtils.getPropertyValue(result, fieldSuggest.getHrefPropertyName());
+        if (StringUtils.isNotBlank(suggestPostData.getHrefPropertyName()) && ObjectPropertyUtils.isReadableProperty(
+                result, suggestPostData.getHrefPropertyName())) {
+            suggestHrefValue = ObjectPropertyUtils.getPropertyValue(result, suggestPostData.getHrefPropertyName());
         }
 
         // add if found
-        if(suggestHrefValue != null){
-            propMap.put(fieldSuggest.getHrefPropertyName(), suggestHrefValue.toString());
+        if (suggestHrefValue != null) {
+            propMap.put(suggestPostData.getHrefPropertyName(), suggestHrefValue.toString());
         }
 
         // url addition/appendage property
         Object addUrlValue = null;
-        if(StringUtils.isNotBlank(fieldSuggest.getAdditionalUrlPathPropertyName())
-                        && ObjectPropertyUtils.isReadableProperty(result, fieldSuggest.getAdditionalUrlPathPropertyName())){
-            addUrlValue = ObjectPropertyUtils.getPropertyValue(result, fieldSuggest.getAdditionalUrlPathPropertyName());
+        if (StringUtils.isNotBlank(suggestPostData.getAdditionalUrlPathPropertyName()) &&
+                ObjectPropertyUtils.isReadableProperty(result, suggestPostData.getAdditionalUrlPathPropertyName())) {
+            addUrlValue = ObjectPropertyUtils.getPropertyValue(result,
+                    suggestPostData.getAdditionalUrlPathPropertyName());
         }
 
         // add if found
-        if(addUrlValue != null){
-            propMap.put(fieldSuggest.getAdditionalUrlPathPropertyName(), addUrlValue.toString());
+        if (addUrlValue != null) {
+            propMap.put(suggestPostData.getAdditionalUrlPathPropertyName(), addUrlValue.toString());
         }
 
-        if(fieldSuggest.getRequestParameterPropertyNames() == null){
+        if (suggestPostData.getRequestParameterPropertyNames() == null) {
             return;
         }
 
         // add properties for each valid requestParameter property name
-        for(String key: fieldSuggest.getRequestParameterPropertyNames().keySet()){
-            String prop = fieldSuggest.getRequestParameterPropertyNames().get(key);
+        for (String key : suggestPostData.getRequestParameterPropertyNames().keySet()) {
+            String prop = suggestPostData.getRequestParameterPropertyNames().get(key);
             Object propValue = null;
 
-            if(StringUtils.isNotBlank(prop)
-                                    && ObjectPropertyUtils.isReadableProperty(result, prop)){
+            if (StringUtils.isNotBlank(prop) && ObjectPropertyUtils.isReadableProperty(result, prop)) {
                 propValue = ObjectPropertyUtils.getPropertyValue(result, prop);
             }
 
-            if (propValue != null){
+            if (propValue != null) {
                 propMap.put(prop, propValue.toString());
             }
         }
-
     }
 
     /**
-     * @see org.kuali.rice.krad.uif.service.AttributeQueryService#performFieldQuery(org.kuali.rice.krad.uif.view.View,
-     *      java.lang.String, java.util.Map<java.lang.String,java.lang.String>)
+     * {@inheritDoc}
      */
     @Override
-    public AttributeQueryResult performFieldQuery(View view, String fieldId, Map<String, String> queryParameters) {
+    public AttributeQueryResult performFieldQuery(ViewPostMetadata viewPostMetadata, String fieldId,
+            Map<String, String> queryParameters) {
         AttributeQueryResult queryResult = new AttributeQueryResult();
 
         // retrieve attribute field from view index
-        InputField inputField = (InputField) view.getViewIndex().getComponentById(fieldId);
-        if (inputField == null) {
+        ComponentPostMetadata inputFieldMetaData = viewPostMetadata.getComponentPostMetadata(fieldId);
+        if (inputFieldMetaData == null) {
             throw new RuntimeException("Unable to find attribute field instance for id: " + fieldId);
         }
 
-        AttributeQuery fieldQuery = inputField.getAttributeQuery();
+        AttributeQuery fieldQuery = (AttributeQuery) inputFieldMetaData
+                .getData(UifConstants.PostMetadata.INPUT_FIELD_ATTRIBUTE_QUERY);
         if (fieldQuery == null) {
             throw new RuntimeException("Field query not defined for field instance with id: " + fieldId);
         }
@@ -268,7 +277,7 @@ public class AttributeQueryServiceImpl implements AttributeQueryService {
         // execute query and get result
         Object resultObject = null;
         if (fieldQuery.hasConfiguredMethod()) {
-            Object queryMethodResult = executeAttributeQueryMethod(view, fieldQuery, queryParameters, false, null);
+            Object queryMethodResult = executeAttributeQueryMethod(fieldQuery, queryParameters, false, null);
             if (queryMethodResult != null) {
                 // if method returned the result then no further processing needed
                 if (queryMethodResult instanceof AttributeQueryResult) {
@@ -321,7 +330,8 @@ public class AttributeQueryServiceImpl implements AttributeQueryService {
             if (fieldQuery.isRenderNotFoundMessage()) {
                 String messageTemplate = getConfigurationService().getPropertyValueAsString(
                         UifConstants.MessageKeys.QUERY_DATA_NOT_FOUND);
-                String message = MessageFormat.format(messageTemplate, inputField.getLabel());
+                String message = MessageFormat.format(messageTemplate, inputFieldMetaData.getData(
+                        UifConstants.PostMetadata.LABEL));
                 fieldQuery.setReturnMessageText(message.toLowerCase());
             }
         }
@@ -336,16 +346,15 @@ public class AttributeQueryServiceImpl implements AttributeQueryService {
     /**
      * Prepares the method configured on the attribute query then performs the method invocation
      *
-     * @param view view instance the field is contained within
      * @param attributeQuery attribute query instance to execute
      * @param queryParameters map of query parameters that provide values for the method arguments
      * @param isSuggestQuery indicates whether the query is for forming suggest options
      * @param queryTerm if being called for a suggest, the term for the query field
      * @return type depends on method being invoked, could be AttributeQueryResult in which
-     *         case the method has prepared the return result, or an Object that needs to be parsed for the result
+     * case the method has prepared the return result, or an Object that needs to be parsed for the result
      */
-    protected Object executeAttributeQueryMethod(View view, AttributeQuery attributeQuery,
-            Map<String, String> queryParameters, boolean isSuggestQuery, String queryTerm) {
+    protected Object executeAttributeQueryMethod(AttributeQuery attributeQuery, Map<String, String> queryParameters,
+            boolean isSuggestQuery, String queryTerm) {
         String queryMethodToCall = attributeQuery.getQueryMethodToCall();
         MethodInvokerConfig queryMethodInvoker = attributeQuery.getQueryMethodInvokerConfig();
 
@@ -359,22 +368,17 @@ public class AttributeQueryServiceImpl implements AttributeQueryService {
             queryMethodInvoker.setTargetMethod(queryMethodToCall);
         }
 
-        // if target class or object not set, use view helper service
-        if ((queryMethodInvoker.getTargetClass() == null) && (queryMethodInvoker.getTargetObject() == null)) {
-            queryMethodInvoker.setTargetObject(view.getViewHelperService());
-        }
-
         // setup query method arguments
         List<Object> arguments = new ArrayList<Object>();
-        if ((attributeQuery.getQueryMethodArgumentFieldList() != null) && (!attributeQuery
-                .getQueryMethodArgumentFieldList().isEmpty())) {
+        if ((attributeQuery.getQueryMethodArgumentFieldList() != null) &&
+                (!attributeQuery.getQueryMethodArgumentFieldList().isEmpty())) {
             // retrieve argument types for conversion and verify method arguments
             int numQueryMethodArguments = attributeQuery.getQueryMethodArgumentFieldList().size();
             if (isSuggestQuery) {
                 numQueryMethodArguments += 1;
             }
 
-            Class[] argumentTypes = queryMethodInvoker.getArgumentTypes();
+            Class<?>[] argumentTypes = queryMethodInvoker.getArgumentTypes();
             if ((argumentTypes == null) || (argumentTypes.length != numQueryMethodArguments)) {
                 throw new RuntimeException(
                         "Query method argument field list size does not match found number of method arguments");

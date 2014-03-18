@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,10 @@
  */
 package org.kuali.rice.kew.rule;
 
-import org.kuali.rice.core.framework.persistence.jpa.OrmUtils;
 import org.kuali.rice.kew.api.rule.RuleTemplateOptionContract;
 import org.kuali.rice.kew.rule.bo.RuleTemplateBo;
-import org.kuali.rice.kew.service.KEWServiceLocator;
 import org.kuali.rice.krad.bo.BusinessObjectBase;
-import org.kuali.rice.krad.data.jpa.eclipselink.PortableSequenceGenerator;
-import org.kuali.rice.krad.service.KRADServiceLocator;
+import org.kuali.rice.krad.data.jpa.PortableSequenceGenerator;
 import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
 
 import javax.persistence.Column;
@@ -32,6 +29,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 import javax.persistence.Version;
 
 /**
@@ -62,6 +60,9 @@ public class RuleTemplateOptionBo extends BusinessObjectBase implements RuleTemp
 	@Column(name="VER_NBR")
 	private Long versionNumber;
 
+    @Transient
+    private String ruleTemplateId;
+
     @ManyToOne(fetch=FetchType.EAGER)
 	@JoinColumn(name="RULE_TMPL_ID",nullable = false)
 	private RuleTemplateBo ruleTemplate;
@@ -73,10 +74,6 @@ public class RuleTemplateOptionBo extends BusinessObjectBase implements RuleTemp
         this.value = value;
     }
 
-    //@PrePersist
-    public void beforeInsert(){
-        OrmUtils.populateAutoIncValue(this, KEWServiceLocator.getEntityManagerFactory().createEntityManager());
-    }
     @Override
     public String getCode() {
         return code;
@@ -103,7 +100,7 @@ public class RuleTemplateOptionBo extends BusinessObjectBase implements RuleTemp
     }
     @Override
     public String getRuleTemplateId() {
-        return getRuleTemplate() != null ? getRuleTemplate().getId() : null;
+        return getRuleTemplate() != null ? getRuleTemplate().getId() : ruleTemplateId;
     }
 
     @Override
@@ -128,5 +125,10 @@ public class RuleTemplateOptionBo extends BusinessObjectBase implements RuleTemp
     public void refresh() {
         KRADServiceLocatorWeb.getLegacyDataAdapter().retrieveNonKeyFields(this);
     }
+
+    public void setRuleTemplateId(String ruleTemplateId) {
+        this.ruleTemplateId = ruleTemplateId;
+    }
+
 }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -129,23 +129,6 @@ public class AttributeSecurity extends UifDictionaryBeanBase {
     }
 
     /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        AttributeSecurity attributeSecurityCopy = ((AttributeSecurity)component);
-
-        attributeSecurityCopy.setHide(this.hide);
-        attributeSecurityCopy.setMask(this.mask);
-        attributeSecurityCopy.setPartialMask(this.partialMask);
-        attributeSecurityCopy.setReadOnly(this.readOnly);
-        attributeSecurityCopy.setMaskFormatter(this.maskFormatter);
-        attributeSecurityCopy.setPartialMaskFormatter(this.partialMaskFormatter);
-    }
-
-    /**
      * This overridden method ...
      *
      * @see org.kuali.rice.krad.datadictionary.DataDictionaryDefinition#completeValidation(java.lang.Class,
@@ -183,12 +166,11 @@ public class AttributeSecurity extends UifDictionaryBeanBase {
     }
 
     /**
-     * Returns whether any of the restrictions defined in this class indicate that the attribute value potentially
-     * needs
-     * to be not shown to the user (i.e. masked, partial mask, hide).  Note that readonly does not fall in this
-     * category.
-     *
-     * @return
+     * Returns whether any of the restrictions defined in this class indicate that the attribute
+     * value potentially needs to be not shown to the user (i.e. masked, partial mask, hide). Note
+     * that readonly does not fall in this category.
+     * 
+     * @return true if the value should be hidden from the user
      */
     public boolean hasRestrictionThatRemovesValueFromUI() {
         return mask || partialMask || hide;

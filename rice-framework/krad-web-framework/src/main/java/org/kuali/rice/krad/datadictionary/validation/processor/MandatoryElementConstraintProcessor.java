@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.kuali.rice.krad.service.KRADServiceLocatorWeb;
  * This abstract class can be extended by constraint processor classes that
  * must be processed on every validation.
  *
+ * @param <C> constraint type
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 public abstract class MandatoryElementConstraintProcessor<C extends Constraint> implements ConstraintProcessor<Object, C> {

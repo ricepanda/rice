@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * ValidationMessages for logic and options specific to groups
+ * ValidationMessages for logic and options specific to fields.
+ *
+ * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 @BeanTag(name = "fieldValidationMessages-bean", parent = "Uif-FieldValidationMessages")
 public class FieldValidationMessages extends ValidationMessages {
@@ -35,15 +37,16 @@ public class FieldValidationMessages extends ValidationMessages {
     private boolean useTooltip;
     private boolean showIcons;
 
-    @Override
     /**
      * Calls super and add dataAttributes that are appropriate for field level validationMessages
      * data.  This data is used by the validation framework clientside.
      *
      * @see krad.validate.js
      */
-    public void generateMessages(boolean reset, View view, Object model, Component parent) {
-        super.generateMessages(reset, view, model, parent);
+    @Override
+    public void generateMessages(View view, Object model, Component parent) {
+        super.generateMessages(view, model, parent);
+
         boolean hasMessages = false;
         if (!this.getErrors().isEmpty() || !this.getWarnings().isEmpty() || !this.getInfos().isEmpty()) {
             hasMessages = true;
@@ -51,7 +54,7 @@ public class FieldValidationMessages extends ValidationMessages {
         HashMap<String, Object> validationMessagesDataAttributes = new HashMap<String, Object>();
 
         Map<String, String> dataDefaults =
-                (Map<String, String>) (KRADServiceLocatorWeb.getDataDictionaryService().getDictionaryObject(
+                (Map<String, String>) (KRADServiceLocatorWeb.getDataDictionaryService().getDictionaryBean(
                         "Uif-FieldValidationMessages-DataDefaults"));
 
         //display
@@ -80,7 +83,7 @@ public class FieldValidationMessages extends ValidationMessages {
                 ScriptUtils.escapeHtml(this.getInfos()));
 
         if (!validationMessagesDataAttributes.isEmpty()) {
-            parent.addDataAttribute(UifConstants.DataAttributes.VALIDATION_MESSAGES, ScriptUtils.translateValue(
+            parent.addScriptDataAttribute(UifConstants.DataAttributes.VALIDATION_MESSAGES, ScriptUtils.translateValue(
                     validationMessagesDataAttributes));
         }
     }
@@ -122,18 +125,5 @@ public class FieldValidationMessages extends ValidationMessages {
      */
     public void setShowIcons(boolean showIcons) {
         this.showIcons = showIcons;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        FieldValidationMessages fieldValidationMessagesCopy = (FieldValidationMessages) component;
-
-        fieldValidationMessagesCopy.setUseTooltip(this.useTooltip);
-        fieldValidationMessagesCopy.setShowIcons(this.showIcons);
     }
 }

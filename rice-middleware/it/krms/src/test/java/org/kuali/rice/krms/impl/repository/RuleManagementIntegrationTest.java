@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ public class RuleManagementIntegrationTest extends AbstractBoTest {
         NaturalLanguageTemplateBoServiceImpl naturalLanguageTemplateBoServiceImpl = new NaturalLanguageTemplateBoServiceImpl();
         naturalLanguageTemplateBoServiceImpl.setNaturalLanguageTemplater(NaturalLanguageTemplateIntegrationGenTest.newStringReplaceTemplater());
         ruleManagementServiceImpl.setNaturalLanguageTemplateBoService(naturalLanguageTemplateBoServiceImpl);
-        ruleManagementServiceImpl.setBusinessObjectService(getBoService()); // Business Object Service gets set to other Services
+        ruleManagementServiceImpl.setDataObjectService(getDataObjectService()); // Business Object Service gets set to other Services
     }
 
     @Test

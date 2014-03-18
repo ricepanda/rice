@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -604,6 +604,7 @@ public class PeopleFlowRoutingTest extends KEWTestCase {
         PeopleFlowMember.Builder member = PeopleFlowMember.Builder.create(testuser3, MemberType.PRINCIPAL);
         PeopleFlowDelegate.Builder delegate = PeopleFlowDelegate.Builder.create(ppfTestRole2, MemberType.ROLE);
         delegate.setDelegationType(DelegationType.PRIMARY);
+        delegate.setActionRequestPolicy(ActionRequestPolicy.FIRST);
 
         createSimplePeopleFlow(PEOPLE_FLOW_8, member, delegate);
 
@@ -669,6 +670,7 @@ public class PeopleFlowRoutingTest extends KEWTestCase {
     @Test
     public void test_RoleMember_principalDelegate() throws Exception {
         PeopleFlowMember.Builder member = PeopleFlowMember.Builder.create(ppfTestRole2, MemberType.ROLE);
+        member.setActionRequestPolicy(ActionRequestPolicy.FIRST);
         PeopleFlowDelegate.Builder delegate = PeopleFlowDelegate.Builder.create(testuser3, MemberType.PRINCIPAL);
         delegate.setDelegationType(DelegationType.PRIMARY);
 
@@ -1395,12 +1397,14 @@ public class PeopleFlowRoutingTest extends KEWTestCase {
         // build role member
         PeopleFlowMember.Builder memberBuilder = peopleFlow.addRole(memberRoleId);
         memberBuilder.setPriority(1);
+        memberBuilder.setActionRequestPolicy(ActionRequestPolicy.FIRST);
 
         if (delegateRoleId != null) {
             // build primary delegate role1
             PeopleFlowDelegate.Builder delegateBuilder =
                     PeopleFlowDelegate.Builder.create(delegateRoleId, MemberType.ROLE);
             delegateBuilder.setDelegationType(delegationType);
+            delegateBuilder.setActionRequestPolicy(ActionRequestPolicy.FIRST);
 
             memberBuilder.getDelegates().add(delegateBuilder);
         }

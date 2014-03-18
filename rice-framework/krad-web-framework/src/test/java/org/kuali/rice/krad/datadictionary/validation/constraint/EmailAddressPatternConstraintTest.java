@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,11 +110,11 @@ public class EmailAddressPatternConstraintTest {
 		invalidEmailEmployeeEmpty.setContactEmail("");
 		invalidEmailEmployee.setContactEmail("@a.b.c.org");
 		invalidEmailEmployee1.setContactEmail("a");
-		invalidEmailEmployee2.setContactEmail("1@a.b.c.org");
-		invalidEmailEmployee3.setContactEmail("1@org");
-		invalidEmailEmployee4.setContactEmail("1@a");
+		invalidEmailEmployee2.setContactEmail("1@org");
+		invalidEmailEmployee3.setContactEmail("1@a");
+		invalidEmailEmployee4.setContactEmail("_@a");
 		invalidEmailEmployee5.setContactEmail(".@a.org");
-		invalidEmailEmployee6.setContactEmail("_@a.org");
+		invalidEmailEmployee6.setContactEmail("-@a.org");
 		invalidEmailEmployee7.setContactEmail("something@a.o-rg");
 
 		contactEmailAddressPatternConstraint = new ConfigurationBasedRegexPatternConstraint();

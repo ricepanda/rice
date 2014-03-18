@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ import java.util.Collection;
  * in that collection -- for example, a constraint that ensures that there are between 1 and 10 elements in a
  * collection.</p>
  *
+ * @param <T> collection type
+ * @param <C> constraint type
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 public interface CollectionConstraintProcessor<T extends Collection<?>, C extends Constraint> extends ConstraintProcessor<T, C> {

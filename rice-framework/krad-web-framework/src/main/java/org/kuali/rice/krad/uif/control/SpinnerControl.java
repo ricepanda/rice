@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,7 @@ package org.kuali.rice.krad.uif.control;
 
 import org.kuali.rice.krad.datadictionary.parse.BeanTag;
 import org.kuali.rice.krad.datadictionary.parse.BeanTagAttribute;
-import org.kuali.rice.krad.uif.component.Component;
 import org.kuali.rice.krad.uif.widget.Spinner;
-
-import java.util.List;
 
 /**
  * Text control that as decorated with a spinner widget (allowing the control value to be modified using the
@@ -29,25 +26,13 @@ import java.util.List;
  * @author Kuali Rice Team (rice.collab@kuali.org)
  */
 @BeanTag(name = "spinnerControl-bean", parent = "Uif-SpinnerControl")
-public class SpinnerControl extends TextControl {
+public class SpinnerControl extends TextControlBase {
     private static final long serialVersionUID = -8267606288443759880L;
 
     private Spinner spinner;
 
     public SpinnerControl() {
         super();
-    }
-
-    /**
-     * @see org.kuali.rice.krad.uif.component.ComponentBase#getComponentsForLifecycle()
-     */
-    @Override
-    public List<Component> getComponentsForLifecycle() {
-        List<Component> components = super.getComponentsForLifecycle();
-
-        components.add(getSpinner());
-
-        return components;
     }
 
     /**
@@ -67,19 +52,5 @@ public class SpinnerControl extends TextControl {
      */
     public void setSpinner(Spinner spinner) {
         this.spinner = spinner;
-    }
-
-    /**
-     * @see org.kuali.rice.krad.datadictionary.DictionaryBeanBase#copyProperties(Object)
-     */
-    @Override
-    protected <T> void copyProperties(T component) {
-        super.copyProperties(component);
-
-        SpinnerControl spinnerControlCopy = (SpinnerControl) component;
-
-        if(this.spinner != null) {
-            spinnerControlCopy.setSpinner((Spinner)this.spinner.copy());
-        }
     }
 }

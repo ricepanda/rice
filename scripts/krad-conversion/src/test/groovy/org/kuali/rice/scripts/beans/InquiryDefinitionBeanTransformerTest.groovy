@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ class InquiryDefinitionBeanTransformerTest extends BeanTransformerTestBase {
         def ddRootNode = getFileRootNode(defaultTestFilePath);
         def beanNode = ddRootNode.bean.find { inquiryDefinitionBeanType.equals(it.@parent) };
         def resultNode = inquiryDefinitionBeanTransformer.transformInquiryDefinitionBean(beanNode);
-        checkBeanParentExists(ddRootNode, "Uif-InquiryView");
+        checkBeanExistsByParentId(ddRootNode, "Uif-InquiryView");
         checkBeanPropertyExists(resultNode, "items");
 
     }
@@ -76,14 +76,55 @@ class InquiryDefinitionBeanTransformerTest extends BeanTransformerTestBase {
     public void testTransformInquirySectionDefinitionBean() {
         def ddRootNode = getFileRootNode(defaultTestFilePath);
         def inquiryDefinitionBean = ddRootNode.bean.find { inquiryDefinitionBeanType.equals(it.@parent) };
-        def beanNode = inquiryDefinitionBean.property.list.bean.find { "InquirySectionDefinition".equals(it.@parent) };
+        def beanNodes = inquiryDefinitionBean.property.list.bean.findAll { "InquirySectionDefinition".equals(it.@parent) };
+        def beanNode = beanNodes.get(0);
 
         Node resultNode = beanNode.replaceNode {
             inquiryDefinitionBeanTransformer.transformInquirySectionDefinitionBean(delegate, beanNode)
         };
 
         Assert.assertTrue("results contains grid section", "Uif-Disclosure-GridSection".equals(resultNode.@parent));
+        checkBeanPropertyExists(resultNode, "headerText");
         checkBeanPropertyExists(resultNode, "layoutManager.numberOfColumns");
+        checkBeanPropertyExists(resultNode, "items");
+    }
+
+    @Test
+    public void testTransformInquirySectionDefinitionBeanWithCollectionDefinition() {
+        def ddRootNode = getFileRootNode(defaultTestFilePath);
+        def parentBeanId = "InquirySectionDefinition-transformInquiryCollectionDefinition";
+        def inquiryDefinitionBean = ddRootNode.bean.find { inquiryDefinitionBeanType.equals(it.@parent) };
+        def beanNode = inquiryDefinitionBean.property.list.bean.find { parentBeanId.equals(it.@id) };
+
+        Node resultNode = beanNode.replaceNode {
+            inquiryDefinitionBeanTransformer.transformInquirySectionDefinitionBean(delegate, beanNode)
+        };
+
+        Assert.assertTrue("results contains grid section", "Uif-StackedCollectionSection".equals(resultNode.@parent));
+        checkBeanPropertyExists(resultNode, "headerText");
+        checkBeanPropertyExists(resultNode, "layoutManager.numberOfColumns");
+        checkBeanPropertyExists(resultNode, "collectionObjectClass");
+        checkBeanPropertyExists(resultNode, "propertyName");
+        checkBeanPropertyExists(resultNode, "items");
+    }
+
+
+    @Test
+    public void testTransformInquiryCollectionDefinitionBean() {
+        def ddRootNode = getFileRootNode(defaultTestFilePath);
+        def parentBeanId = "InquirySectionDefinition-transformInquiryCollectionDefinition";
+        def inquiryDefinitionBean = ddRootNode.bean.find { inquiryDefinitionBeanType.equals(it.@parent) };
+        def beanNode = inquiryDefinitionBean.property.list.bean.find { parentBeanId.equals(it.@id) };
+
+        Node resultNode = beanNode.replaceNode {
+            inquiryDefinitionBeanTransformer.transformInquiryCollectionDefinitionBean(delegate, beanNode)
+        };
+
+        Assert.assertTrue("results contains grid section", "Uif-StackedCollectionSection".equals(resultNode.@parent));
+        checkBeanPropertyExists(resultNode, "headerText");
+        checkBeanPropertyExists(resultNode, "layoutManager.numberOfColumns");
+        checkBeanPropertyExists(resultNode, "collectionObjectClass");
+        checkBeanPropertyExists(resultNode, "propertyName");
         checkBeanPropertyExists(resultNode, "items");
     }
 

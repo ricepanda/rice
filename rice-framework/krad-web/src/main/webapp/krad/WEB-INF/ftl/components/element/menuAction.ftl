@@ -1,6 +1,6 @@
 <#--
 
-    Copyright 2005-2013 The Kuali Foundation
+    Copyright 2005-2014 The Kuali Foundation
 
     Licensed under the Educational Community License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -24,32 +24,10 @@
 
 <#macro uif_menuAction element>
 
-    <#local styleClass="${element.styleClassesAsString}"/>
-
-    <#if element.menuDivider>
-        <#local styleClass="${styleClass} divider"/>
-    <#elseif element.menuHeader>
-        <#local styleClass="${styleClass} dropdown-header"/>
+    <#if element.menuHeader>
+        ${element.actionLabel?html}
+    <#elseif !element.menuDivider>
+        <@uif_actionLink element=element/>
     </#if>
-
-    <#if element.disabled>
-        <#local styleClass="${styleClass} disabled"/>
-    </#if>
-
-    <#if styleClass?has_content>
-        <#local styleClass="class=\"${styleClass}\""/>
-    </#if>
-
-    <#if element.style?has_content>
-        <#local style="style=\"${element.style}\""/>
-    </#if>
-
-    <li ${styleClass!} ${style!}>
-        <#if element.menuHeader>
-            ${element.actionLabel?html}
-        <#elseif !element.menuDivider>
-            <@uif_actionLink element=element/>
-        </#if>
-    </li>
 
 </#macro>

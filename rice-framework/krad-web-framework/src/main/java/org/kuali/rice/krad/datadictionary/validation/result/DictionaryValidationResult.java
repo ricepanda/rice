@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -305,7 +305,7 @@ public class DictionaryValidationResult implements Iterable<ConstraintValidation
      * @param attributeName - the attribute name
      * @param attributePath - a string representation of specifically which attribute (at some depth) is being accessed
      * @param constraintName - a descriptive name of the current constraint processor
-     * @return
+     * @return validation result
      */
     private ConstraintValidationResult getConstraintValidationResult(String entryName, String attributeName,
             String attributePath, String constraintName) {

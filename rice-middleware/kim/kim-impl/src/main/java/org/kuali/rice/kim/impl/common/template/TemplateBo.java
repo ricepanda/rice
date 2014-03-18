@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,28 +15,38 @@
  */
 package org.kuali.rice.kim.impl.common.template;
 
-import org.kuali.rice.kim.api.common.template.TemplateContract;
-import org.kuali.rice.krad.bo.PersistableBusinessObjectBase;
-
 import javax.persistence.Column;
+import javax.persistence.Convert;
+import javax.persistence.MappedSuperclass;
 
+import org.kuali.rice.kim.api.common.template.TemplateContract;
+import org.kuali.rice.krad.bo.DataObjectBase;
+import org.kuali.rice.krad.bo.PersistableBusinessObjectBase;
+import org.kuali.rice.krad.data.jpa.converters.BooleanYNConverter;
+import org.kuali.rice.krad.data.provider.annotation.BusinessKey;
+
+@MappedSuperclass
 public abstract class TemplateBo extends PersistableBusinessObjectBase implements TemplateContract {
 
-    @Column(name="NMSPC_CD")
-    private String namespaceCode;
+    private static final long serialVersionUID = 1L;
 
-    @Column(name="NM")
-    private String name;
+    @Column(name="NMSPC_CD",nullable=false)
+    @BusinessKey
+    protected String namespaceCode;
+
+    @Column(name="NM",nullable=false)
+    @BusinessKey
+    protected String name;
 
     @Column(name="DESC_TXT", length=400)
-    private String description;
+    protected String description;
 
     @Column(name="KIM_TYP_ID")
-    private String kimTypeId;
+    protected String kimTypeId;
 
     @Column(name="ACTV_IND")
-    //@Type(type="yes_no")
-    private boolean active;
+    @Convert(converter = BooleanYNConverter.class)
+    protected boolean active;
 
     @Override
     public String getNamespaceCode() {
