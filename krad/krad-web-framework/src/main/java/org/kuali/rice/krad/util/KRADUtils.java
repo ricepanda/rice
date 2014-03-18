@@ -1,5 +1,5 @@
 /**
- * Copyright 2005-2013 The Kuali Foundation
+ * Copyright 2005-2014 The Kuali Foundation
  *
  * Licensed under the Educational Community License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -488,7 +488,7 @@ public final class KRADUtils {
                     throw new RuntimeException("Exception while trying to encrypt value for key/value map.", e);
                 }
             }
-
+ 
             // TODO: need to apply formatting to return value once util class is ready
             propertyKeyValues.put(propertyName, propertyValue.toString());
         }
