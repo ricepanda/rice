@@ -29,6 +29,7 @@ import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.struts.upload.FormFile;
+import org.kuali.rice.core.config.ConfigContext;
 import org.kuali.rice.core.service.EncryptionService;
 import org.kuali.rice.kim.bo.Person;
 import org.kuali.rice.kns.authorization.BusinessObjectRestrictions;
@@ -55,8 +56,8 @@ import org.kuali.rice.kns.service.ParameterService;
 import org.kuali.rice.kns.service.PersistenceStructureService;
 import org.kuali.rice.kns.service.SequenceAccessorService;
 import org.kuali.rice.kns.util.FieldUtils;
-import org.kuali.rice.kns.util.GlobalVariables;
 import org.kuali.rice.kns.util.KNSConstants;
+import org.kuali.rice.kns.util.GlobalVariables;
 import org.kuali.rice.kns.util.ObjectUtils;
 import org.kuali.rice.kns.util.RiceKeyConstants;
 import org.kuali.rice.kns.util.TypeUtils;
@@ -494,6 +495,19 @@ public abstract class AbstractLookupableHelperServiceImpl implements LookupableH
 		 Properties parameters = new Properties();
 		 for (Iterator iter = pkNames.iterator(); iter.hasNext();) {
 			 String fieldNm = (String) iter.next();
+			 
+			// If we cannot find the attribute in the data dictionary, then we cannot determine whether it should be encrypted
+            if (getDataDictionaryService().getAttributeDefinition(businessObjectClass.getName(), fieldNm) == null) {
+                String errorMessage = "The field " + fieldNm + " could not be found in the data dictionary for class "
+                        + businessObjectClass.getName() + ", and thus it could not be determined whether it is a secure field.";
+
+                if (ConfigContext.getCurrentContextConfig().getBooleanProperty(KNSConstants.EXCEPTION_ON_MISSING_FIELD_CONVERSION_ATTRIBUTE, false)) {
+                    throw new RuntimeException(errorMessage);
+                } else {
+                    LOG.error(errorMessage);
+                    continue;
+                }
+            }
 
 			 Object fieldVal = ObjectUtils.getPropertyValue(businessObject, fieldNm);
 			 if (fieldVal == null) {
@@ -508,16 +522,10 @@ public abstract class AbstractLookupableHelperServiceImpl implements LookupableH
 				 }
 			 }
 
-			 // Encrypt value if it is a secure field
+			 // secure values are not passed in urls
 			 if (getBusinessObjectAuthorizationService().attributeValueNeedsToBeEncryptedOnFormsAndLinks(businessObjectClass, fieldNm)) {
-				 try {
-					 fieldVal = getEncryptionService().encrypt(fieldVal) + EncryptionService.ENCRYPTION_POST_PREFIX;
-				 }
-				 catch (GeneralSecurityException e) {
-					 LOG.error("Exception while trying to encrypted value for inquiry framework.", e);
-					 throw new RuntimeException(e);
-				 }
-
+                                 LOG.warn("field name " + fieldNm + " is a secure value and not included in pk parameter results");
+                                 continue;
 			 }
 
 			 parameters.put(fieldNm, fieldVal.toString());
@@ -839,6 +847,19 @@ public abstract class AbstractLookupableHelperServiceImpl implements LookupableH
 		 Iterator returnKeysIt = getReturnKeys().iterator();
 		 while (returnKeysIt.hasNext()) {
 			 String fieldNm = (String) returnKeysIt.next();
+			 
+            // If we cannot find the attribute in the data dictionary, then we cannot determine whether it should be encrypted
+            if (getDataDictionaryService().getAttributeDefinition(businessObjectClass.getName(), fieldNm) == null) {
+                String errorMessage = "The field " + fieldNm + " could not be found in the data dictionary for class "
+                        + businessObjectClass.getName() + ", and thus it could not be determined whether it is a secure field.";
+
+                if (ConfigContext.getCurrentContextConfig().getBooleanProperty(KNSConstants.EXCEPTION_ON_MISSING_FIELD_CONVERSION_ATTRIBUTE, false)) {
+                    throw new RuntimeException(errorMessage);
+                } else {
+                    LOG.error(errorMessage);
+                    continue;
+                }
+            }
 
 			 Object fieldVal = ObjectUtils.getPropertyValue(bo, fieldNm);
 			 if (fieldVal == null) {
@@ -846,14 +867,8 @@ public abstract class AbstractLookupableHelperServiceImpl implements LookupableH
 			 }
 
 			 if (getBusinessObjectAuthorizationService().attributeValueNeedsToBeEncryptedOnFormsAndLinks(businessObjectClass, fieldNm)) {
-				 try {
-					 fieldVal = getEncryptionService().encrypt(fieldVal) + EncryptionService.ENCRYPTION_POST_PREFIX;
-				 }
-				 catch (GeneralSecurityException e) {
-					 LOG.error("Exception while trying to encrypted value for inquiry framework.", e);
-					 throw new RuntimeException(e);
-				 }
-
+                                 LOG.warn("field name " + fieldNm + " is a secure value and not included in parameter results");
+                                 continue;
 			 }
 
 			 //need to format date in url
