@@ -2516,7 +2516,7 @@
 
   <scm>
     <connection>scm:${project.scm.vendor}:https://github.com/ricepanda/rice.git</connection>
-    <developerConnection>scm:${project.scm.vendor}:https://github.com/ricepanda/ricegit</developerConnection>
+    <developerConnection>scm:${project.scm.vendor}:https://github.com/ricepanda/rice.git</developerConnection>
     <url>https://github.com/ricepanda/rice</url>
     <tag>master</tag>
   </scm>
