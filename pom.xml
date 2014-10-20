@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.kuali.pom</groupId>
     <artifactId>kuali-common</artifactId>
-    <version>3.3.44</version>
+    <version>4.0.2</version>
   </parent>
   <groupId>org.kuali.rice</groupId>
   <artifactId>rice</artifactId>
@@ -2515,9 +2515,10 @@
   </issueManagement>
 
   <scm>
-    <connection>scm:${project.scm.vendor}:https://svn.kuali.org/repos/rice/trunk</connection>
-    <developerConnection>scm:${project.scm.vendor}:https://svn.kuali.org/repos/rice/trunk</developerConnection>
-    <url>https://svn.kuali.org/repos/rice/trunk</url>
+    <connection>scm:${project.scm.vendor}:https://github.com/ricepanda/rice.git</connection>
+    <developerConnection>scm:${project.scm.vendor}:https://github.com/ricepanda/ricegit</developerConnection>
+    <url>https://github.com/ricepanda/rice</url>
+    <tag>master</tag>
   </scm>
 
 </project>
