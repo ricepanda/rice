@@ -2515,8 +2515,8 @@
   </issueManagement>
 
   <scm>
-    <connection>scm:git:git@github.com/ricepanda/rice.git</connection>
-    <developerConnection>scm:git:git@github.com/ricepanda/rice.git</developerConnection>
+    <connection>scm:git:git@github.com:ricepanda/rice.git</connection>
+    <developerConnection>scm:git:git@github.com:ricepanda/rice.git</developerConnection>
     <url>https://github.com/ricepanda/rice/tree/${project.scm.tag}</url>
     <tag>master</tag>
   </scm>
