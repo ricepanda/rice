@@ -58,7 +58,6 @@
     <impex.generate.sql.phase>${impex.generate.phase}</impex.generate.sql.phase>
     <impex.generate.sql.oracle.phase>${impex.generate.sql.phase}</impex.generate.sql.oracle.phase>
     <impex.generate.sql.mysql.phase>${impex.generate.sql.phase}</impex.generate.sql.mysql.phase>
-    <impex.generate.morph.phase>${impex.generate.phase}</impex.generate.morph.phase>
     <impex.generate.dtd.phase>${impex.generate.phase}</impex.generate.dtd.phase>
     <!-- This is the format dates will be exported/imported as -->
     <impex.date.format>yyyyMMddHHmmss</impex.date.format>
@@ -302,18 +301,6 @@
           </configuration>
           <executions>
             <execution>
-              <id>morph</id>
-              <phase>${impex.generate.morph.phase}</phase>
-              <goals>
-                <goal>morphschema</goal>
-                <goal>morphdata</goal>
-              </goals>
-              <configuration>
-                <oldSchemaXMLFile>${project.basedir}/src/main/resources/schema.xml</oldSchemaXMLFile>
-                <oldDataXMLDir>${project.basedir}/src/main/resources</oldDataXMLDir>
-              </configuration>
-            </execution>
-            <execution>
               <id>datadtd</id>
               <phase>${impex.generate.dtd.phase}</phase>
               <goals>
@@ -482,21 +469,64 @@
       </build>
     </profile>
 
+    <!-- Sets up the MySQL Amazon RDS profile -->
+    <profile>
+      <id>rds_mysql</id>
+      <properties>
+        <impex.dba.username>master</impex.dba.username>
+        <impex.dba.url>jdbc:mysql://mysql.rice.kuali.org</impex.dba.url>
+      </properties>
+    </profile>
+
+    <!-- Sets up the Oracle JDK6 Amazon RDS profile -->
+    <profile>
+      <id>rds_oracle</id>
+      <properties>
+        <oracle.jdbc.artifactId>ojdbc6_g</oracle.jdbc.artifactId>
+        <oracle.jdbc.version>11.2.0.2</oracle.jdbc.version>
+        <impex.url>jdbc:oracle:thin:@oracle.rice.kuali.org:1521:ORACLE</impex.url>
+        <impex.dba.url>${impex.url}</impex.dba.url>
+        <impex.dba.username>master</impex.dba.username>
+      </properties>
+    </profile>
+
     <!-- Exports a database to the impex format on disk -->
     <profile>
       <id>export</id>
       <properties>
-        <impex.generate.phase>none</impex.generate.phase>
+        <scm.phase>none</scm.phase>
+        <impex.export.phase>none</impex.export.phase>
       </properties>
       <build>
         <plugins>
+          <plugin>
+            <groupId>org.kuali.maven.plugins</groupId>
+            <artifactId>maven-scm-plugin</artifactId>
+            <version>1.6</version>
+            <configuration>
+              <message>Automated Impex update</message>
+            </configuration>
+            <executions>
+              <execution>
+                <id>remove</id>
+                <phase>${scm.phase}</phase>
+                <goals>
+                  <goal>remove</goal>
+                </goals>
+                <configuration>
+                  <includes>**/src/main/resources/*.xml,**/src/main/resources/*.dtd</includes>
+                  <excludes>**/src/main/resources/schema.xml,**/src/main/resources/data.dtd,**/src/main/resources/database.dtd</excludes>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
           <plugin>
             <groupId>org.kuali.maven.plugins</groupId>
             <artifactId>maven-impex-plugin</artifactId>
             <executions>
               <execution>
                 <id>export</id>
-                <phase>none</phase>
+                <phase>${impex.export.phase}</phase>
                 <goals>
                   <goal>exportschema</goal>
                   <goal>exportdata</goal>
@@ -522,53 +552,14 @@
       </build>
     </profile>
 
-    <!-- Sets up the MySQL Amazon RDS profile -->
-    <profile>
-      <id>rds_mysql</id>
-      <properties>
-        <impex.dba.username>master</impex.dba.username>
-        <impex.dba.url>jdbc:mysql://mysql.rice.kuali.org</impex.dba.url>
-      </properties>
-    </profile>
-
-    <!-- Sets up the Oracle JDK6 Amazon RDS profile -->
-    <profile>
-      <id>rds_oracle</id>
-      <properties>
-        <oracle.jdbc.artifactId>ojdbc6_g</oracle.jdbc.artifactId>
-        <oracle.jdbc.version>11.2.0.2</oracle.jdbc.version>
-        <impex.url>jdbc:oracle:thin:@oracle.rice.kuali.org:1521:ORACLE</impex.url>
-        <impex.dba.url>${impex.url}</impex.dba.url>
-        <impex.dba.username>master</impex.dba.username>
-      </properties>
-    </profile>
-
     <!-- Commits the generated XML to version control -->
     <profile>
       <id>commit</id>
       <properties>
-        <impex.generate.phase>none</impex.generate.phase>
-        <impex.invalid.phase>initialize</impex.invalid.phase>
+        <scm.phase>process-resources</scm.phase>
       </properties>
       <build>
         <plugins>
-          <plugin>
-            <groupId>org.kuali.maven.plugins</groupId>
-            <artifactId>maven-impex-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>id-invalid</id>
-                <phase>${impex.invalid.phase}</phase>
-                <goals>
-                  <goal>id-invalid-data-files</goal>
-                </goals>
-                <configuration>
-                  <schemaXMLFile>${project.basedir}/src/main/resources/schema.xml</schemaXMLFile>
-                  <dataDir>${project.basedir}/src/main/resources</dataDir>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
           <plugin>
             <groupId>org.kuali.maven.plugins</groupId>
             <artifactId>maven-scm-plugin</artifactId>
@@ -581,38 +572,11 @@
                 <id>add</id>
                 <phase>${scm.phase}</phase>
                 <goals>
-                  <goal>add</goal>
                   <goal>checkin</goal>
                 </goals>
                 <configuration>
                   <includes>**/src/main/resources/*.xml,**/src/main/resources/*.dtd</includes>
                 </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <artifactId>maven-antrun-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>remove-from-scm</id>
-                <phase>${scm.phase}</phase>
-                <configuration>
-                  <target name="impex-remove" if="impex.found.invalid">
-                    <exec executable="svn">
-                      <arg value="rm" />
-                      <arg value="--targets" />
-                      <arg value="target/impex/invalid.txt" />
-                    </exec>
-                    <exec executable="svn">
-                      <arg value="commit" />
-                      <arg value="-m" />
-                      <arg value="Automated Impex Update" />
-                    </exec>
-                  </target>
-                </configuration>
-                <goals>
-                  <goal>run</goal>
-                </goals>
               </execution>
             </executions>
           </plugin>

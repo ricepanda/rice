@@ -34,4 +34,15 @@
     <impex.password>${impex.username}</impex.password>
     <impex.database>${impex.username}</impex.database>
   </properties>
+
+  <profiles>
+    <!-- Exports a database to the impex format on disk -->
+    <profile>
+      <id>export</id>
+      <properties>
+        <scm.phase>generate-resources</scm.phase>
+        <impex.export.phase>generate-resources</impex.export.phase>
+      </properties>
+    </profile>
+  </profiles>
 </project>
