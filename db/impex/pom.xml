@@ -58,6 +58,7 @@
     <impex.generate.sql.phase>${impex.generate.phase}</impex.generate.sql.phase>
     <impex.generate.sql.oracle.phase>${impex.generate.sql.phase}</impex.generate.sql.oracle.phase>
     <impex.generate.sql.mysql.phase>${impex.generate.sql.phase}</impex.generate.sql.mysql.phase>
+    <impex.generate.morph.phase>${impex.generate.phase}</impex.generate.morph.phase>
     <impex.generate.dtd.phase>${impex.generate.phase}</impex.generate.dtd.phase>
     <!-- This is the format dates will be exported/imported as -->
     <impex.date.format>yyyyMMddHHmmss</impex.date.format>
@@ -300,6 +301,18 @@
             <antCompatibilityMode>${impex.ant.compatibility.mode}</antCompatibilityMode>
           </configuration>
           <executions>
+            <execution>
+              <id>morph</id>
+              <phase>${impex.generate.morph.phase}</phase>
+              <goals>
+                <goal>morphschema</goal>
+                <goal>morphdata</goal>
+              </goals>
+              <configuration>
+                <oldSchemaXMLFile>${project.basedir}/src/main/resources/schema.xml</oldSchemaXMLFile>
+                <oldDataXMLDir>${project.basedir}/src/main/resources</oldDataXMLDir>
+              </configuration>
+            </execution>
             <execution>
               <id>datadtd</id>
               <phase>${impex.generate.dtd.phase}</phase>
