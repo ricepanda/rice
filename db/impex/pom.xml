@@ -588,7 +588,6 @@
                   <goal>checkin</goal>
                 </goals>
                 <configuration>
-                  <workingDirectory>${basedir}/../..</workingDirectory>
                   <includes>**/src/main/resources/*.xml,**/src/main/resources/*.dtd</includes>
                 </configuration>
               </execution>
