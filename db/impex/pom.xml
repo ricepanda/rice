@@ -576,15 +576,6 @@
       </build>
     </profile>
 
-    <!-- Commits the generated XML to version control -->
-    <profile>
-      <id>commit</id>
-      <properties>
-        <scm.message>Automated Impex Update</scm.message>
-        <scm.phase>process-resources</scm.phase>
-      </properties>
-    </profile>
-
     <!-- Pre-generate and bundle SQL for Oracle/MySQL during a release -->
     <profile>
       <id>kuali-release</id>

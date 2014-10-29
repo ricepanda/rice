@@ -313,12 +313,12 @@
         <rice.java2ws.phase>none</rice.java2ws.phase>
       </properties>
     </profile>
-    <!-- Commits the tracked files to version control -->
+    <!-- Commits the generated XML to version control -->
     <profile>
       <id>commit</id>
       <properties>
-        <scm.message>Automated Commit</scm.message>
-        <scm.phase>none</scm.phase>
+        <scm.message>Automated Impex Update</scm.message>
+        <scm.phase>process-resources</scm.phase>
       </properties>
       <build>
         <plugins>
