@@ -40,8 +40,9 @@
     <profile>
       <id>export</id>
       <properties>
-        <scm.phase>generate-resources</scm.phase>
-        <impex.export.phase>generate-resources</impex.export.phase>
+        <scm.remove.phase>clean</scm.remove.phase>
+        <impex.export.phase>initialize</impex.export.phase>
+        <scm.add.phase>generate-resources</scm.add.phase>
       </properties>
     </profile>
   </profiles>

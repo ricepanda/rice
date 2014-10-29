@@ -34,14 +34,4 @@
     <module>demo</module>
     <module>bootstrap</module>
   </modules>
-
-  <profiles>
-    <!-- Commits the generated XML to version control -->
-    <profile>
-      <id>commit</id>
-      <properties>
-        <scm.phase>none</scm.phase>
-      </properties>
-    </profile>
-  </profiles>
 </project>

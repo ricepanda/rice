@@ -507,8 +507,9 @@
     <profile>
       <id>export</id>
       <properties>
-        <scm.phase>none</scm.phase>
+        <scm.remove.phase>none</scm.remove.phase>
         <impex.export.phase>none</impex.export.phase>
+        <scm.add.phase>none</scm.add.phase>
       </properties>
       <build>
         <plugins>
@@ -522,13 +523,23 @@
             <executions>
               <execution>
                 <id>remove</id>
-                <phase>${scm.phase}</phase>
+                <phase>${scm.remove.phase}</phase>
                 <goals>
                   <goal>remove</goal>
                 </goals>
                 <configuration>
                   <includes>**/src/main/resources/*.xml,**/src/main/resources/*.dtd</includes>
                   <excludes>**/src/main/resources/schema.xml,**/src/main/resources/data.dtd,**/src/main/resources/database.dtd</excludes>
+                </configuration>
+              </execution>
+              <execution>
+                <id>add</id>
+                <phase>${scm.add.phase}</phase>
+                <goals>
+                  <goal>add</goal>
+                </goals>
+                <configuration>
+                  <includes>**/src/main/resources/*.xml,**/src/main/resources/*.dtd</includes>
                 </configuration>
               </execution>
             </executions>
@@ -569,32 +580,9 @@
     <profile>
       <id>commit</id>
       <properties>
+        <scm.message>Automated Impex Update</scm.message>
         <scm.phase>process-resources</scm.phase>
       </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.kuali.maven.plugins</groupId>
-            <artifactId>maven-scm-plugin</artifactId>
-            <version>1.6</version>
-            <configuration>
-              <message>Automated Impex update</message>
-            </configuration>
-            <executions>
-              <execution>
-                <id>add</id>
-                <phase>${scm.phase}</phase>
-                <goals>
-                  <goal>checkin</goal>
-                </goals>
-                <configuration>
-                  <includes>**/src/main/resources/*.xml,**/src/main/resources/*.dtd</includes>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
 
     <!-- Pre-generate and bundle SQL for Oracle/MySQL during a release -->

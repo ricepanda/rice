@@ -313,6 +313,35 @@
         <rice.java2ws.phase>none</rice.java2ws.phase>
       </properties>
     </profile>
+    <!-- Commits the tracked files to version control -->
+    <profile>
+      <id>commit</id>
+      <properties>
+        <scm.message>Automated Commit</scm.message>
+        <scm.phase>none</scm.phase>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.kuali.maven.plugins</groupId>
+            <artifactId>maven-scm-plugin</artifactId>
+            <version>1.6</version>
+            <configuration>
+              <message>${scm.message}</message>
+            </configuration>
+            <executions>
+              <execution>
+                <id>commit</id>
+                <phase>${scm.phase}</phase>
+                <goals>
+                  <goal>checkin</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
     <!-- Setup the dependency tree needed by the deploy logic -->
     <profile>
       <id>jmeter</id>

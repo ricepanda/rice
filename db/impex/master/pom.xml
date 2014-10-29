@@ -50,16 +50,9 @@
     <profile>
       <id>export</id>
       <properties>
-        <scm.phase>generate-resources</scm.phase>
-        <impex.export.phase>generate-resources</impex.export.phase>
-      </properties>
-    </profile>
-
-    <!-- Commits the generated XML to version control -->
-    <profile>
-      <id>commit</id>
-      <properties>
-        <scm.phase>none</scm.phase>
+        <scm.remove.phase>clean</scm.remove.phase>
+        <impex.export.phase>initialize</impex.export.phase>
+        <scm.add.phase>generate-resources</scm.add.phase>
       </properties>
     </profile>
   </profiles>
