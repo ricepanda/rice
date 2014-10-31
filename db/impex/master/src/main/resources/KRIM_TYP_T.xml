@@ -145,29 +145,29 @@
         OBJ_ID="CEA27F2DB2D93593E040F90A05B924DB"
         SRVC_NM="backdoorRestrictionPermissionTypeService" VER_NBR="1"/>
     <KRIM_TYP_T ACTV_IND="Y" KIM_TYP_ID="KR1002" NM="Channel"
-        NMSPC_CD="KR-NTFCN" OBJ_ID="06B9A315E73327AAE0506E0AC31D3A5E"
+        NMSPC_CD="KR-NTFCN" OBJ_ID="06BA0587A12CD5A3E0506E0AC31D3EE4"
         SRVC_NM="{http://rice.kuali.org/ken/v2_0}channelPermissionTypeService" VER_NBR="1"/>
     <KRIM_TYP_T ACTV_IND="Y" KIM_TYP_ID="KRSAP10"
         NM="Namespace or Component" NMSPC_CD="KR-SAP"
-        OBJ_ID="06B9A3764DDE0C9BE0506E0AC31D3A76"
+        OBJ_ID="06BA05FA0F6D37E5E0506E0AC31D3EFC"
         SRVC_NM="namespaceOrComponentPermissionTypeService" VER_NBR="1"/>
     <KRIM_TYP_T ACTV_IND="Y" KIM_TYP_ID="KRSAP12"
         NM="Namespace or Action" NMSPC_CD="KR-SAP"
-        OBJ_ID="06B9A3764DDF0C9BE0506E0AC31D3A76"
+        OBJ_ID="06BA05FA0F6E37E5E0506E0AC31D3EFC"
         SRVC_NM="namespaceOrActionPermissionTypeService" VER_NBR="1"/>
     <KRIM_TYP_T ACTV_IND="Y" KIM_TYP_ID="KRSAP3"
         NM="Document Type (Permission)" NMSPC_CD="KR-SAP"
-        OBJ_ID="06B9A3764DDB0C9BE0506E0AC31D3A76"
+        OBJ_ID="06BA05FA0F6A37E5E0506E0AC31D3EFC"
         SRVC_NM="documentTypePermissionTypeService" VER_NBR="1"/>
     <KRIM_TYP_T ACTV_IND="Y" KIM_TYP_ID="KRSAP5" NM="Ad Hoc Review"
-        NMSPC_CD="KR-SAP" OBJ_ID="06B9A3764DDC0C9BE0506E0AC31D3A76"
+        NMSPC_CD="KR-SAP" OBJ_ID="06BA05FA0F6B37E5E0506E0AC31D3EFC"
         SRVC_NM="adhocReviewPermissionTypeService" VER_NBR="1"/>
     <KRIM_TYP_T ACTV_IND="Y" KIM_TYP_ID="KRSAP59"
         NM="Document Type &amp; Relationship to Note Author"
-        NMSPC_CD="KR-SAP" OBJ_ID="06B9A3764DE00C9BE0506E0AC31D3A76"
+        NMSPC_CD="KR-SAP" OBJ_ID="06BA05FA0F6F37E5E0506E0AC31D3EFC"
         SRVC_NM="documentTypeAndRelationshipToNoteAuthorPermissionTypeService" VER_NBR="1"/>
     <KRIM_TYP_T ACTV_IND="Y" KIM_TYP_ID="KRSAP8"
         NM="Document Type &amp; Routing Node or State" NMSPC_CD="KR-SAP"
-        OBJ_ID="06B9A3764DDD0C9BE0506E0AC31D3A76"
+        OBJ_ID="06BA05FA0F6C37E5E0506E0AC31D3EFC"
         SRVC_NM="documentTypeAndNodeOrStatePermissionTypeService" VER_NBR="1"/>
 </dataset>
