@@ -83,6 +83,9 @@
     <jmeter.counterconfigend>6</jmeter.counterconfigend>
     <jmeter.counterconfigincr>1</jmeter.counterconfigincr>
 
+     <!-- kuali specific -->
+     <kuali-core.version>1.0.18-SNAPSHOT</kuali-core>
+
     <maven.skip.packaging>false</maven.skip.packaging>
     <maven.failsafe.forkmode>once</maven.failsafe.forkmode>
     <maven.failsafe.forkedProcessTimeoutInSeconds>7200</maven.failsafe.forkedProcessTimeoutInSeconds>
