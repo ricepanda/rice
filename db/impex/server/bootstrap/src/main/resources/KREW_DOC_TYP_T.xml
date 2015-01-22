@@ -270,7 +270,7 @@
         DOC_TYP_VER_NBR="1"
         HELP_DEF_URL="http://site.kuali.org/rice/${rice.version}/reference/html/Help.html#campus"
         LBL="CampusMaintenanceDocument"
-        OBJ_ID="6dba2510-7050-476e-8693-b6791d8156a5" PARNT_ID="2681"
+        OBJ_ID="7454c08d-494b-43e4-b819-69ea9ea13043" PARNT_ID="2681"
         PREV_DOC_TYP_VER_NBR="2708" RTE_VER_NBR="2" VER_NBR="1"/>
     <KREW_DOC_TYP_T ACTV_IND="1" CUR_IND="1"
         DOC_HDLR_URL="${kr.url}/maintenance.do?methodToCall=docHandler"
@@ -278,7 +278,7 @@
         DOC_TYP_VER_NBR="1"
         HELP_DEF_URL="http://site.kuali.org/rice/${rice.version}/reference/html/Help.html#campus_type"
         LBL="CampusTypeMaintenanceDocument"
-        OBJ_ID="7970b8aa-f04b-4a9b-abd2-18887df0c32e" PARNT_ID="2681"
+        OBJ_ID="a5fa2746-9e70-4b8a-99fa-29fcbdec1266" PARNT_ID="2681"
         PREV_DOC_TYP_VER_NBR="2709" RTE_VER_NBR="2" VER_NBR="1"/>
     <KREW_DOC_TYP_T ACTV_IND="1" BLNKT_APPR_GRP_ID="1" CUR_IND="1"
         DOC_HDLR_URL="${kr.url}/maintenance.do?methodToCall=docHandler"
@@ -287,7 +287,7 @@
         GRP_ID="1"
         HELP_DEF_URL="http://site.kuali.org/rice/${rice.version}/reference/html/Help.html#parameter_component"
         LBL="Component Maintenance Document"
-        OBJ_ID="3011582f-38e4-4311-b7b5-b9c1433c2f2e" PARNT_ID="2681"
+        OBJ_ID="04ea23f4-5a9d-4532-9484-dc44daf4497e" PARNT_ID="2681"
         POST_PRCSR="org.kuali.rice.krad.workflow.postprocessor.KualiPostProcessor"
         PREV_DOC_TYP_VER_NBR="3007" RTE_VER_NBR="2" VER_NBR="1"/>
     <KREW_DOC_TYP_T ACTV_IND="1" CUR_IND="1"
@@ -296,7 +296,7 @@
         DOC_TYP_VER_NBR="1"
         HELP_DEF_URL="http://site.kuali.org/rice/${rice.version}/reference/html/Help.html#country"
         LBL="CountryMaintenanceDocument"
-        OBJ_ID="fcbb1632-e34d-4a6d-bd0f-329ae5536622" PARNT_ID="2681"
+        OBJ_ID="193e4fc7-729c-4462-8c87-0dd3752d9878" PARNT_ID="2681"
         PREV_DOC_TYP_VER_NBR="2710" RTE_VER_NBR="2" VER_NBR="1"/>
     <KREW_DOC_TYP_T ACTV_IND="1" CUR_IND="1"
         DOC_HDLR_URL="${kr.url}/maintenance.do?methodToCall=docHandler"
@@ -304,7 +304,7 @@
         DOC_TYP_VER_NBR="1"
         HELP_DEF_URL="http://site.kuali.org/rice/${rice.version}/reference/html/Help.html#county"
         LBL="CountyMaintenanceDocument"
-        OBJ_ID="11f5e91a-4fcb-40c1-b0ee-1de3f686580e" PARNT_ID="2681"
+        OBJ_ID="41bc0f30-f335-4de3-8255-06d52a061379" PARNT_ID="2681"
         PREV_DOC_TYP_VER_NBR="2711" RTE_VER_NBR="2" VER_NBR="1"/>
     <KREW_DOC_TYP_T ACTV_IND="1" BLNKT_APPR_GRP_ID="1" CUR_IND="1"
         DOC_HDLR_URL="${kr.url}/maintenance.do?methodToCall=docHandler"
@@ -313,7 +313,7 @@
         DOC_TYP_VER_NBR="1" GRP_ID="1"
         HELP_DEF_URL="http://site.kuali.org/rice/${rice.version}/reference/html/Help.html#document_type"
         LBL="Workflow Maintenance Document Type Document"
-        OBJ_ID="f8d54538-dfb7-4991-a629-3fbe8f99b1e2" PARNT_ID="2681"
+        OBJ_ID="494e03e6-999a-4e68-864d-7edf437953d2" PARNT_ID="2681"
         POST_PRCSR="org.kuali.rice.krad.workflow.postprocessor.KualiPostProcessor"
         PREV_DOC_TYP_VER_NBR="2011" RTE_VER_NBR="2" VER_NBR="1"/>
     <KREW_DOC_TYP_T ACTV_IND="1" BLNKT_APPR_GRP_ID="1" CUR_IND="1"
@@ -322,7 +322,7 @@
         DOC_TYP_ID="3016" DOC_TYP_NM="NamespaceMaintenanceDocument"
         DOC_TYP_VER_NBR="1" GRP_ID="1"
         HELP_DEF_URL="http://site.kuali.org/rice/${rice.version}/reference/html/Help.html#namespace"
-        LBL="Namespace" OBJ_ID="72cede4e-430b-414a-8324-de25e78250f4"
+        LBL="Namespace" OBJ_ID="6e2304e1-ffa6-4b96-886e-b803cbc1fdec"
         PARNT_ID="2681"
         POST_PRCSR="org.kuali.rice.krad.workflow.postprocessor.KualiPostProcessor"
         PREV_DOC_TYP_VER_NBR="2031" RTE_VER_NBR="2" VER_NBR="1"/>
@@ -334,7 +334,7 @@
         DOC_TYP_VER_NBR="1" GRP_ID="1"
         HELP_DEF_URL="http://site.kuali.org/rice/${rice.version}/reference/html/Help.html#parameter_component"
         LBL="Parameter Detail Type Maintenance Document"
-        OBJ_ID="3c0199a0-869a-49cc-89a2-1abab13f7051" PARNT_ID="2681"
+        OBJ_ID="c5b4eae3-ec07-4baf-9416-c4a845265882" PARNT_ID="2681"
         POST_PRCSR="org.kuali.rice.krad.workflow.postprocessor.KualiPostProcessor"
         PREV_DOC_TYP_VER_NBR="2033" RTE_VER_NBR="2" VER_NBR="1"/>
     <KREW_DOC_TYP_T ACTV_IND="1" BLNKT_APPR_GRP_ID="1" CUR_IND="1"
@@ -344,7 +344,7 @@
         GRP_ID="1"
         HELP_DEF_URL="http://site.kuali.org/rice/${rice.version}/reference/html/Help.html#parameter"
         LBL="Parameter Maintenance Document"
-        OBJ_ID="13ffa4b3-34da-4bbb-ac75-657a5be2baa3" PARNT_ID="2681"
+        OBJ_ID="e7b4de2a-b618-488d-9133-af529fbdf7d8" PARNT_ID="2681"
         POST_PRCSR="org.kuali.rice.krad.workflow.postprocessor.KualiPostProcessor"
         PREV_DOC_TYP_VER_NBR="2034" RTE_VER_NBR="2" VER_NBR="1"/>
     <KREW_DOC_TYP_T ACTV_IND="1" BLNKT_APPR_GRP_ID="1" CUR_IND="1"
@@ -354,7 +354,7 @@
         DOC_TYP_VER_NBR="1" GRP_ID="1"
         HELP_DEF_URL="http://site.kuali.org/rice/${rice.version}/reference/html/Help.html#parameter_type"
         LBL="Parameter Type Maintenance Document"
-        OBJ_ID="ea18f40c-ec90-4bb1-ab2f-09d4e2efbfd7" PARNT_ID="2681"
+        OBJ_ID="ed44e3b0-2a66-43e1-99e4-8dd651328e55" PARNT_ID="2681"
         POST_PRCSR="org.kuali.rice.krad.workflow.postprocessor.KualiPostProcessor"
         PREV_DOC_TYP_VER_NBR="2032" RTE_VER_NBR="2" VER_NBR="1"/>
     <KREW_DOC_TYP_T ACTV_IND="1" CUR_IND="1"
@@ -363,7 +363,7 @@
         DOC_TYP_VER_NBR="1"
         HELP_DEF_URL="http://site.kuali.org/rice/${rice.version}/reference/html/Help.html#postal_code"
         LBL="PostalCodeMaintenanceDocument"
-        OBJ_ID="19bce4d3-0b1e-42ec-abe6-0b658f56ea33" PARNT_ID="2681"
+        OBJ_ID="c1fe9e54-cae2-4a0a-aad7-c62c72f87bf5" PARNT_ID="2681"
         PREV_DOC_TYP_VER_NBR="2712" RTE_VER_NBR="2" VER_NBR="1"/>
     <KREW_DOC_TYP_T ACTV_IND="1" CUR_IND="1"
         DOC_HDLR_URL="${kr.url}/maintenance.do?methodToCall=docHandler"
@@ -371,7 +371,7 @@
         DOC_TYP_VER_NBR="1"
         HELP_DEF_URL="http://site.kuali.org/rice/${rice.version}/reference/html/Help.html#state"
         LBL="StateMaintenanceDocument"
-        OBJ_ID="cf536979-1032-41ae-ad47-3add676e028d" PARNT_ID="2681"
+        OBJ_ID="18386c4a-894a-486c-9cb7-b04d5670fd57" PARNT_ID="2681"
         PREV_DOC_TYP_VER_NBR="2713" RTE_VER_NBR="2" VER_NBR="1"/>
     <KREW_DOC_TYP_T ACTV_IND="1" CUR_IND="1"
         DOC_HDLR_URL="${kr.url}/maintenance.do?methodToCall=docHandler"
@@ -379,21 +379,21 @@
         DOC_TYP_NM="IdentityManagementGenericPermissionMaintenanceDocument"
         DOC_TYP_VER_NBR="1"
         HELP_DEF_URL="http://site.kuali.org/rice/${rice.version}/reference/html/Help.html#permission"
-        LBL="Permission" OBJ_ID="5ccdeedb-aa79-44a6-9077-cb4c01010e8b"
+        LBL="Permission" OBJ_ID="b8fca5da-0c9b-47f7-951f-154deca924ca"
         PARNT_ID="2994" PREV_DOC_TYP_VER_NBR="2999" RTE_VER_NBR="2" VER_NBR="1"/>
     <KREW_DOC_TYP_T ACTV_IND="1" CUR_IND="1"
         DOC_HDLR_URL="${kim.url}/identityManagementGroupDocument.do?methodToCall=docHandler"
         DOC_TYP_ID="3023" DOC_TYP_NM="IdentityManagementGroupDocument"
         DOC_TYP_VER_NBR="2"
         HELP_DEF_URL="http://site.kuali.org/rice/${rice.version}/reference/html/Help.html#group"
-        LBL="Group" OBJ_ID="bf24dd6f-5566-4623-8f18-7edd836bea64"
+        LBL="Group" OBJ_ID="1aba4175-0b8b-470d-b711-82d3f059c966"
         PARNT_ID="2994" PREV_DOC_TYP_VER_NBR="2996" RTE_VER_NBR="2" VER_NBR="1"/>
     <KREW_DOC_TYP_T ACTV_IND="1" CUR_IND="1"
         DOC_HDLR_URL="${kim.url}/identityManagementPersonDocument.do?methodToCall=docHandler"
         DOC_TYP_ID="3024" DOC_TYP_NM="IdentityManagementPersonDocument"
         DOC_TYP_VER_NBR="2"
         HELP_DEF_URL="http://site.kuali.org/rice/${rice.version}/reference/html/Help.html#person"
-        LBL="Person" OBJ_ID="e9f7dac1-d009-4290-ae55-90b73066ad29"
+        LBL="Person" OBJ_ID="647df8c6-b167-4520-963f-70d9a1cf731c"
         PARNT_ID="2994" PREV_DOC_TYP_VER_NBR="2997" RTE_VER_NBR="2" VER_NBR="1"/>
     <KREW_DOC_TYP_T ACTV_IND="1" CUR_IND="1"
         DOC_HDLR_URL="${kr.url}/maintenance.do?methodToCall=docHandler"
@@ -402,13 +402,13 @@
         DOC_TYP_VER_NBR="1"
         HELP_DEF_URL="http://site.kuali.org/rice/${rice.version}/reference/html/Help.html#responsibility"
         LBL="Review Responsibility"
-        OBJ_ID="f811afab-7a28-49a6-887e-8407bb55c0ab" PARNT_ID="2994"
+        OBJ_ID="d8a40c77-52c2-4150-bd08-93feec3e9fd2" PARNT_ID="2994"
         PREV_DOC_TYP_VER_NBR="2998" RTE_VER_NBR="2" VER_NBR="1"/>
     <KREW_DOC_TYP_T ACTV_IND="1" CUR_IND="1"
         DOC_HDLR_URL="${kim.url}/identityManagementRoleDocument.do?methodToCall=docHandler"
         DOC_TYP_ID="3026" DOC_TYP_NM="IdentityManagementRoleDocument"
         DOC_TYP_VER_NBR="2"
         HELP_DEF_URL="http://site.kuali.org/rice/${rice.version}/reference/html/Help.html#role"
-        LBL="Role" OBJ_ID="3ee7e7f2-f026-4e9d-b06a-4cf4544c2c42"
+        LBL="Role" OBJ_ID="8869a770-01cf-4e1f-9b7d-06ee18b6e9da"
         PARNT_ID="2994" PREV_DOC_TYP_VER_NBR="2995" RTE_VER_NBR="2" VER_NBR="1"/>
 </dataset>
